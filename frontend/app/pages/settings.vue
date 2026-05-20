@@ -68,6 +68,24 @@
         <section class="setup-panel card">
           <div class="setup-panel-head compact">
             <div>
+              <div class="setup-title">생성 방식</div>
+              <div class="setup-desc">API 자동 생성은 저장된 키로 완전 자동 처리합니다. 수동/구독형 모드는 프롬프트를 복사해 외부 서비스에서 생성한 결과를 직접 등록합니다.</div>
+            </div>
+          </div>
+          <div class="generation-mode-box">
+            <button :class="['generation-mode-option', generationMode === 'api' && 'active']" @click="setGenerationMode('api')">
+              <span class="generation-mode-title">API 자동 생성</span>
+              <span class="generation-mode-desc">이미지, 영상, 오디오 provider API 키 사용</span>
+            </button>
+            <button :class="['generation-mode-option', generationMode === 'manual' && 'active']" @click="setGenerationMode('manual')">
+              <span class="generation-mode-title">수동/구독형 생성</span>
+              <span class="generation-mode-desc">프롬프트 복사 후 파일/URL 직접 등록</span>
+            </button>
+          </div>
+        </section>
+        <section class="setup-panel card">
+          <div class="setup-panel-head compact">
+            <div>
               <div class="setup-title">빠른 템플릿</div>
               <div class="setup-desc">서비스 유형을 선택하면 추천 `provider / base URL / model`을 템플릿으로 채웁니다.</div>
             </div>
@@ -400,6 +418,8 @@ import brandLogo from '~/assets/huobao-logo.png'
 const showBrandImage = ref(true)
 const tab = ref('ai')
 const showAdvanced = ref(false)
+const GENERATION_MODE_KEY = 'huobao:generation-mode'
+const generationMode = ref('api')
 const baseTabs = [
   { id: 'ai', label: 'AI 서비스', icon: Cpu },
 ]
@@ -410,6 +430,12 @@ const advancedTabs = [
 watch(showAdvanced, (v) => {
   if (!v && tab.value !== 'ai') tab.value = 'ai'
 })
+
+function setGenerationMode(mode) {
+  generationMode.value = mode
+  if (import.meta.client) localStorage.setItem(GENERATION_MODE_KEY, mode)
+  toast.success(mode === 'api' ? 'API 자동 생성 모드로 설정했습니다' : '수동/구독형 생성 모드로 설정했습니다')
+}
 
 // ===== AI Service Configs =====
 const cfgs = ref([])
@@ -835,7 +861,10 @@ async function saveSkill(id) {
   }
 }
 
-onMounted(() => { loadCfgs(); loadAgents(); loadAllSkills() })
+onMounted(() => {
+  generationMode.value = localStorage.getItem(GENERATION_MODE_KEY) || 'api'
+  loadCfgs(); loadAgents(); loadAllSkills()
+})
 </script>
 
 <style scoped>
@@ -1014,6 +1043,37 @@ onMounted(() => { loadCfgs(); loadAgents(); loadAllSkills() })
   color: var(--accent-text);
   background: var(--accent-bg);
 }
+.generation-mode-box {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.generation-mode-option {
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.82);
+  border-radius: 14px;
+  padding: 12px;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  transition: 0.15s;
+}
+.generation-mode-option.active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  color: var(--accent-text);
+}
+.generation-mode-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+.generation-mode-desc {
+  font-size: 11px;
+  color: var(--text-2);
+}
+.generation-mode-option.active .generation-mode-desc { color: inherit; opacity: 0.82; }
 .sections { display: flex; flex-direction: column; gap: 24px; }
 .section-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .section-title { font-size: 13px; font-weight: 600; }

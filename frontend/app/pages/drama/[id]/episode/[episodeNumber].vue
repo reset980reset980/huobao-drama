@@ -1440,7 +1440,7 @@ import { toast } from 'vue-sonner'
 import {
   Users, MapPin, Video, ImageIcon, Layers, Mic2, FileText, FolderKanban, Clapperboard, Download,
 } from 'lucide-vue-next'
-import { dramaAPI, episodeAPI, storyboardAPI, characterAPI, sceneAPI, imageAPI, videoAPI, composeAPI, mergeAPI, gridAPI, aiConfigAPI, voicesAPI } from '~/composables/useApi'
+import { dramaAPI, episodeAPI, storyboardAPI, characterAPI, sceneAPI, imageAPI, videoAPI, composeAPI, mergeAPI, gridAPI, aiConfigAPI, voicesAPI, uploadAPI } from '~/composables/useApi'
 import { useAgent } from '~/composables/useAgent'
 import BaseSelect from '~/components/BaseSelect.vue'
 
@@ -1506,6 +1506,19 @@ const pendingComposeIds = ref([])
 const failedVideoMessages = ref({})
 const failedComposeMessages = ref({})
 const imageViewer = ref({ open: false, src: '', title: '' })
+const GENERATION_MODE_KEY = 'huobao:generation-mode'
+const generationMode = ref('api')
+const isManualGeneration = computed(() => generationMode.value === 'manual')
+const manualDialog = reactive({
+  open: false,
+  title: '',
+  kind: 'uploads',
+  accept: '',
+  prompt: '',
+  url: '',
+  file: null,
+  onSave: null,
+})
 
 function configLabel(config) {
   if (!config) return '설정 없음'
@@ -1532,12 +1545,19 @@ function handleImageViewerKeydown(event) {
 }
 
 onMounted(() => {
+  generationMode.value = localStorage.getItem(GENERATION_MODE_KEY) || 'api'
   window.addEventListener('keydown', handleImageViewerKeydown)
+  window.addEventListener('storage', handleGenerationModeStorage)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleImageViewerKeydown)
+  window.removeEventListener('storage', handleGenerationModeStorage)
 })
+
+function handleGenerationModeStorage(event) {
+  if (event.key === GENERATION_MODE_KEY) generationMode.value = event.newValue || 'api'
+}
 
 function isPendingSceneImage(id) {
   return pendingSceneImageIds.value.includes(id)
@@ -2486,6 +2506,112 @@ function watchAsyncResult(check, attempts = 24, delay = 2500) {
       if (check()) return
     }
   })()
+}
+
+async function copyPrompt(text, label = '프롬프트') {
+  const value = String(text || '').trim()
+  if (!value) {
+    toast.warning(`${label}가 비어 있습니다`)
+    return false
+  }
+  await navigator.clipboard.writeText(value)
+  toast.success(`${label}를 복사했습니다`)
+  return true
+}
+
+function buildCharacterImagePrompt(char) {
+  return [
+    `Use case: illustration-story`,
+    `Asset type: character reference image`,
+    `Primary request: ${char.name} character portrait for a short-form drama`,
+    char.appearance ? `Subject: ${char.appearance}` : '',
+    char.description ? `Character description: ${char.description}` : '',
+    char.personality ? `Mood/personality: ${char.personality}` : '',
+    char.role ? `Role: ${char.role}` : '',
+    'Style/medium: cinematic high-quality character concept art, consistent drama style',
+    'Composition/framing: front-facing portrait, clear face and outfit, clean background',
+    'Constraints: no text, no watermark, no logo',
+  ].filter(Boolean).join('\n')
+}
+
+function buildSceneImagePrompt(scene) {
+  return [
+    'Use case: illustration-story',
+    'Asset type: scene reference image',
+    `Primary request: ${scene.location} scene background for a short-form drama`,
+    scene.time ? `Time: ${scene.time}` : '',
+    scene.prompt ? `Scene/backdrop: ${scene.prompt}` : '',
+    'Style/medium: cinematic scene, high-quality lighting, consistent drama style',
+    'Constraints: no text, no watermark, no logo',
+  ].filter(Boolean).join('\n')
+}
+
+function buildTtsPrompt(sb) {
+  return [
+    `샷 #${sb.storyboard_number || sb.storyboardNumber || sb.id} 더빙`,
+    `화자: ${getDialogueSpeaker(sb)}`,
+    `대사: ${getDialogueText(sb)}`,
+    `권장 분위기: ${sb.atmosphere || sb.action || '장면 감정에 맞는 자연스러운 연기'}`,
+  ].filter(Boolean).join('\n')
+}
+
+function buildVideoManualPrompt(sb) {
+  return [
+    `Use case: video-generation`,
+    `Asset type: short-form drama shot video`,
+    `Primary request: ${sb.video_prompt || sb.videoPrompt || sb.description || sb.title || ''}`,
+    `Duration: ${Number(sb.duration || 5)} seconds`,
+    sb.location ? `Location: ${sb.location}` : '',
+    sb.time ? `Time: ${sb.time}` : '',
+    sb.dialogue ? `Dialogue/narration: ${sb.dialogue}` : '',
+    sb.bgm_prompt || sb.bgmPrompt ? `BGM: ${sb.bgm_prompt || sb.bgmPrompt}` : '',
+    sb.sound_effect || sb.soundEffect ? `Sound effects: ${sb.sound_effect || sb.soundEffect}` : '',
+    getFirstFrame(sb) ? `First frame reference: ${getFirstFrame(sb)}` : '',
+    getLastFrame(sb) ? `Last frame reference: ${getLastFrame(sb)}` : '',
+  ].filter(Boolean).join('\n')
+}
+
+function openManualDialog({ title, kind, accept, prompt, onSave }) {
+  manualDialog.open = true
+  manualDialog.title = title
+  manualDialog.kind = kind || 'uploads'
+  manualDialog.accept = accept || ''
+  manualDialog.prompt = prompt || ''
+  manualDialog.url = ''
+  manualDialog.file = null
+  manualDialog.onSave = onSave
+}
+
+function closeManualDialog() {
+  manualDialog.open = false
+  manualDialog.onSave = null
+}
+
+function onManualFileChange(event) {
+  manualDialog.file = event.target.files?.[0] || null
+}
+
+async function submitManualAsset() {
+  try {
+    let path = ''
+    if (manualDialog.file) {
+      const uploaded = await uploadAPI.file(manualDialog.file, manualDialog.kind)
+      path = uploaded.path
+    } else if (manualDialog.url.trim()) {
+      const uploaded = await uploadAPI.fromUrl(manualDialog.url.trim(), manualDialog.kind)
+      path = uploaded.path
+    }
+    if (!path) {
+      toast.warning('파일을 선택하거나 URL/저장 경로를 입력하세요')
+      return
+    }
+    await manualDialog.onSave?.(path)
+    toast.success('수동 생성 결과를 연결했습니다')
+    closeManualDialog()
+    await refresh()
+  } catch (e) {
+    toast.error(e.message || '수동 결과 연결 실패')
+  }
 }
 
 async function genCharImg(id) {

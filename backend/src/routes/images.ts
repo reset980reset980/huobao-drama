@@ -53,6 +53,32 @@ app.post('/', async (c) => {
   }
 })
 
+// POST /images/manual — Register a manually generated image
+app.post('/manual', async (c) => {
+  const body = await c.req.json()
+  const localPath = String(body.local_path || body.localPath || '').replace(/^\/+/, '')
+  if (!localPath) return badRequest(c, 'local_path is required')
+  const ts = now()
+  const res = db.insert(schema.imageGenerations).values({
+    storyboardId: body.storyboard_id || null,
+    dramaId: body.drama_id || null,
+    sceneId: body.scene_id || null,
+    characterId: body.character_id || null,
+    frameType: body.frame_type || null,
+    provider: 'manual',
+    prompt: body.prompt || '',
+    imageUrl: localPath,
+    localPath,
+    status: 'completed',
+    createdAt: ts,
+    updatedAt: ts,
+    completedAt: ts,
+  }).run()
+  const [record] = db.select().from(schema.imageGenerations)
+    .where(eq(schema.imageGenerations.id, Number(res.lastInsertRowid))).all()
+  return created(c, record)
+})
+
 // GET /images/:id
 app.get('/:id', async (c) => {
   const id = Number(c.req.param('id'))

@@ -68,10 +68,12 @@ export const characterAPI = {
 
 export const sceneAPI = {
   generateImage: (id: number, episodeId: number) => api.post(`/scenes/${id}/generate-image`, { episode_id: episodeId }),
+  update: (id: number, data: any) => api.put(`/scenes/${id}`, data),
 }
 
 export const imageAPI = {
   generate: (d: any) => api.post('/images', d),
+  manual: (d: any) => api.post('/images/manual', d),
   list: (params?: { drama_id?: number; storyboard_id?: number }) => {
     const query = new URLSearchParams()
     if (params?.drama_id) query.set('drama_id', String(params.drama_id))
@@ -126,4 +128,17 @@ export const skillsAPI = {
 export const voicesAPI = {
   list: (provider?: string) => api.get(`/ai-voices${provider ? `?provider=${provider}` : ''}`),
   sync: () => api.post('/ai-voices/sync', {}),
+}
+
+export const uploadAPI = {
+  file: async (file: File, kind = 'uploads') => {
+    const form = new FormData()
+    form.append('file', file)
+    form.append('kind', kind)
+    const resp = await fetch(`${BASE}/upload/file`, { method: 'POST', body: form })
+    const json = await resp.json()
+    if (!resp.ok || (json.code && json.code >= 400)) throw new Error(json.message || `${resp.status}`)
+    return json.data ?? json
+  },
+  fromUrl: (url: string, kind = 'uploads') => api.post('/upload/from-url', { url, kind }),
 }
