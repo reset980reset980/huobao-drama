@@ -1,6 +1,6 @@
 /**
- * 剧本改写 Agent 工具
- * 工厂函数模式 — 注入 episodeId，工具不再需要 LLM 传递 ID
+ * 극본 수정 Agent 도구
+ * 팩토리 함수 패턴 - episodeId를 주입하므로 LLM이 ID를 전달할 필요가 없습니다.
  */
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
@@ -11,7 +11,7 @@ import { now } from '../../utils/response.js'
 export function createScriptTools(episodeId: number) {
   const readEpisodeScript = createTool({
     id: 'read_episode_script',
-    description: 'Read the script content of the current episode.',
+    description: '현재 회차의 원본 내용을 읽습니다.',
     inputSchema: z.object({}),
     execute: async () => {
       const [ep] = db.select().from(schema.episodes)
@@ -25,7 +25,7 @@ export function createScriptTools(episodeId: number) {
 
   const rewriteToScreenplay = createTool({
     id: 'rewrite_to_screenplay',
-    description: 'Read the original content for AI rewriting. Returns the source text with formatting instructions.',
+    description: 'AI 각색을 위해 원본 내용과 형식 지침을 함께 반환합니다.',
     inputSchema: z.object({
       instructions: z.string().optional().describe('Additional rewrite instructions'),
     }),
@@ -38,17 +38,17 @@ export function createScriptTools(episodeId: number) {
 
       return {
         source_content: source,
-        instruction: `请将以下内容改写为格式化剧本。
+        instruction: `아래 내용을 형식화된 극본으로 수정하세요.
 
-格式规范：
-- 场景头：## S编号 | 内景/外景 · 地点 | 时间段
-- 动作描写：自然段落，不包含镜头语言
-- 对白：角色名：（状态/表情）台词内容
-- 每个场景 30-60 秒内容
+형식 규칙:
+- 장면 헤더: ## S번호 | 실내/실외 · 장소 | 시간대
+- 동작 묘사：자연스러운 문단, 카메라 언어 제외
+- 대사: 캐릭터명: (상태/표정) 대사 내용
+- 각 장면은 30-60초 분량
 
 ${instructions || ''}
 
-【原始内容】
+【원본 내용】
 ${source}`,
       }
     },
@@ -56,7 +56,7 @@ ${source}`,
 
   const saveScript = createTool({
     id: 'save_script',
-    description: 'Save the rewritten screenplay content to the current episode.',
+    description: '수정된 전체 극본을 현재 회차에 저장합니다.',
     inputSchema: z.object({
       content: z.string().describe('The formatted screenplay content to save'),
     }),

@@ -22,7 +22,7 @@ function formatTime(): string {
 }
 
 /**
- * 全局日志中间件 — 打印请求方法/路径/状态/耗时/请求体
+ * 全局日志中间件 — 打印请求方法/路径/상태/耗时/请求体
  */
 export const requestLogger: MiddlewareHandler = async (c, next) => {
   const method = c.req.method

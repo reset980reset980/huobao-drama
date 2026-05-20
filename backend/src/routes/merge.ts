@@ -8,7 +8,7 @@ import { logTaskError, logTaskStart, logTaskSuccess } from '../utils/task-logger
 
 const app = new Hono()
 
-// POST /episodes/:id/merge — 拼接全集视频
+// POST /episodes/:id/merge — 拼接全회영상
 app.post('/episodes/:id/merge', async (c) => {
   const episodeId = Number(c.req.param('id'))
   const [ep] = db.select().from(schema.episodes).where(eq(schema.episodes.id, episodeId)).all()
@@ -25,7 +25,7 @@ app.post('/episodes/:id/merge', async (c) => {
   }
 })
 
-// GET /episodes/:id/merge — 查询拼接状态
+// GET /episodes/:id/merge — 查询拼接상태
 app.get('/episodes/:id/merge', async (c) => {
   const episodeId = Number(c.req.param('id'))
   const merges = db.select().from(schema.videoMerges)

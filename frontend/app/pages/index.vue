@@ -3,14 +3,14 @@
     <!-- Page Header -->
     <div class="page-head">
       <div class="head-left">
-        <h1 class="page-title">短剧项目</h1>
-        <p class="page-desc">{{ dramas.length }} 个项目</p>
+        <h1 class="page-title">드라마 프로젝트</h1>
+        <p class="page-desc">{{ dramas.length }} 개 프로젝트</p>
       </div>
       <button class="btn btn-primary" @click="showCreate = true">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
           <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
-        新建项目
+        새 프로젝트
       </button>
     </div>
 
@@ -39,9 +39,9 @@
           <div class="card-header">
             <div class="episode-badge">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
-              {{ d.episodes?.length || 0 }} 集
+              {{ d.episodes?.length || 0 }} 회
             </div>
-            <button class="btn btn-ghost btn-icon card-delete" @click.stop="delDrama(d)" title="删除">
+            <button class="btn btn-ghost btn-icon card-delete" @click.stop="delDrama(d)" title="삭제">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
               </svg>
@@ -82,8 +82,8 @@
             <line x1="8" y1="12" x2="16" y2="12"/>
           </svg>
         </div>
-        <p class="empty-title">新建第一个短剧项目</p>
-        <p class="empty-desc">从剧本到成片，AI 助力的短剧制作工作台</p>
+        <p class="empty-title">첫 드라마 프로젝트 만들기</p>
+        <p class="empty-desc">극본부터 완성본까지 AI가 돕는 드라마 제작 작업대</p>
       </div>
     </div>
 
@@ -97,31 +97,31 @@
               <line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
             </svg>
           </div>
-          <h2 class="modal-title">新建短剧项目</h2>
-          <p class="modal-desc">输入项目基本信息，即可开始制作</p>
+          <h2 class="modal-title">새 드라마 프로젝트</h2>
+          <p class="modal-desc">프로젝트 기본 정보를 입력하면 제작을 시작할 수 있습니다</p>
         </div>
         <form @submit.prevent="create" class="modal-form">
           <label class="field">
-            <span class="field-label">项目名称 <span class="required">*</span></span>
-            <input v-model="form.title" class="input" placeholder="例如：都市情感短剧《时光邮局》" required autofocus />
+            <span class="field-label">프로젝트 이름 <span class="required">*</span></span>
+            <input v-model="form.title" class="input" placeholder="예: 도시 로맨스 드라마 《시간 우체국》" required autofocus />
           </label>
           <div class="field-row">
             <label class="field">
-              <span class="field-label">计划集数</span>
+              <span class="field-label">예정 회차</span>
               <input v-model.number="form.total_episodes" class="input" type="number" min="1" max="100" />
             </label>
             <label class="field">
-              <span class="field-label">视觉风格</span>
-              <BaseSelect v-model="form.style" :options="styleSelectOptions" placeholder="选择风格" searchable />
+              <span class="field-label">비주얼 스타일</span>
+              <BaseSelect v-model="form.style" :options="styleSelectOptions" placeholder="스타일 선택" searchable />
             </label>
           </div>
           <div class="modal-actions">
-            <button type="button" class="btn" @click="showCreate = false">取消</button>
+            <button type="button" class="btn" @click="showCreate = false">취소</button>
             <button type="submit" class="btn btn-primary">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
                 <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
               </svg>
-              创建项目
+              프로젝트 생성
             </button>
           </div>
         </form>
@@ -166,10 +166,10 @@ async function create() {
 }
 
 async function delDrama(d) {
-  if (!confirm(`确定删除「${d.title}」？此操作不可恢复。`)) return
+  if (!confirm(`정말 삭제할까요「${d.title}」？이 작업은 되돌릴 수 없습니다.`)) return
   try {
     await dramaAPI.del(d.id)
-    toast.success('已删除')
+    toast.success('삭제됨')
     load()
   } catch (e) {
     toast.error(e.message)
@@ -181,10 +181,10 @@ function fmtDate(s) {
   const d = new Date(s)
   const now = new Date()
   const diff = now.getTime() - d.getTime()
-  if (diff < 60000) return '刚刚'
-  if (diff < 3600000) return `${Math.floor(diff / 60000)} 分钟前`
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)} 小时前`
-  if (diff < 604800000) return `${Math.floor(diff / 86400000)} 天前`
+  if (diff < 60000) return '방금 전'
+  if (diff < 3600000) return `${Math.floor(diff / 60000)} 분 전`
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)} 시간 전`
+  if (diff < 604800000) return `${Math.floor(diff / 86400000)} 일 전`
   return d.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
 }
 

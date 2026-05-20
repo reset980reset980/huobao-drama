@@ -1,108 +1,55 @@
 ---
-name: grid-image-generator
-description: 图片提示词生成指南 — 角色、场景、宫格图三类提示词规范
+name: grid_prompt_generator
+description: 캐릭터, 장면, 그리드 이미지 프롬프트 생성 가이드
 ---
 
-# 图片提示词生成指南
+# 이미지 프롬프트 생성 가이드
 
-本 SKILL 对应 `grid_prompt_generator` Agent，支持生成三类图片提示词：
+이 Skill은 `grid_prompt_generator` Agent가 사용하는 규칙입니다. 세 가지 프롬프트를 지원합니다.
 
-1. **角色图片提示词** — 角色外貌与气质
-2. **场景图片提示词** — 场景氛围与光线
-3. **宫格图提示词** — 多镜头网格拼图
+1. **캐릭터 이미지 프롬프트**: 캐릭터 외형과 분위기
+2. **장면 이미지 프롬프트**: 장면의 분위기와 빛
+3. **그리드 이미지 프롬프트**: 여러 샷을 한 장에 배치한 참고 이미지
 
-详细模板见 `reference/` 目录。
+상세 템플릿은 `reference/` 디렉터리를 참고합니다.
 
----
+## 캐릭터 이미지 프롬프트
 
-## 角色图片提示词
+- `appearance`를 핵심 정보로 사용합니다.
+- `personality`로 캐릭터의 분위기를 정합니다.
+- `role`로 의상과 소품 방향을 보강합니다.
+- `cinematic portrait`와 `consistent art style`을 포함합니다.
+- 문자, 서명, 워터마크가 나오지 않게 합니다.
 
-参考：`reference/character-prompt.md`
+## 장면 이미지 프롬프트
 
-### 模板结构
-```
-[appearance], [personality/temperament], [role], [cinematic portrait], [high quality], [consistent art style], [no text, no watermark]
-```
+- `location`을 기반으로 공간을 구성합니다.
+- `time`으로 빛과 색감을 정합니다.
+- atmospheric, moody, warm, cold 같은 분위기 단어를 적절히 사용합니다.
+- `cinematic scene`과 `consistent art style`을 포함합니다.
+- 문자, 서명, 워터마크가 나오지 않게 합니다.
 
-### 生成规则
-- 以 `appearance`（外貌描述）为核心
-- `personality` 决定气质基调（内敛/张扬/神秘等）
-- `role` 决定服装和道具风格
-- 必须包含 `cinematic portrait` + `consistent art style`
-- 避免出现文字、签名、水印
+## 그리드 이미지 프롬프트
 
----
+### 첫 프레임 모드 (`first_frame`)
 
-## 场景图片提示词
+각 칸은 한 샷의 시작 화면입니다. 사용자가 지정한 `rows x cols` 총 칸 수를 정확히 지킵니다.
 
-参考：`reference/scene-prompt.md`
+### 첫/끝 프레임 모드 (`first_last`)
 
-### 模板结构
-```
-[location], [time period], [lighting atmosphere], [scene description], [cinematic scene], [high quality], [consistent art style], [no text, no watermark]
-```
+각 샷의 시작과 끝을 리듬감 있게 배치합니다. 그래도 사용자가 지정한 총 칸 수를 정확히 지켜야 합니다.
 
-### 生成规则
-- 以 `location`（地点）为基础
-- `time` 决定光线色调（白天/夜晚/黄昏）
-- 场景氛围词：atmospheric, moody, warm, cold 等
-- 必须包含 `cinematic scene` + `consistent art style`
-- 避免出现文字、签名、水印
+### 다중 참조 모드 (`multi_ref`)
 
----
+모든 칸은 같은 샷의 서로 다른 각도나 구도 참고 이미지입니다. 지정된 `rows x cols` 총 칸 수를 지킵니다.
 
-## 宫格图提示词
+## 공통 규칙
 
-参考：`reference/shot-prompt.md`
-
-### 三种模式
-
-#### 首帧模式 (first_frame)
-每个格子 = 一个镜头的起始画面，但必须严格生成用户指定的 `rows x cols` 总格数。
-
-```
-[rows x cols grid layout], exactly [rows*cols] visible panels, consistent art style, [style description],
-格1: [shot 1 opening scene],
-格2: [shot 2 opening scene],
-格3: [shot 3 opening scene],
-...
-格N: [opening scene],
-high quality, cinematic lighting, no merged panels, no missing panels, no text, no watermark
-```
-
-#### 首尾帧模式 (first_last)
-保持首尾帧节奏感，但仍然必须严格生成用户指定的 `rows x cols` 总格数，不允许偷偷改成 `Nx2`。
-
-```
-[rows x cols grid layout], exactly [rows*cols] visible panels, consistent art style, [style description],
-格1: [opening beat],
-格2: [closing beat],
-格3: [opening beat],
-格4: [closing beat],
-...
-high quality, cinematic, continuous motion implied, no merged panels, no missing panels, no text
-```
-
-#### 多参考模式 (multi_ref)
-所有格子都是同一镜头的不同角度/构图参考，但仍然必须严格生成用户指定的 `rows x cols` 总格数。
-
-```
-[rows x cols grid layout], exactly [rows*cols] visible panels, same scene different angles, [style description],
-[main scene description],
-格1: wide shot establishing,
-格2: medium shot character focus,
-格3: close-up detail,
-格4: dramatic angle,
-...
-consistent lighting and color palette, no merged panels, no missing panels, no text
-```
-
-### 通用规则
-1. 提示词使用**英文**
-2. 必须明确写出用户指定的 `rows x cols grid layout`
-3. 必须包含 `consistent art style` 保持风格统一
-4. 必须明确要求 `exactly N visible panels`
-5. 必须明确要求 `no merged panels, no missing panels`
-6. 避免在格子间出现分割线的描述
-7. 尺寸建议：每格 960x540，总图 = 960×cols × 540×rows
-8. 当存在参考图映射时，统一使用 `图片1/图片2/...` 指代参考图，不要把它和 `格1/格2/...` 混用
+1. 프롬프트는 영어로 작성합니다.
+2. 사용자가 지정한 `rows x cols grid layout`을 명확히 씁니다.
+3. `consistent art style`을 포함해 스타일을 통일합니다.
+4. `exactly N visible panels`를 명확히 요구합니다.
+5. `no merged panels, no missing panels`를 명확히 요구합니다.
+6. 칸 사이 구분선은 별도로 강조하지 않습니다.
+7. 권장 크기는 칸당 960x540이며, 전체 이미지는 960×cols × 540×rows입니다.
+8. 참조 이미지 매핑이 있으면 `이미지1/이미지2/...`와 `칸1/칸2/...`를 혼동하지 않습니다.

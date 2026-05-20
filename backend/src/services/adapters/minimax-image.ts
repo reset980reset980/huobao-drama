@@ -1,6 +1,6 @@
 /**
- * MiniMax 图片生成 Adapter
- * API 风格与 OpenAI 兼容，零改动
+ * MiniMax 이미지生成 Adapter
+ * API 风칸与 OpenAI 兼容，零改动
  */
 import type {
   ImageProviderAdapter,
@@ -23,12 +23,12 @@ export class MiniMaxImageAdapter implements ImageProviderAdapter {
       n: 1,
     }
 
-    // MiniMax 支持 reference_images（参考图）
+    // MiniMax 支持 reference_images（참조 이미지）
     if (record.referenceImages) {
       try {
         const refs = JSON.parse(record.referenceImages)
         if (refs.length > 0) {
-          body.image = refs // 支持多张参考图
+          body.image = refs // 支持多张참조 이미지
         }
       } catch {}
     }
@@ -58,7 +58,7 @@ export class MiniMaxImageAdapter implements ImageProviderAdapter {
     if (result.task_id || result.id) {
       return { isAsync: true, taskId: result.task_id || result.id }
     }
-    // 同步模式：直接返回图片 URL
+    // 同步模式：直接返回이미지 URL
     const imageUrl = result.data?.[0]?.url || result.url
     if (imageUrl) {
       return { isAsync: false, imageUrl }

@@ -1,14 +1,14 @@
 /**
- * 图片生成 Provider Adapter 接口
+ * 이미지生成 Provider Adapter 接口
  */
 export interface ImageProviderAdapter {
   /** 厂商标识 */
   provider: string
 
   /**
-   * 构建图片生成请求
+   * 构建이미지生成请求
    * @param config AI 配置 { baseUrl, apiKey, model }
-   * @param record 图片生成记录
+   * @param record 이미지生成记录
    */
   buildGenerateRequest(config: AIConfig, record: ImageGenerationRecord): ProviderRequest
 
@@ -30,20 +30,20 @@ export interface ImageProviderAdapter {
   parsePollResponse(result: any): ImagePollResponse
 
   /**
-   * 从响应中提取图片 URL（用于直接下载）
-   * 返回 null 表示图片数据是 base64 格式，需要用 extractImageBase64 处理
+   * 从响应中提取이미지 URL（用于直接下载）
+   * 返回 null 表示이미지数据是 base64 칸式，需要用 extractImageBase64 处理
    */
   extractImageUrl(result: any): string | null
 
   /**
-   * 从响应中提取 base64 图片数据
+   * 从响应中提取 base64 이미지数据
    * 仅用于 Gemini 等只返回 base64 的厂商
    */
   extractImageBase64(result: any): { data: string; mimeType: string } | null
 }
 
 /**
- * 视频生成 Provider Adapter 接口
+ * 영상 생성 Provider Adapter 接口
  */
 export interface VideoProviderAdapter {
   provider: string
@@ -59,7 +59,7 @@ export interface VideoProviderAdapter {
   extractVideoUrl(result: any): string | null
 }
 
-// ============ 通用类型 ============
+// ============ 범용类型 ============
 
 export interface ProviderRequest {
   url: string
@@ -82,7 +82,7 @@ export interface ImageGenerationRecord {
   size?: string | null
   frameType?: string | null
   referenceImages?: string | null
-  // ... 其他字段
+  // ... 其他자段
 }
 
 export interface VideoGenerationRecord {
@@ -96,13 +96,13 @@ export interface VideoGenerationRecord {
   referenceImageUrls?: string | null
   duration?: number | null
   aspectRatio?: string | null
-  // ... 其他字段
+  // ... 其他자段
 }
 
 export interface ImageGenResponse {
   isAsync: boolean
   taskId?: string
-  /** 同步模式下直接返回的图片 URL */
+  /** 同步模式下直接返回的이미지 URL */
   imageUrl?: string
 }
 
@@ -125,7 +125,7 @@ export interface VideoPollResponse {
 }
 
 /**
- * TTS 语音合成 Provider Adapter
+ * TTS 语音합성 Provider Adapter
  */
 export interface TTSProviderAdapter {
   provider: string

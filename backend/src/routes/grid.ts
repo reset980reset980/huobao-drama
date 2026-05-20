@@ -5,6 +5,8 @@ import { success, badRequest, now } from '../utils/response.js'
 import { generateImage } from '../services/image-generation.js'
 import { splitGridImage } from '../services/grid-split.js'
 import { createAgent } from '../agents/index.js'
+import { shouldUseCodexTextAgent } from '../services/ai.js'
+import { runCodexAgent } from '../services/codex-agent.js'
 import { logTaskError, logTaskPayload, logTaskProgress } from '../utils/task-logger.js'
 
 const app = new Hono()
@@ -21,7 +23,7 @@ function posLabel(i: number, rows: number, cols: number) {
 }
 
 function cellLabel(i: number, rows: number, cols: number) {
-  return `格${i + 1}（${posLabel(i, rows, cols)}）`
+  return `칸${i + 1}（${posLabel(i, rows, cols)}）`
 }
 
 function safeParseJsonArray(value: any): string[] {
@@ -81,24 +83,24 @@ function collectGridReferenceAssets(storyboards: any[]) {
   }
 
   for (const sb of storyboards) {
-    pushAsset(sb.firstFrameImage, `镜头${sb.storyboardNumber}首帧`, 'storyboard', { storyboardId: sb.id })
-    pushAsset(sb.lastFrameImage, `镜头${sb.storyboardNumber}尾帧`, 'storyboard', { storyboardId: sb.id })
-    pushAsset(sb.composedImage, `镜头${sb.storyboardNumber}镜头图`, 'storyboard', { storyboardId: sb.id })
+    pushAsset(sb.firstFrameImage, `샷${sb.storyboardNumber}첫 프레임`, 'storyboard', { storyboardId: sb.id })
+    pushAsset(sb.lastFrameImage, `샷${sb.storyboardNumber}끝 프레임`, 'storyboard', { storyboardId: sb.id })
+    pushAsset(sb.composedImage, `샷${sb.storyboardNumber}샷이미지`, 'storyboard', { storyboardId: sb.id })
     for (const ref of safeParseJsonArray(sb.referenceImages)) {
-      pushAsset(ref, `镜头${sb.storyboardNumber}参考图`, 'storyboard', { storyboardId: sb.id })
+      pushAsset(ref, `샷${sb.storyboardNumber}참조 이미지`, 'storyboard', { storyboardId: sb.id })
     }
   }
   for (const scene of scenes) {
-    pushAsset(scene.imageUrl, `${scene.location}${scene.time ? `（${scene.time}）` : ''}场景`, 'scene', { sceneId: scene.id })
+    pushAsset(scene.imageUrl, `${scene.location}${scene.time ? `（${scene.time}）` : ''}장면`, 'scene', { sceneId: scene.id })
   }
   for (const char of characters) {
-    pushAsset(char.imageUrl, `${char.name}角色`, 'character', { characterId: char.id })
+    pushAsset(char.imageUrl, `${char.name}캐릭터`, 'character', { characterId: char.id })
   }
 
   return assets.map((asset, index) => ({
     ...asset,
     imageIndex: index + 1,
-    imageLabel: `图片${index + 1}`,
+    imageLabel: `이미지${index + 1}`,
   }))
 }
 
@@ -132,7 +134,7 @@ function buildStoryboardReferenceHints(
   return [...new Set(hints)].slice(0, 4)
 }
 
-// Build prompt based on mode
+// 모드에 따라 기본 그리드 프롬프트를 구성합니다.
 function buildGridPrompt(
   mode: string,
   storyboards: any[],
@@ -146,23 +148,23 @@ function buildGridPrompt(
   const legend = buildReferenceLegend(referenceAssets)
 
   if (mode === 'first_frame') {
-    // Each cell = one shot's first frame
+    // 각 칸은 선택한 샷의 첫 프레임입니다.
     const cells = storyboards.map((sb, i) => {
       const desc = sb.imagePrompt || sb.description || sb.title || `shot ${i + 1}`
       const refs = buildStoryboardReferenceHints(sb, referenceAssets, storyboardCharacterIds)
-      return `${cellLabel(i, rows, cols)}: ${refs.length ? `参考${refs.join('、')}，` : ''}${desc}`
+      return `${cellLabel(i, rows, cols)}: ${refs.length ? `참조 ${refs.join(', ')}, ` : ''}${desc}`
     })
     return [
       `${rows}x${cols} grid layout, consistent art style, ${style},`,
-      legend ? `参考图映射：${legend}` : '',
-      '当画面涉及角色或场景时，优先使用对应的图片编号来约束一致性。',
+      legend ? `참조 이미지 매핑: ${legend}` : '',
+      '화면에 캐릭터나 장면이 포함되면 해당 이미지 번호를 우선 사용해 일관성을 유지하세요.',
       ...cells,
       'high quality, cinematic lighting, no text, no watermark',
     ].filter(Boolean).join('\n')
   }
 
   if (mode === 'first_last') {
-    // Fill the selected grid using first/last-frame style cues, but do not force Nx2 layout.
+    // 첫/끝 프레임 리듬을 쓰되 사용자가 고른 행/열을 그대로 유지합니다.
     const totalCells = rows * cols
     const cells = Array.from({ length: totalCells }, (_, i) => {
       const sb = storyboards[i % storyboards.length]
@@ -172,11 +174,11 @@ function buildGridPrompt(
       const frameHint = i % 2 === 0
         ? 'opening moment'
         : `${action ? `${action}, ` : ''}closing moment, subtle motion change`
-      return `${cellLabel(i, rows, cols)}: ${refs.length ? `参考${refs.join('、')}，` : ''}${desc}, ${frameHint}`
+      return `${cellLabel(i, rows, cols)}: ${refs.length ? `참조 ${refs.join(', ')}, ` : ''}${desc}, ${frameHint}`
     })
     return [
       `${rows}x${cols} grid layout, consistent art style, ${style},`,
-      legend ? `参考图映射：${legend}` : '',
+      legend ? `참조 이미지 매핑: ${legend}` : '',
       'first/last frame visual rhythm, alternating opening and closing beats across the grid,',
       ...cells,
       'continuous motion implied between left and right, high quality, no text',
@@ -184,7 +186,7 @@ function buildGridPrompt(
   }
 
   if (mode === 'multi_ref') {
-    // All cells are different angles/compositions of the same shot
+    // 모든 칸은 같은 샷의 서로 다른 각도와 구도입니다.
     const sb = storyboards[0]
     const desc = sb.imagePrompt || sb.description || sb.title || 'scene'
     const angles = [
@@ -200,11 +202,11 @@ function buildGridPrompt(
     ]
     const totalCells = rows * cols
     const cells = Array.from({ length: totalCells }, (_, i) => {
-      return `${cellLabel(i, rows, cols)}: ${legend ? `参考${legend}，` : ''}${desc}, ${angles[i % angles.length]}`
+      return `${cellLabel(i, rows, cols)}: ${legend ? `참조 ${legend}, ` : ''}${desc}, ${angles[i % angles.length]}`
     })
     return [
       `${rows}x${cols} grid layout, same scene different angles and compositions, ${style},`,
-      legend ? `参考图映射：${legend}` : '',
+      legend ? `참조 이미지 매핑: ${legend}` : '',
       `main scene: ${desc},`,
       ...cells,
       'consistent lighting and color palette, high quality, no text',
@@ -241,7 +243,7 @@ function buildGridCellPrompts(
     return Array.from({ length: rows * cols }, (_, i) => ({
       shot_number: sb.storyboardNumber,
       frame_type: 'reference',
-      prompt: `${cellLabel(i, rows, cols)}: ${buildStoryboardReferenceHints(sb, referenceAssets, storyboardCharacterIds).join('、')}${buildStoryboardReferenceHints(sb, referenceAssets, storyboardCharacterIds).length ? '，' : ''}${desc}, ${angles[i % angles.length]}`,
+      prompt: `${cellLabel(i, rows, cols)}: ${buildStoryboardReferenceHints(sb, referenceAssets, storyboardCharacterIds).join(', ')}${buildStoryboardReferenceHints(sb, referenceAssets, storyboardCharacterIds).length ? ', ' : ''}${desc}, ${angles[i % angles.length]}`,
     }))
   }
 
@@ -256,8 +258,8 @@ function buildGridCellPrompts(
         shot_number: sb.storyboardNumber,
         frame_type: isFirst ? 'first_frame' : 'last_frame',
         prompt: isFirst
-          ? `${cellLabel(i, rows, cols)}，首帧：${refs.length ? `参考${refs.join('、')}，` : ''}${desc}${sb.location ? `, ${sb.location}` : ''}${sb.shotType ? `, ${sb.shotType}` : ''}`
-          : `${cellLabel(i, rows, cols)}，尾帧：${refs.length ? `参考${refs.join('、')}，` : ''}${desc}${motion ? `, ${motion}` : ''}${sb.location ? `, ${sb.location}` : ''}${sb.shotType ? `, ${sb.shotType}` : ''}`,
+          ? `${cellLabel(i, rows, cols)}, 첫 프레임: ${refs.length ? `참조 ${refs.join(', ')}, ` : ''}${desc}${sb.location ? `, ${sb.location}` : ''}${sb.shotType ? `, ${sb.shotType}` : ''}`
+          : `${cellLabel(i, rows, cols)}, 끝 프레임: ${refs.length ? `참조 ${refs.join(', ')}, ` : ''}${desc}${motion ? `, ${motion}` : ''}${sb.location ? `, ${sb.location}` : ''}${sb.shotType ? `, ${sb.shotType}` : ''}`,
       }
     })
   }
@@ -268,7 +270,7 @@ function buildGridCellPrompts(
     return {
       shot_number: sb.storyboardNumber,
       frame_type: 'first_frame',
-      prompt: `${cellLabel(index, rows, cols)}：${refs.length ? `参考${refs.join('、')}，` : ''}${desc}${sb.location ? `, ${sb.location}` : ''}${sb.shotType ? `, ${sb.shotType}` : ''}, opening scene`,
+      prompt: `${cellLabel(index, rows, cols)}: ${refs.length ? `참조 ${refs.join(', ')}, ` : ''}${desc}${sb.location ? `, ${sb.location}` : ''}${sb.shotType ? `, ${sb.shotType}` : ''}, opening scene`,
     }
   })
 }
@@ -353,26 +355,27 @@ async function tryAgentGridPrompt(
   mode: string,
   referenceLegend: string,
 ) {
-  const agent = createAgent('grid_prompt_generator', episodeId, dramaId)
-  if (!agent) return null
+  const message = [
+    '그리드 이미지 프롬프트를 생성하고, 가능한 경우 도구를 우선 호출해 완료하세요.',
+    `선택한 샷 ID: ${JSON.stringify(storyboardIds)}`,
+    `행 수: ${rows}`,
+    `열 수: ${cols}`,
+    `모드: ${mode}`,
+    referenceLegend ? `참조 이미지 매핑: ${referenceLegend}` : '',
+    '프롬프트가 특정 캐릭터나 장면을 언급할 때는 해당 이미지 번호를 직접 포함하세요. 예: 이미지1의 캐릭터 A가 일어난다, 이미지3의 방 장면.',
+    `${rows}x${cols}를 엄격히 지키고, 총 exactly ${rows * cols} visible panels를 생성하세요. 칸 병합이나 누락은 허용하지 않습니다.`,
+    '반드시 JSON을 반환하세요. 구조: {"grid_prompt":"...","cell_prompts":[{"shot_number":1,"frame_type":"first_frame","prompt":"..."}]}',
+  ].filter(Boolean).join('\n')
 
-  const result = await agent.generate(
-    [{
-      role: 'user',
-      content: [
-        '请为宫格图生成提示词，并优先调用工具完成。',
-        `选中镜头ID：${JSON.stringify(storyboardIds)}`,
-        `行数：${rows}`,
-        `列数：${cols}`,
-        `模式：${mode}`,
-        referenceLegend ? `参考图映射：${referenceLegend}` : '',
-        '当提示词涉及到某个角色或场景时，直接把对应的图片编号写进提示词，例如：图片1中的角色A站了起来，图片3中的房间场景。不要只写名字，不写图片编号。',
-        `必须严格按 ${rows}x${cols} 生成，总共 exactly ${rows * cols} visible panels。不要合并格子，不要缺格。`,
-        '必须返回 JSON，结构为：{"grid_prompt":"...","cell_prompts":[{"shot_number":1,"frame_type":"first_frame","prompt":"..."}]}',
-      ].join('\n'),
-    }],
-    { maxSteps: 10 },
-  )
+  const result = shouldUseCodexTextAgent()
+    ? await runCodexAgent({ agentType: 'grid_prompt_generator', episodeId, dramaId, message })
+    : await (async () => {
+        const agent = createAgent('grid_prompt_generator', episodeId, dramaId)
+        if (!agent) return null
+        return await agent.generate([{ role: 'user', content: message }], { maxSteps: 10 })
+      })()
+
+  if (!result) return null
 
   const fromTools = findGridPayload(result.toolResults)
   if (fromTools) return fromTools

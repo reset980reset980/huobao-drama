@@ -1,5 +1,5 @@
 /**
- * AI 服务抽象层 — 从数据库配置中获取 provider 和 API key
+ * AI 서비스 추상화 계층 - 데이터베이스 설정에서 provider와 API key를 읽습니다.
  */
 import { db, schema } from '../db/index.js'
 import { eq } from 'drizzle-orm'
@@ -38,7 +38,7 @@ export function getActiveConfig(serviceType: ServiceType): AIConfig | null {
     .where(eq(schema.aiServiceConfigs.serviceType, serviceType))
     .all()
     .filter(r => r.isActive)
-    .sort((a, b) => (b.priority || 0) - (a.priority || 0)) // 高优先级优先
+    .sort((a, b) => (b.priority || 0) - (a.priority || 0))
 
   const active = rows[0]
   if (!active) {
@@ -68,9 +68,25 @@ export function getTextConfig(): AIConfig {
   return config
 }
 
+export function getOptionalTextConfig(): AIConfig | null {
+  return getActiveConfig('text')
+}
+
+export function shouldUseCodexTextAgent(): boolean {
+  const envProvider = process.env.TEXT_AGENT_PROVIDER?.trim().toLowerCase()
+  if (envProvider === 'codex' || envProvider === 'codex-cli') return true
+  if (envProvider) return false
+
+  const config = getOptionalTextConfig()
+  if (!config) return true
+
+  const provider = config.provider.trim().toLowerCase()
+  return provider === 'codex' || provider === 'codex-cli'
+}
+
 export function getAudioConfig(): AIConfig {
   const config = getActiveConfig('audio')
-  if (!config) throw new Error('No active audio AI config — 请在设置中添加音频服务')
+  if (!config) throw new Error('활성 오디오 AI 설정이 없습니다. 설정에서 오디오 서비스를 추가하세요.')
   return config
 }
 

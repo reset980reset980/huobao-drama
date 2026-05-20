@@ -129,7 +129,7 @@ async function processImageGeneration(id: number, config: AIConfig) {
 
     if (!isAsync && imageUrl) {
       logTaskProgress('ImageTask', 'sync-complete', { id, imageUrl })
-      // 同步模式：直接下载图片
+      // 同步模式：直接下载이미지
       await handleImageComplete(id, config.provider, imageUrl)
       return
     }

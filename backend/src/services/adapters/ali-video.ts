@@ -1,5 +1,5 @@
 /**
- * 阿里云百炼（万相）视频生成 Adapter
+ * 阿里云百炼（万相）영상 생성 Adapter
  * API 文档: https://help.aliyun.com/zh/model-studio/image-to-video-api-reference
  */
 import type { VideoProviderAdapter, VideoGenerationRecord } from './types'
@@ -36,7 +36,7 @@ export class AliVideoAdapter implements VideoProviderAdapter {
       },
     }
 
-    // 尾帧模式
+    // 끝 프레임模式
     if (record.lastFrameUrl) {
       body.input.last_img_url = record.lastFrameUrl as string
     }

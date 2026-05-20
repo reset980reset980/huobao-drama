@@ -1,14 +1,14 @@
 app:
-  name: "Huobao Drama API"
+  name: "화보 드라마 API"
   version: "1.0.0"
   debug: true
-  language: "zh" # 系统语言：zh(中文) 或 en(英文)
+  language: "ko" # 시스템 언어: ko(한국어) / zh(중국어) / en(영어)
 
 server:
-  port: 5678
+  port: 5679
   host: "0.0.0.0"
   cors_origins:
-    - "http://localhost:3012"
+    - "http://localhost:3013"
   read_timeout: 600
   write_timeout: 600
 
@@ -21,7 +21,7 @@ database:
 storage:
   type: "local"
   local_path: "./data/storage"
-  base_url: "http://localhost:5678/static"
+  base_url: "http://localhost:5679/static"
 
 ai:
   default_text_provider: "openai"

@@ -1,7 +1,7 @@
 /**
- * 火山引擎 Seedance 视频生成 Adapter
- * 端点: /api/v3/contents/generations/tasks (注意 /api/v3 前缀)
- * 响应: { id: "task-xxx" } -> 轮询获取状态
+ * 火山引擎 Seedance 영상 생성 Adapter
+ * 端点: /api/v3/contents/generations/tasks (주의 /api/v3 前缀)
+ * 响应: { id: "task-xxx" } -> 轮询获取상태
  */
 import type {
   VideoProviderAdapter,
@@ -21,7 +21,7 @@ export class VolcEngineVideoAdapter implements VideoProviderAdapter {
 
     const content: any[] = [{ type: 'text', text: record.prompt || '' }]
 
-    // 添加参考图
+    // 추가참조 이미지
     if (record.referenceMode === 'single' && record.imageUrl) {
       content.push({ type: 'image_url', image_url: { url: record.imageUrl } })
     } else if (record.referenceMode === 'first_last') {

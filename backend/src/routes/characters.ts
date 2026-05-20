@@ -32,13 +32,13 @@ app.delete('/:id', async (c) => {
   return success(c)
 })
 
-// POST /characters/:id/generate-voice-sample — 生成角色音色试听
+// POST /characters/:id/generate-voice-sample — 生成캐릭터음색试听
 app.post('/:id/generate-voice-sample', async (c) => {
   const id = Number(c.req.param('id'))
   const body = await c.req.json().catch(() => ({}))
   const [char] = db.select().from(schema.characters).where(eq(schema.characters.id, id)).all()
   if (!char) return badRequest(c, 'Character not found')
-  if (!char.voiceStyle) return badRequest(c, '请先分配音色')
+  if (!char.voiceStyle) return badRequest(c, '먼저 음색을 배정하세요')
   if (!body.episode_id) return badRequest(c, 'episode_id is required')
 
   const [ep] = db.select().from(schema.episodes).where(eq(schema.episodes.id, Number(body.episode_id))).all()
@@ -54,7 +54,7 @@ app.post('/:id/generate-voice-sample', async (c) => {
     return success(c, { voice_sample_url: audioPath })
   } catch (err: any) {
     logTaskError('VoiceSample', 'generate', { characterId: id, error: err.message })
-    return badRequest(c, `TTS 生成失败: ${err.message}`)
+    return badRequest(c, `TTS 생성 실패: ${err.message}`)
   }
 })
 
@@ -69,7 +69,7 @@ app.post('/:id/generate-image', async (c) => {
   const [ep] = db.select().from(schema.episodes).where(eq(schema.episodes.id, Number(body.episode_id))).all()
   if (!ep) return badRequest(c, 'Episode not found')
 
-  const prompt = `${char.name}, ${char.appearance || char.description || '人物立绘'}, 高质量, 正面, 白色背景`
+  const prompt = `${char.name}, ${char.appearance || char.description || 'character portrait'}, high quality, front view, white background`
   try {
     logTaskStart('CharacterImage', 'generate', { characterId: id, episodeId: ep.id, dramaId: char.dramaId })
     const genId = await generateImage({ characterId: id, dramaId: char.dramaId, prompt, configId: ep.imageConfigId ?? undefined })
@@ -92,7 +92,7 @@ app.post('/batch-generate-images', async (c) => {
   for (const cid of ids) {
     const [char] = db.select().from(schema.characters).where(eq(schema.characters.id, cid)).all()
     if (!char) continue
-    const prompt = `${char.name}, ${char.appearance || char.description || '人物立绘'}, 高质量, 正面, 白色背景`
+    const prompt = `${char.name}, ${char.appearance || char.description || 'character portrait'}, high quality, front view, white background`
     try {
       const genId = await generateImage({ characterId: cid, dramaId: char.dramaId, prompt, configId: ep.imageConfigId ?? undefined })
       results.push(genId)

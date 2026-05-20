@@ -9,7 +9,7 @@ import { logTaskError, logTaskPayload, logTaskProgress, logTaskStart, logTaskSuc
 const app = new Hono()
 
 const IGNORE_TTS_SPEAKERS = /^(环境音|环境声|音效|效果音|sfx|sound ?effect|bgm|背景音|背景音乐|ambient)$/i
-const IGNORE_TTS_TEXT = /^(无|无对白|无台词|无旁白|无需配音|无需对白|none|null|n\/a|na|环境音|环境声|音效|效果音|纯音效|纯环境音|只有环境音|仅环境音|背景音|背景音乐|bgm|sfx|ambient)$/i
+const IGNORE_TTS_TEXT = /^(无|无대사|无台词|无내레이션|无需더빙|无需대사|none|null|n\/a|na|环境音|环境声|音效|效果音|纯音效|纯环境音|只有环境音|仅环境音|背景音|背景音乐|bgm|sfx|ambient)$/i
 
 function parseDialogueForTTS(dialogue?: string | null) {
   const raw = dialogue?.trim() || ''
@@ -56,12 +56,12 @@ function validateStoryboardBindings(episodeId: number, sceneId: number | null | 
   )
 
   if (sceneId != null && !episodeSceneIds.has(sceneId)) {
-    throw new Error('scene_id 必须来自当前集已关联场景')
+    throw new Error('scene_id는 현재 회차에 연결된 장면이어야 합니다')
   }
 
   const invalidCharacterIds = (characterIds || []).filter(id => !episodeCharacterIds.has(id))
   if (invalidCharacterIds.length) {
-    throw new Error('character_ids 必须来自当前集已关联角色')
+    throw new Error('character_ids는 현재 회차에 연결된 캐릭터여야 합니다')
   }
 }
 
@@ -108,7 +108,7 @@ app.put('/:id', async (c) => {
   const id = Number(c.req.param('id'))
   const body = await c.req.json()
   const [storyboard] = db.select().from(schema.storyboards).where(eq(schema.storyboards.id, id)).all()
-  if (!storyboard) return badRequest(c, '镜头不存在')
+  if (!storyboard) return badRequest(c, '샷을 찾을 수 없습니다')
   logTaskStart('StoryboardAPI', 'update', {
     storyboardId: id,
     episodeId: storyboard.episodeId,
@@ -155,9 +155,9 @@ app.put('/:id', async (c) => {
 app.post('/:id/generate-tts', async (c) => {
   const id = Number(c.req.param('id'))
   const [sb] = db.select().from(schema.storyboards).where(eq(schema.storyboards.id, id)).all()
-  if (!sb) return badRequest(c, '镜头不存在')
+  if (!sb) return badRequest(c, '샷을 찾을 수 없습니다')
   const parsedDialogue = parseDialogueForTTS(sb.dialogue)
-  if (parsedDialogue.ignorable) return badRequest(c, '该镜头没有可生成的对白或旁白')
+  if (parsedDialogue.ignorable) return badRequest(c, '이 샷에는 생성할 대사나 내레이션이 없습니다')
   logTaskStart('StoryboardAPI', 'generate-tts', {
     storyboardId: id,
     episodeId: sb.episodeId,
@@ -173,7 +173,7 @@ app.post('/:id/generate-tts', async (c) => {
   const speaker = parsedDialogue.speaker
 
   if (speaker) {
-    if (!/^(旁白|画外音|narrator)$/i.test(speaker)) {
+    if (!/^(내레이션|画外音|narrator)$/i.test(speaker)) {
       const [ep] = db.select().from(schema.episodes).where(eq(schema.episodes.id, sb.episodeId)).all()
       if (ep) {
         const chars = db.select().from(schema.characters).where(eq(schema.characters.dramaId, ep.dramaId)).all()
@@ -184,7 +184,7 @@ app.post('/:id/generate-tts', async (c) => {
   }
 
   const pureDialogue = parsedDialogue.pureText
-  if (!pureDialogue) return badRequest(c, '未提取到可合成的文本')
+  if (!pureDialogue) return badRequest(c, '합성 가능한 텍스트를 찾지 못했습니다')
 
   const [ep] = db.select().from(schema.episodes).where(eq(schema.episodes.id, sb.episodeId)).all()
   try {

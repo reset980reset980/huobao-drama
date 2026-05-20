@@ -1,5 +1,5 @@
 /**
- * Vidu 视频生成 Adapter
+ * Vidu 영상 생성 Adapter
  * 端点: /ent/v2/img2video
  * 认证: Authorization: Token {apiKey} (不是 Bearer!)
  * 特点: Vidu 不提供轮询接口，依赖 Webhook 回调通知结果
@@ -26,7 +26,7 @@ export class ViduVideoAdapter implements VideoProviderAdapter {
       prompt: record.prompt,
     }
 
-    // 添加参考图
+    // 추가참조 이미지
     if (record.referenceMode === 'single' && record.imageUrl) {
       body.images.push(record.imageUrl)
     } else if (record.referenceMode === 'first_last') {
@@ -56,7 +56,7 @@ export class ViduVideoAdapter implements VideoProviderAdapter {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Token ${config.apiKey}`, // 注意: 不是 Bearer!
+        'Authorization': `Token ${config.apiKey}`, // 주의: 不是 Bearer!
       },
       body,
     }
@@ -80,7 +80,7 @@ export class ViduVideoAdapter implements VideoProviderAdapter {
    */
   buildPollRequest(config: AIConfig, taskId: string): ProviderRequest {
     // Vidu 没有轮询端点，返回一个不可达的 URL
-    // 轮询会超时，最终依赖 Webhook 回调更新状态
+    // 轮询会超时，最终依赖 Webhook 回调更新상태
     return {
       url: 'vidu://no-polling-endpoint',
       method: 'GET',
@@ -91,7 +91,7 @@ export class ViduVideoAdapter implements VideoProviderAdapter {
 
   /**
    * Vidu 轮询永远返回 processing，因为没有轮询端点
-   * 实际状态通过 Webhook 更新
+   * 实际상태通过 Webhook 更新
    */
   parsePollResponse(result: any): VideoPollResponse {
     return { status: 'processing' }
@@ -102,7 +102,7 @@ export class ViduVideoAdapter implements VideoProviderAdapter {
   }
 
   /**
-   * Vidu 回调状态映射
+   * Vidu 回调상태映射
    * Webhook 路由使用此方法解析回调
    */
   static parseCallbackState(body: any): { status: 'completed' | 'failed'; videoUrl?: string; error?: string } {

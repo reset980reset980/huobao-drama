@@ -1,7 +1,7 @@
 /**
- * 火山引擎 veImageX 图片生成 Adapter
- * 端点: /api/v3/images/generations (注意 /api/v3 前缀)
- * 响应格式: { data: [{ url: "..." }] }
+ * 火山引擎 veImageX 이미지生成 Adapter
+ * 端点: /api/v3/images/generations (주의 /api/v3 前缀)
+ * 响应칸式: { data: [{ url: "..." }] }
  */
 import type {
   ImageProviderAdapter,
@@ -17,7 +17,7 @@ export class VolcEngineImageAdapter implements ImageProviderAdapter {
   provider = 'volcengine'
 
   buildGenerateRequest(config: AIConfig, record: ImageGenerationRecord): ProviderRequest {
-    // 火山引擎使用 seedream 模型
+    // 火山引擎使用 seedream 모델
     const model = record.model || config.model || 'doubao-seedream-5-0-lite'
 
     const body: any = {

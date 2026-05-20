@@ -13,7 +13,7 @@ import { logTaskError, logTaskProgress, logTaskSuccess, logTaskWarn } from '../u
 const app = new Hono()
 
 // POST /webhooks/vidu
-// Vidu 回调格式: { task_id, state, video_url, ... }
+// Vidu 回调칸式: { task_id, state, video_url, ... }
 app.post('/vidu', async (c) => {
   const body = await c.req.json()
   const { task_id, state, video_url, error } = body
@@ -92,7 +92,7 @@ app.post('/vidu', async (c) => {
     return success(c, { message: 'Error recorded' })
   }
 
-  // 其他状态（processing 等），不处理
+  // 其他상태（processing 等），不处理
   logTaskProgress('Webhook', 'vidu-status-noted', { taskId: task_id, generationId: record.id, state })
   return success(c, { message: 'Status noted' })
 })

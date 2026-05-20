@@ -41,5 +41,7 @@ configs/config.yaml
 tmp/
 temp/
 .superpowers/
+.omx/
+**/.omx/
 /CLAUDE.md
 /AGENTS.md

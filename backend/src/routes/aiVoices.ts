@@ -1,7 +1,7 @@
 /**
- * AI 音色管理
- * GET  /api/v1/ai-voices       - 获取音色列表
- * POST /api/v1/ai-voices/sync  - 从 MiniMax 同步音色
+ * AI 음색管理
+ * GET  /api/v1/ai-voices       - 获取음색列表
+ * POST /api/v1/ai-voices/sync  - 从 MiniMax 同步음색
  */
 import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
@@ -31,7 +31,7 @@ app.get('/', async (c) => {
 
 // POST /ai-voices/sync
 app.post('/sync', async (c) => {
-  // 从数据库获取 minimax 的音频配置
+  // 从数据库获取 minimax 的오디오配置
   const rows = db.select().from(schema.aiServiceConfigs)
     .where(eq(schema.aiServiceConfigs.serviceType, 'audio'))
     .all()
@@ -93,29 +93,29 @@ app.post('/sync', async (c) => {
  */
 function extractLanguage(voiceId: string, voiceName: string): string {
   const text = `${voiceId} ${voiceName}`.toLowerCase()
-  if (text.includes('cantonese') || text.includes('粤')) return '粤语'
-  if (text.includes('english') || text.includes('aussie')) return '英语'
-  if (text.includes('japanese') || text.includes('日语')) return '日语'
-  if (text.includes('korean') || text.includes('韩')) return '韩语'
-  if (text.includes('spanish')) return '西班牙语'
-  if (text.includes('portuguese')) return '葡萄牙语'
-  if (text.includes('french')) return '法语'
-  if (text.includes('indonesian')) return '印尼语'
-  if (text.includes('german')) return '德语'
-  if (text.includes('russian')) return '俄语'
-  if (text.includes('italian')) return '意大利语'
-  if (text.includes('arabic')) return '阿拉伯语'
-  if (text.includes('turkish')) return '土耳其语'
-  if (text.includes('ukrainian')) return '乌克兰语'
-  if (text.includes('dutch')) return '荷兰语'
-  if (text.includes('vietnamese')) return '越南语'
-  if (text.includes('chinese') || text.includes('mandarin') || text.includes('中文')) return '中文'
-  return '其他'
+  if (text.includes('cantonese') || text.includes('粤')) return '광둥어'
+  if (text.includes('english') || text.includes('aussie')) return '영어'
+  if (text.includes('japanese') || text.includes('일본어')) return '일본어'
+  if (text.includes('korean') || text.includes('韩')) return '한국어'
+  if (text.includes('spanish')) return '스페인어'
+  if (text.includes('portuguese')) return '포르투갈어'
+  if (text.includes('french')) return '프랑스어'
+  if (text.includes('indonesian')) return '인도네시아어'
+  if (text.includes('german')) return '독일어'
+  if (text.includes('russian')) return '러시아어'
+  if (text.includes('italian')) return '이탈리아어'
+  if (text.includes('arabic')) return '아랍어'
+  if (text.includes('turkish')) return '터키어'
+  if (text.includes('ukrainian')) return '우크라이나어'
+  if (text.includes('dutch')) return '네덜란드어'
+  if (text.includes('vietnamese')) return '베트남어'
+  if (text.includes('chinese') || text.includes('mandarin') || text.includes('중국어')) return '중국어'
+  return '기타'
 }
 
 function shouldKeepVoice(voice: { voice_id: string, voice_name: string }) {
   const language = extractLanguage(voice.voice_id, voice.voice_name)
-  if (language !== '中文' && language !== '粤语') return false
+  if (language !== '중국어' && language !== '광둥어') return false
 
   const text = `${voice.voice_id} ${voice.voice_name}`.toLowerCase()
 

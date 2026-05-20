@@ -1,8 +1,10 @@
 /**
- * Agent 聊天路由 — 非流式版本
+ * Agent 채팅 라우트 - 비스트리밍 버전
  */
 import { Hono } from 'hono'
 import { createAgent, validAgentTypes } from '../agents/index.js'
+import { runCodexAgent } from '../services/codex-agent.js'
+import { shouldUseCodexTextAgent } from '../services/ai.js'
 import { success, badRequest } from '../utils/response.js'
 import { logTaskError, logTaskPayload, logTaskProgress, logTaskStart, logTaskSuccess } from '../utils/task-logger.js'
 
@@ -22,7 +24,7 @@ function normalizeToolResult(entry: any) {
   return typeof result === 'string' ? result : JSON.stringify(result)
 }
 
-// POST /agent/:type/chat — 非流式 Agent 对话
+// POST /agent/:type/chat - 비스트리밍 Agent 대화
 app.post('/:type/chat', async (c) => {
   const agentType = c.req.param('type')
   if (!validAgentTypes.includes(agentType)) {
@@ -44,24 +46,31 @@ app.post('/:type/chat', async (c) => {
     return badRequest(c, 'drama_id and episode_id are required')
   }
 
-  const agent = createAgent(agentType, episode_id, drama_id)
-  if (!agent) {
-    logTaskError('Agent', agentType, { reason: 'agent not found' })
-    return badRequest(c, 'Agent not found')
-  }
-
   const startTime = performance.now()
 
   try {
-    const result = await agent.generate(
-      [{ role: 'user', content: message }],
-      { maxSteps: 20 },
-    )
+    const useCodex = shouldUseCodexTextAgent()
+    const result = useCodex
+      ? await runCodexAgent({ agentType, episodeId: episode_id, dramaId: drama_id, message })
+      : await (async () => {
+          const agent = createAgent(agentType, episode_id, drama_id)
+          if (!agent) return null
+          const generated = await agent.generate(
+            [{ role: 'user', content: message }],
+            { maxSteps: 20 },
+          )
+          return generated
+        })()
+
+    if (!result) {
+      logTaskError('Agent', agentType, { reason: 'agent not found' })
+      return badRequest(c, 'Agent not found')
+    }
 
     const elapsed = ((performance.now() - startTime) / 1000).toFixed(1)
-    logTaskSuccess('Agent', agentType, { elapsedSeconds: elapsed })
+    logTaskSuccess('Agent', agentType, { elapsedSeconds: elapsed, provider: useCodex ? 'codex-cli' : 'api' })
 
-    // 收集所有 tool calls 和 results
+    // 모든 tool call과 결과를 프론트엔드가 읽기 쉬운 형태로 정규화합니다.
     const toolCalls = result.toolCalls || []
     const toolResults = result.toolResults || []
     const normalizedToolCalls = toolCalls.map((tc: any) => ({

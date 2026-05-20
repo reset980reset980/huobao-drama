@@ -24,7 +24,7 @@ app.post('/', async (c) => {
   const res = db.insert(schema.episodes).values({
     dramaId: body.drama_id,
     episodeNumber: nextNum,
-    title: body.title || `第${nextNum}集`,
+    title: body.title || `제 ${nextNum} 회`,
     imageConfigId: body.image_config_id,
     videoConfigId: body.video_config_id,
     audioConfigId: body.audio_config_id,

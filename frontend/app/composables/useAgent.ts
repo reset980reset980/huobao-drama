@@ -6,7 +6,7 @@ export function useAgent() {
   const runningType = ref<string | null>(null)
 
   async function run(type: string, msg: string, dramaId: number, episodeId: number, onDone?: () => void) {
-    if (running.value) { toast.warning('操作执行中'); return }
+    if (running.value) { toast.warning('작업 실행 중입니다'); return }
     running.value = true
     runningType.value = type
     try {
@@ -15,7 +15,7 @@ export function useAgent() {
         drama_id: dramaId,
         episode_id: episodeId,
       })
-      toast.success('完成')
+      toast.success('완료')
       onDone?.()
     } catch (err: any) {
       toast.error(err.message)

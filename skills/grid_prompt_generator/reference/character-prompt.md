@@ -1,19 +1,17 @@
-# 角色图片提示词模板
+# 캐릭터 이미지 프롬프트 템플릿
 
-## 模板结构
+## 템플릿 구조
 
-```
-A [gender] [age] character, [name], [body type], [facial features].
-[Hair description]. [Clothing details].
-[Pose and expression]. [Background: simple/gradient].
-Style: [art style], high quality, detailed, character concept art.
+```text
+[appearance], [personality/tone], [role styling], cinematic portrait,
+consistent art style, high detail, professional lighting, no text, no watermark
 ```
 
-## 示例
+## 예시
 
-```
-A young woman in her early 20s, Li Mei, slender build, delicate oval face with bright almond eyes.
-Long black hair flowing over shoulders with subtle waves. Wearing a vintage blue qipao with floral embroidery.
-Standing confidently with a slight smile, one hand on hip. Background: soft gradient.
-Style: cinematic anime, high quality, detailed, character concept art.
+```text
+young woman with shoulder-length black hair and a beige trench coat,
+calm but determined expression, modern urban drama lead,
+cinematic portrait, consistent art style, high detail, professional lighting,
+no text, no watermark
 ```

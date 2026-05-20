@@ -1,5 +1,5 @@
 /**
- * FFmpeg 单镜头合成 — 视频 + TTS音频 + 烧录字幕
+ * FFmpeg 单샷합성 — 영상 + TTS오디오 + 烧录자幕
  */
 import ffmpeg from 'fluent-ffmpeg'
 import fs from 'fs'
@@ -18,7 +18,7 @@ const STORAGE_ROOT = process.env.STORAGE_PATH || path.resolve(__dirname, '../../
 const DATA_ROOT = path.resolve(__dirname, '../../../data')
 let subtitleFilterSupport: boolean | null = null
 const IGNORE_TTS_SPEAKERS = /^(环境音|环境声|音效|效果音|sfx|sound ?effect|bgm|背景音|背景音乐|ambient)$/i
-const IGNORE_TTS_TEXT = /^(无|无对白|无台词|无旁白|无需配音|无需对白|none|null|n\/a|na|环境音|环境声|音效|效果音|纯音效|纯环境音|只有环境音|仅环境音|背景音|背景音乐|bgm|sfx|ambient)$/i
+const IGNORE_TTS_TEXT = /^(无|无대사|无台词|无내레이션|无需더빙|无需대사|none|null|n\/a|na|环境音|环境声|音效|效果音|纯音效|纯环境音|只有环境音|仅环境音|背景音|背景音乐|bgm|sfx|ambient)$/i
 
 function toAbsPath(relativePath: string): string {
   if (path.isAbsolute(relativePath)) return relativePath
@@ -48,7 +48,7 @@ function parseDialogueForTTS(dialogue?: string | null) {
 }
 
 /**
- * 合成单个镜头：视频 + TTS对白音频 + 烧录字幕
+ * 합성单个샷：영상 + TTS대사오디오 + 烧录자幕
  */
 export async function composeStoryboard(storyboardId: number): Promise<string> {
   const [sb] = db.select().from(schema.storyboards).where(eq(schema.storyboards.id, storyboardId)).all()
@@ -70,7 +70,7 @@ export async function composeStoryboard(storyboardId: number): Promise<string> {
   let subtitlePath: string | null = null
   const parsedDialogue = parseDialogueForTTS(sb.dialogue)
 
-  // 1. 生成 TTS 音频（如果有对白）
+  // 1. 生成 TTS 오디오（如果有대사）
   try {
     if (!parsedDialogue.ignorable) {
       if (sb.ttsAudioUrl) {
@@ -104,7 +104,7 @@ export async function composeStoryboard(storyboardId: number): Promise<string> {
       }
     }
 
-    // 2. 生成字幕文件（SRT）
+    // 2. 生成자幕文件（SRT）
     if (!parsedDialogue.ignorable) {
       const srtDir = path.join(STORAGE_ROOT, 'subtitles')
       fs.mkdirSync(srtDir, { recursive: true })
@@ -121,7 +121,7 @@ export async function composeStoryboard(storyboardId: number): Promise<string> {
         .where(eq(schema.storyboards.id, storyboardId)).run()
     }
 
-    // 3. FFmpeg 合成
+    // 3. FFmpeg 합성
     const outputDir = path.join(STORAGE_ROOT, 'composed')
     fs.mkdirSync(outputDir, { recursive: true })
     const outputFilename = `${uuid()}.mp4`

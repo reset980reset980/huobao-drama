@@ -7,7 +7,7 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
           </svg>
-          返回
+          돌아가기
         </button>
         <div class="head-info">
           <h1 class="page-title">{{ drama.title }}</h1>
@@ -16,12 +16,12 @@
             <span v-if="drama.style" class="meta-divider"></span>
             <span class="meta-item">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              {{ drama.characters?.length || 0 }} 角色
+              {{ drama.characters?.length || 0 }} 캐릭터
             </span>
             <span class="meta-divider"></span>
             <span class="meta-item">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
-              {{ drama.scenes?.length || 0 }} 场景
+              {{ drama.scenes?.length || 0 }} 장면
             </span>
           </div>
         </div>
@@ -30,7 +30,7 @@
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
           <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
-        添加集
+        추가회
       </button>
     </div>
 
@@ -43,7 +43,7 @@
         <line x1="13" y1="8" x2="13" y2="16"/>
         <line x1="16" y1="8" x2="16" y2="16"/>
       </svg>
-      剧集列表
+      회차 목록
     </div>
 
     <div class="ep-grid">
@@ -59,7 +59,7 @@
           <span class="ep-title">{{ ep.title }}</span>
           <div class="ep-status">
             <span :class="['status-dot', hasScript(ep) ? 'dot-ready' : 'dot-pending']"></span>
-            <span class="status-text">{{ hasScript(ep) ? '已完成剧本' : '待编写' }}</span>
+            <span class="status-text">{{ hasScript(ep) ? '극본 완료' : '작성 대기' }}</span>
             <span v-if="ep.duration" class="ep-duration">{{ ep.duration }}s</span>
           </div>
         </div>
@@ -79,7 +79,7 @@
             <line x1="8" y1="12" x2="16" y2="12"/>
           </svg>
         </div>
-        <p>点击上方「添加集」创建第一集</p>
+        <p>상단의 「회차 추가」를 눌러 첫 회차를 만드세요</p>
       </div>
     </div>
 
@@ -89,59 +89,59 @@
           <div class="dialog-head-copy">
             <div class="dialog-kicker">Episode Setup</div>
             <div class="dialog-title-row">
-              <div class="dialog-title">创建新集</div>
-              <span class="dialog-badge">配置将锁定</span>
+              <div class="dialog-title">새 회차 생성</div>
+              <span class="dialog-badge">설정이 고정됩니다</span>
             </div>
-            <div class="dialog-sub">为这一集预先锁定图片、视频和音频生成服务。创建后，这些生成链路将始终跟随当前集配置。</div>
+            <div class="dialog-sub">이 회차에 사용할 이미지, 영상, 오디오 생성 서비스를 미리 고정합니다. 생성 후에는 해당 생성 경로가 항상 현재 회차 설정을 따릅니다.</div>
           </div>
-          <button class="back-btn" @click="addDialog = false">取消</button>
+          <button class="back-btn" @click="addDialog = false">취소</button>
         </div>
         <div class="dialog-summary">
-          <div class="summary-chip">图片 · {{ imageConfigs.length }} 可选</div>
-          <div class="summary-chip">视频 · {{ videoConfigs.length }} 可选</div>
-          <div class="summary-chip">音频 · {{ audioConfigs.length }} 可选</div>
+          <div class="summary-chip">이미지 · {{ imageConfigs.length }} 개 선택 가능</div>
+          <div class="summary-chip">영상 · {{ videoConfigs.length }} 개 선택 가능</div>
+          <div class="summary-chip">오디오 · {{ audioConfigs.length }} 개 선택 가능</div>
         </div>
         <div class="dialog-body">
           <div class="dialog-section">
             <div class="dialog-section-head">
-              <span class="dialog-section-title">基础信息</span>
-              <span class="dialog-section-copy">这一项只影响显示名称，不影响生成配置</span>
+              <span class="dialog-section-title">기본 정보</span>
+              <span class="dialog-section-copy">이 항목은 표시 이름에만 영향을 주며 생성 설정에는 영향을 주지 않습니다</span>
             </div>
             <label class="field">
-              <span class="field-label">标题</span>
-              <input v-model="newEpisodeTitle" class="input" placeholder="默认按集数自动命名" />
-              <span class="field-hint">留空时会自动按集数命名，例如“第 3 集”。</span>
+              <span class="field-label">제목</span>
+              <input v-model="newEpisodeTitle" class="input" placeholder="비워 두면 회차 번호로 자동 이름 지정" />
+              <span class="field-hint">비워 두면 회차 번호로 자동 이름이 지정됩니다. 예: “제 3 회”.</span>
             </label>
           </div>
 
           <div class="dialog-section">
             <div class="dialog-section-head">
-              <span class="dialog-section-title">生成配置</span>
-              <span class="dialog-section-copy">创建后不可更改，建议在这里一次性选对</span>
+              <span class="dialog-section-title">생성 설정</span>
+              <span class="dialog-section-copy">생성 후에는 변경할 수 없으므로 여기서 한 번에 올바르게 선택하세요</span>
             </div>
             <div class="config-grid">
               <label class="config-card">
                 <span class="config-card-kicker">IMAGE</span>
-                <span class="field-label">图片配置</span>
-                <BaseSelect v-model="newEpisodeImageConfigId" :options="imageConfigOptions" placeholder="选择图片服务" searchable />
+                <span class="field-label">이미지 설정</span>
+                <BaseSelect v-model="newEpisodeImageConfigId" :options="imageConfigOptions" placeholder="이미지 서비스 선택" searchable />
               </label>
               <label class="config-card">
                 <span class="config-card-kicker">VIDEO</span>
-                <span class="field-label">视频配置</span>
-                <BaseSelect v-model="newEpisodeVideoConfigId" :options="videoConfigOptions" placeholder="选择视频服务" searchable />
+                <span class="field-label">영상 설정</span>
+                <BaseSelect v-model="newEpisodeVideoConfigId" :options="videoConfigOptions" placeholder="영상 서비스 선택" searchable />
               </label>
               <label class="config-card">
                 <span class="config-card-kicker">AUDIO</span>
-                <span class="field-label">音频配置</span>
-                <BaseSelect v-model="newEpisodeAudioConfigId" :options="audioConfigOptions" placeholder="选择音频服务" searchable />
+                <span class="field-label">오디오 설정</span>
+                <BaseSelect v-model="newEpisodeAudioConfigId" :options="audioConfigOptions" placeholder="오디오 서비스 선택" searchable />
               </label>
             </div>
           </div>
         </div>
         <div class="dialog-foot">
-          <div class="dialog-foot-copy">创建后，工作台中的图片、视频、音频生成入口都会锁定到当前集。</div>
+          <div class="dialog-foot-copy">생성 후 작업대의 이미지, 영상, 오디오 생성 진입점은 현재 회차로 고정됩니다.</div>
           <button class="btn btn-primary" :disabled="creatingEpisode || !canCreateEpisode" @click="addEpisode">
-            {{ creatingEpisode ? '创建中...' : '创建并锁定配置' }}
+            {{ creatingEpisode ? '생성 중...' : '생성하고 설정 고정' }}
           </button>
         </div>
       </div>
@@ -221,7 +221,7 @@ async function addEpisode() {
       video_config_id: newEpisodeVideoConfigId.value,
       audio_config_id: newEpisodeAudioConfigId.value,
     })
-    toast.success('已添加新集')
+    toast.success('새 회차가 추가되었습니다')
     addDialog.value = false
     load()
   } catch (e) {

@@ -1,22 +1,18 @@
-# 场景图片提示词模板
+# 장면 이미지 프롬프트 템플릿
 
-## 模板结构
+## 템플릿 구조
 
-```
-A cinematic [style] pure background scene depicting [location] at [time].
-The scene shows [environment details, architecture, objects, lighting].
-No characters, no people, no figures.
-Style: [art style], rich details, high quality, atmospheric lighting.
-Mood: [mood description].
+```text
+[location], [time/light], [atmosphere], cinematic scene,
+consistent art style, high detail, professional composition, no people,
+no text, no watermark
 ```
 
-## 示例
+## 예시
 
-```
-A cinematic anime-style pure background scene depicting a traditional Japanese courtyard at dusk.
-The scene shows wooden corridors surrounding a zen garden with raked white gravel,
-a single cherry blossom tree with petals falling, stone lanterns casting warm light,
-sliding shoji doors partially open. No characters.
-Style: ghibli, rich details, high quality, warm golden hour lighting.
-Mood: peaceful, nostalgic, serene.
+```text
+small coffee shop interior at dusk, warm sunset light through large windows,
+quiet and slightly melancholic atmosphere, cinematic scene,
+consistent art style, high detail, professional composition, no people,
+no text, no watermark
 ```

@@ -1,6 +1,6 @@
 /**
- * 分镜拆解 Agent 工具
- * 工厂函数模式 — 注入 episodeId + dramaId
+ * 스토리보드 분해 Agent 도구
+ * 팩토리 함수 패턴 - episodeId + dramaId를 주입합니다.
  */
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
@@ -46,19 +46,19 @@ function validateStoryboardBindings(episodeId: number, sceneId: number | null | 
   const episodeCharacterIds = getEpisodeCharacterIds(episodeId)
 
   if (sceneId != null && !episodeSceneIds.has(sceneId)) {
-    throw new Error(`scene_id ${sceneId} 不属于当前集`)
+    throw new Error(`scene_id ${sceneId}는 현재 회차에 속하지 않습니다`)
   }
 
   const invalidCharacterIds = (characterIds || []).filter(id => !episodeCharacterIds.has(id))
   if (invalidCharacterIds.length) {
-    throw new Error(`character_ids 不属于当前集: ${invalidCharacterIds.join(', ')}`)
+    throw new Error(`현재 회차에 속하지 않는 character_ids: ${invalidCharacterIds.join(', ')}`)
   }
 }
 
 export function createStoryboardTools(episodeId: number, dramaId: number) {
   const readStoryboardContext = createTool({
     id: 'read_storyboard_context',
-    description: 'Read the screenplay, characters, and scenes for storyboard breakdown.',
+    description: '스토리보드 분해를 위해 극본, 캐릭터, 장면 정보를 읽습니다.',
     inputSchema: z.object({}),
     execute: async () => {
       const [ep] = db.select().from(schema.episodes)
@@ -147,7 +147,7 @@ export function createStoryboardTools(episodeId: number, dramaId: number) {
 
   const saveStoryboards = createTool({
     id: 'save_storyboards',
-    description: 'Save generated storyboards. Replaces all existing storyboards for this episode.',
+    description: '생성된 스토리보드를 저장합니다. 이 회차의 기존 스토리보드는 모두 교체됩니다.',
     inputSchema: z.object({
       storyboards: z.array(z.object({
         shot_number: z.number(),
@@ -225,7 +225,7 @@ export function createStoryboardTools(episodeId: number, dramaId: number) {
 
   const updateStoryboard = createTool({
     id: 'update_storyboard',
-    description: 'Update a specific storyboard shot.',
+    description: '특정 스토리보드 샷을 수정합니다.',
     inputSchema: z.object({
       storyboard_id: z.number(),
       title: z.string().optional(),
@@ -296,10 +296,10 @@ export function createStoryboardTools(episodeId: number, dramaId: number) {
     },
   })
 
-  // 为宫格图生成整体提示词（分析选中镜头的描述，生成一个连贯的画格布局描述）
+  // 그리드 이미지용 전체 프롬프트를 생성합니다.
   const generateGridPrompt = createTool({
     id: 'generate_grid_prompt',
-    description: '为宫格图生成整体画面描述。根据选中的镜头列表及其描述，生成一个连贯的宫格图提示词，用于一次性生成完整的宫格拼图。',
+    description: '선택한 샷 목록과 설명을 바탕으로 완성된 그리드 이미지 생성을 위한 전체 화면 설명을 만듭니다.',
     inputSchema: z.object({
       shots: z.array(z.object({
         shot_number: z.number(),
@@ -324,11 +324,11 @@ export function createStoryboardTools(episodeId: number, dramaId: number) {
       if (mode === 'multi_ref') {
         const sb = shots[0]
         const payload = {
-          grid_prompt: `电影级高质量参考图，${sb.description}，专业摄影，电影质感，4K分辨率，${rows}x${cols} 宫格统一风格参考图`,
+          grid_prompt: `cinematic high-quality reference image, ${sb.description}, professional photography, cinematic texture, 4K resolution, ${rows}x${cols} grid, consistent style reference image`,
           cell_prompts: shots.map(s => ({
             shot_number: s.shot_number,
             frame_type: 'reference',
-            prompt: `电影级高质量参考图，${s.description}，专业摄影，电影质感，4K分辨率，统一风格`,
+            prompt: `cinematic high-quality reference image, ${s.description}, professional photography, cinematic texture, 4K resolution, consistent style`,
           })),
         }
         logTaskSuccess('StoryboardTool', 'grid-prompt-complete', { episodeId, cells: payload.cell_prompts.length, mode })
@@ -341,16 +341,16 @@ export function createStoryboardTools(episodeId: number, dramaId: number) {
           cellPrompts.push({
             shot_number: s.shot_number,
             frame_type: 'first_frame',
-            prompt: `电影级高质量首帧，${s.description}，${s.shot_type || ''}，专业摄影，${rows}x${cols} 宫格风格统一`,
+            prompt: `cinematic high-quality first frame, ${s.description}, ${s.shot_type || ''}, professional photography, ${rows}x${cols} grid, consistent style`,
           })
           cellPrompts.push({
             shot_number: s.shot_number,
             frame_type: 'last_frame',
-            prompt: `电影级高质量尾帧，${s.description}，${s.shot_type || ''}，专业摄影，${rows}x${cols} 宫格风格统一`,
+            prompt: `cinematic high-quality last frame, ${s.description}, ${s.shot_type || ''}, professional photography, ${rows}x${cols} grid, consistent style`,
           })
         }
         const payload = {
-          grid_prompt: `${shots.length}个镜头首尾帧拼图，${shots.map(s => s.description).join(' | ')}，电影级画面，专业摄影，${rows}行${cols}列风格统一`,
+          grid_prompt: `${shots.length} shots first-last frame grid image, ${shots.map(s => s.description).join(' | ')}, cinematic visuals, professional photography, ${rows} rows and ${cols} columns, consistent style`,
           cell_prompts: cellPrompts,
         }
         logTaskSuccess('StoryboardTool', 'grid-prompt-complete', { episodeId, cells: payload.cell_prompts.length, mode })
@@ -361,10 +361,10 @@ export function createStoryboardTools(episodeId: number, dramaId: number) {
       const cellPrompts = shots.slice(0, rows * cols).map(s => ({
         shot_number: s.shot_number,
         frame_type: 'first_frame',
-        prompt: `电影级高质量首帧，${s.description}，${s.shot_type || ''}，专业摄影，${rows}x${cols} 宫格风格统一`,
+        prompt: `cinematic high-quality first frame, ${s.description}, ${s.shot_type || ''}, professional photography, ${rows}x${cols} grid, consistent style`,
       }))
       const payload = {
-        grid_prompt: `${shots.length}个镜头首帧拼图，${shots.map(s => s.description).join(' | ')}，电影级画面，专业摄影，${rows}行${cols}列风格统一`,
+        grid_prompt: `${shots.length} shots first-frame grid image, ${shots.map(s => s.description).join(' | ')}, cinematic visuals, professional photography, ${rows} rows and ${cols} columns, consistent style`,
         cell_prompts: cellPrompts,
       }
       logTaskSuccess('StoryboardTool', 'grid-prompt-complete', { episodeId, cells: payload.cell_prompts.length, mode })

@@ -6,15 +6,15 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
             <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
           </svg>
-          返回项目
+          프로젝트로 돌아가기
         </button>
         <div class="studio-identity">
           <h1 class="studio-title">{{ drama.title }}</h1>
-          <span class="studio-episode-chip">第 {{ episodeNumber }} 集</span>
+          <span class="studio-episode-chip">제 {{ episodeNumber }} 회</span>
           <div class="studio-meta-row">
             <span class="studio-meta-pill">{{ currentSubStageLabel }}</span>
             <span class="studio-meta-pill is-progress">{{ pipelineProgress }}/11</span>
-            <span class="studio-meta-inline">{{ chars.length }} 角色 · {{ sbs.length }} 镜头</span>
+            <span class="studio-meta-inline">{{ chars.length }} 캐릭터 · {{ sbs.length }} 샷</span>
           </div>
         </div>
       </div>
@@ -23,11 +23,11 @@
         <div class="studio-actions">
           <button class="btn" @click="refresh">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-            刷新
+            새로고침
           </button>
           <button class="btn btn-primary" @click="panel = mergeUrl ? 'export' : (sbs.length ? 'production' : 'script')">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            {{ mergeUrl ? '查看成片' : (sbs.length ? '继续制作' : '开始制作') }}
+            {{ mergeUrl ? '완성본 보기' : (sbs.length ? '제작 계속' : '제작 시작') }}
           </button>
         </div>
       </div>
@@ -65,7 +65,7 @@
       <div class="sidebar-bottom">
         <div class="progress-wrap">
           <div class="progress-head">
-            <span class="progress-label">制作进度</span>
+            <span class="progress-label">제작 진행률</span>
             <span class="progress-val">{{ pipelineProgress }}/11</span>
           </div>
           <div class="progress-track">
@@ -83,7 +83,7 @@
         </div>
         <button class="refresh-btn" @click="refresh">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-          刷新数据
+          데이터 새로고침
         </button>
       </div>
     </aside>
@@ -110,21 +110,21 @@
             <div class="toolbar-left">
               <div class="step-indicator">
                 <span class="step-num">01</span>
-                <span class="step-name">原始内容</span>
+                <span class="step-name">원본 내용</span>
               </div>
             </div>
             <div class="toolbar-right">
-              <span v-if="rawLen" class="char-count">{{ rawLen }} 字</span>
-              <button class="btn btn-sm" @click="saveRaw(); toast.success('已保存')">
+              <span v-if="rawLen" class="char-count">{{ rawLen }} 자</span>
+              <button class="btn btn-sm" @click="saveRaw(); toast.success('저장됨')">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                保存
+                저장
               </button>
             </div>
           </div>
           <textarea
             class="fill-textarea"
             v-model="localRaw"
-            placeholder="粘贴小说原文、故事大纲或分镜描述..."
+            placeholder="소설 원문, 이야기 개요 또는 스토리보드 설명을 붙여넣으세요..."
           />
         </div>
 
@@ -134,19 +134,19 @@
             <div class="toolbar-left">
               <div class="step-indicator">
                 <span class="step-num">02</span>
-                <span class="step-name">AI 改写</span>
+                <span class="step-name">AI 수정</span>
               </div>
             </div>
             <div class="toolbar-right">
-              <span v-if="scriptLen" class="char-count">{{ scriptLen }} 字</span>
+              <span v-if="scriptLen" class="char-count">{{ scriptLen }} 자</span>
               <button v-if="rawContent" class="btn btn-sm" @click="skipRewrite">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/><path d="M13 18l6-6-6-6"/></svg>
-                跳过改写
+                수정 건너뛰기
               </button>
               <button v-if="scriptContent" class="btn btn-sm" @click="doRewrite" :disabled="rn">
                 <Loader2 v-if="rn && rt === 'script_rewriter'" :size="11" class="animate-spin" />
                 <svg v-else width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                重新改写
+                다시 수정
               </button>
             </div>
           </div>
@@ -157,24 +157,24 @@
                 <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
               </svg>
             </div>
-            <div class="empty-title">AI 改写为格式化剧本</div>
-            <div class="empty-desc">你可以先用 AI 把原始内容整理成格式化剧本，也可以跳过这一步，直接使用原始内容继续提取角色与场景。</div>
+            <div class="empty-title">AI로 형식화된 극본 만들기</div>
+            <div class="empty-desc">AI로 원본 내용을 형식화된 극본으로 정리하거나, 이 단계를 건너뛰고 원본 내용으로 캐릭터와 장면을 추출할 수 있습니다.</div>
             <div class="step-empty-actions">
               <button class="btn btn-primary" @click="doRewrite">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                开始改写
+                수정 시작
               </button>
               <button class="btn" @click="skipRewrite">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14"/><path d="M13 18l6-6-6-6"/></svg>
-                跳过改写
+                수정 건너뛰기
               </button>
             </div>
           </div>
           <div v-else-if="rn && rt === 'script_rewriter'" class="step-loading">
             <Loader2 :size="24" class="animate-spin" style="color:var(--accent)" />
-            <div class="loading-text">正在改写剧本...</div>
+            <div class="loading-text">극본을 수정하는 중...</div>
           </div>
-          <textarea v-else class="fill-textarea" v-model="localScript" placeholder="格式化剧本内容..." />
+          <textarea v-else class="fill-textarea" v-model="localScript" placeholder="형식화된 극본 내용..." />
         </div>
 
         <!-- Step 2: Extract -->
@@ -183,15 +183,15 @@
             <div class="toolbar-left">
               <div class="step-indicator">
                 <span class="step-num">03</span>
-                <span class="step-name">提取角色与场景</span>
+                <span class="step-name">캐릭터와 장면 추출</span>
               </div>
             </div>
             <div class="toolbar-right">
-              <span v-if="chars.length" class="char-count">{{ chars.length }} 角色 · {{ scenes.length }} 场景</span>
+              <span v-if="chars.length" class="char-count">{{ chars.length }} 캐릭터 · {{ scenes.length }} 장면</span>
               <button v-if="chars.length" class="btn btn-sm" @click="doExtract" :disabled="rn">
                 <Loader2 v-if="rn && rt === 'extractor'" :size="11" class="animate-spin" />
                 <svg v-else width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                重新提取
+                다시 추출
               </button>
             </div>
           </div>
@@ -200,39 +200,39 @@
             <div class="empty-visual">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             </div>
-            <div class="empty-title">从剧本提取角色与场景</div>
-            <div class="empty-desc">AI 自动分析剧本，提取角色信息和场景列表，与项目已有数据智能去重合并</div>
+            <div class="empty-title">극본에서 캐릭터와 장면 추출</div>
+            <div class="empty-desc">AI가 극본을 분석해 캐릭터 정보와 장면 목록을 추출하고 기존 프로젝트 데이터와 중복 없이 병합합니다</div>
             <button class="btn btn-primary" @click="doExtract">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              开始提取
+              추출 시작
             </button>
           </div>
           <div v-else-if="rn && rt === 'extractor'" class="step-loading">
             <Loader2 :size="24" class="animate-spin" style="color:var(--accent)" />
-            <div class="loading-text">正在提取角色和场景...</div>
+            <div class="loading-text">캐릭터와 장면을 추출하는 중...</div>
           </div>
           <div v-else class="extract-stage">
             <aside class="card extract-summary">
               <div class="extract-summary-kicker">Extraction Board</div>
-              <div class="extract-summary-title">角色与场景结果</div>
-              <div class="extract-summary-desc">从剧本里提取出的角色和场景已经入库。这里先确认命名、定位和描述是否可直接进入后续制作。</div>
+              <div class="extract-summary-title">캐릭터와 장면 결과</div>
+              <div class="extract-summary-desc">극본에서 추출한 캐릭터와 장면이 저장되었습니다. 이름, 역할, 설명이 다음 제작 단계로 바로 넘어가도 되는지 확인하세요.</div>
               <div class="extract-summary-stats">
                 <div class="extract-summary-stat">
-                  <span>角色</span>
+                  <span>캐릭터</span>
                   <strong>{{ chars.length }}</strong>
                 </div>
                 <div class="extract-summary-stat">
-                  <span>场景</span>
+                  <span>장면</span>
                   <strong>{{ scenes.length }}</strong>
                 </div>
               </div>
-              <div class="extract-summary-note">如果角色描述过于简短，后续分配音色和生成形象时建议先补充人物特征。</div>
+              <div class="extract-summary-note">캐릭터 설명이 너무 짧다면 음성 배정과 이미지 생성 전에 인물 특징을 보강하는 것이 좋습니다.</div>
             </aside>
 
             <div class="card extract-card">
               <div class="extract-card-head">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                <span>角色</span>
+                <span>캐릭터</span>
                 <span class="tag tag-accent">{{ chars.length }}</span>
               </div>
               <div class="extract-list">
@@ -241,9 +241,9 @@
                   <div class="extract-info">
                     <div class="extract-name-row">
                       <div class="extract-name">{{ c.name }}</div>
-                      <span class="tag">{{ c.role || '角色' }}</span>
+                      <span class="tag">{{ c.role || '캐릭터' }}</span>
                     </div>
-                    <div class="extract-meta wrap">{{ c.description || c.appearance || c.personality || '暂无描述' }}</div>
+                    <div class="extract-meta wrap">{{ c.description || c.appearance || c.personality || '설명 없음' }}</div>
                   </div>
                 </div>
               </div>
@@ -252,7 +252,7 @@
             <div class="card extract-card" v-if="scenes.length">
               <div class="extract-card-head">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                <span>场景</span>
+                <span>장면</span>
                 <span class="tag tag-accent">{{ scenes.length }}</span>
               </div>
               <div class="extract-list">
@@ -265,7 +265,7 @@
                       <div class="extract-name">{{ s.location }}</div>
                       <span v-if="s.time" class="tag">{{ s.time }}</span>
                     </div>
-                    <div class="extract-meta wrap">{{ s.description || s.time || '等待补充场景描述' }}</div>
+                    <div class="extract-meta wrap">{{ s.description || s.time || '장면 설명 보강 대기' }}</div>
                   </div>
                 </div>
               </div>
@@ -279,20 +279,20 @@
             <div class="toolbar-left">
               <div class="step-indicator">
                 <span class="step-num">04</span>
-                <span class="step-name">分配音色</span>
+                <span class="step-name">음색 배정</span>
               </div>
             </div>
             <div class="toolbar-right">
-              <span v-if="charsVoiced" class="char-count">{{ charsVoiced }}/{{ chars.length }} 已分配</span>
-              <span v-if="voiceSampleCount" class="char-count">{{ voiceSampleCount }}/{{ charsVoiced }} 试听文件</span>
+              <span v-if="charsVoiced" class="char-count">{{ charsVoiced }}/{{ chars.length }} 배정됨</span>
+              <span v-if="voiceSampleCount" class="char-count">{{ voiceSampleCount }}/{{ charsVoiced }} 미리듣기 파일</span>
               <button v-if="charsVoiced" class="btn btn-sm" @click="doVoice" :disabled="rn">
                 <Loader2 v-if="rn && rt === 'voice_assigner'" :size="11" class="animate-spin" />
                 <svg v-else width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
-                重新分配
+                다시 배정
               </button>
               <button v-if="charsVoiced" class="btn btn-sm" @click="batchGenSamples">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19 5v14"/></svg>
-                生成试听文件
+                미리듣기 파일 생성
               </button>
             </div>
           </div>
@@ -301,35 +301,35 @@
             <div class="empty-visual">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
             </div>
-            <div class="empty-title">为角色分配合适的音色</div>
-            <div class="empty-desc">AI 根据角色特征自动分配最匹配的 TTS 音色</div>
+            <div class="empty-title">캐릭터에 적절한 음색 배정</div>
+            <div class="empty-desc">AI가 캐릭터 특징에 맞는 TTS 음색을 자동 배정합니다</div>
             <button class="btn btn-primary" @click="doVoice">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              AI 自动分配
+              AI 자동 배정
             </button>
           </div>
           <div v-else-if="rn && rt === 'voice_assigner'" class="step-loading">
             <Loader2 :size="24" class="animate-spin" style="color:var(--accent)" />
-            <div class="loading-text">正在分配音色...</div>
+            <div class="loading-text">음색을 배정하는 중...</div>
           </div>
           <div v-else class="voice-stage">
             <aside class="card voice-stage-panel">
               <div class="voice-stage-kicker">Voice Casting</div>
-              <div class="voice-stage-title">角色声音分配台</div>
-              <div class="voice-stage-desc">先为每个角色选择合适音色，再生成试听。音色标签会帮助你快速区分旁白、主角、反派和配角的表达方向。</div>
+              <div class="voice-stage-title">캐릭터 음성 배정대</div>
+              <div class="voice-stage-desc">각 캐릭터에 맞는 음색을 선택한 뒤 미리듣기를 생성하세요. 음색 태그는 내레이션, 주연, 악역, 조연의 표현 방향을 빠르게 구분하는 데 도움이 됩니다.</div>
               <div class="voice-stage-stats">
                 <div class="voice-stage-stat">
-                  <span class="voice-stage-stat-label">已分配</span>
+                  <span class="voice-stage-stat-label">배정됨</span>
                   <strong>{{ charsVoiced }}/{{ chars.length }}</strong>
                 </div>
                 <div class="voice-stage-stat">
-                  <span class="voice-stage-stat-label">试听文件</span>
+                  <span class="voice-stage-stat-label">미리듣기 파일</span>
                   <strong>{{ voiceSampleCount }}/{{ charsVoiced }}</strong>
                 </div>
               </div>
               <div class="voice-library-meta">
-                <span>音色库</span>
-                <span>{{ voiceProfiles.length }} 条</span>
+                <span>음색 라이브러리</span>
+                <span>{{ voiceProfiles.length }} 개</span>
               </div>
               <div class="voice-library">
                 <div v-for="voice in voiceProfiles" :key="voice.id" class="voice-library-item">
@@ -351,23 +351,23 @@
                     <div class="voice-name">
                       <div class="voice-name-row">
                         <div class="extract-name">{{ c.name }}</div>
-                        <span class="tag" :class="(c.voice_style || c.voiceStyle) ? 'tag-success' : ''">{{ (c.voice_style || c.voiceStyle) ? '已分配' : '待分配' }}</span>
+                        <span class="tag" :class="(c.voice_style || c.voiceStyle) ? 'tag-success' : ''">{{ (c.voice_style || c.voiceStyle) ? '배정됨' : '배정 대기' }}</span>
                       </div>
-                      <div class="extract-meta">{{ c.role || '角色' }}</div>
+                      <div class="extract-meta">{{ c.role || '캐릭터' }}</div>
                     </div>
                   </div>
                 </div>
 
                 <div class="voice-card-copy">
-                  <div class="voice-card-text">{{ c.description || c.personality || c.appearance || '暂无角色描述，可根据人物定位手动挑选音色。' }}</div>
+                  <div class="voice-card-text">{{ c.description || c.personality || c.appearance || '캐릭터 설명이 없습니다. 인물 역할에 맞춰 음색을 직접 선택할 수 있습니다.' }}</div>
                 </div>
 
                 <div class="voice-select-block">
-                  <span class="voice-block-label">选择音色</span>
+                  <span class="voice-block-label">음색 선택</span>
                   <BaseSelect
                     :model-value="c.voice_style || c.voiceStyle || ''"
                     :options="voiceSelectOptions"
-                    placeholder="选择音色"
+                    placeholder="음색 선택"
                     searchable
                     style="width:100%"
                     @update:model-value="updateCharVoice(c.id, $event)"
@@ -386,9 +386,9 @@
                 <div class="voice-actions-row">
                   <button class="btn btn-sm" :disabled="!(c.voice_style || c.voiceStyle)" @click="genSample(c.id)">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-                    {{ (c.voice_sample_url || c.voiceSampleUrl) ? '重新试听' : '生成试听' }}
+                    {{ (c.voice_sample_url || c.voiceSampleUrl) ? '다시 미리듣기' : '미리듣기 생성' }}
                   </button>
-                  <span class="dim" style="font-size:11px">{{ (c.voice_sample_url || c.voiceSampleUrl) ? '已生成声音样本，可直接播放' : '生成后可快速确认角色声音' }}</span>
+                  <span class="dim" style="font-size:11px">{{ (c.voice_sample_url || c.voiceSampleUrl) ? '음성 샘플이 생성되어 바로 재생할 수 있습니다' : '생성 후 캐릭터 음성을 빠르게 확인할 수 있습니다' }}</span>
                 </div>
 
                 <div v-if="c.voice_sample_url || c.voiceSampleUrl" class="voice-player">
@@ -405,22 +405,22 @@
             <div class="toolbar-left">
               <div class="step-indicator">
                 <span class="step-num">05</span>
-                <span class="step-name">分镜列表</span>
+                <span class="step-name">스토리보드 목록</span>
               </div>
             </div>
             <div class="toolbar-right">
-              <span v-if="sbs.length" class="char-count">{{ sbs.length }} 镜头 · {{ totalDuration }}s</span>
+              <span v-if="sbs.length" class="char-count">{{ sbs.length }} 샷 · {{ totalDuration }}s</span>
               <button v-if="sbs.length" class="btn btn-sm" @click="addShot">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                添加
+                추가
               </button>
               <template v-if="!sbs.length">
-                <span class="locked-config">视频模型 · {{ lockedVideoConfigLabel }}</span>
+                <span class="locked-config">영상모델 · {{ lockedVideoConfigLabel }}</span>
               </template>
               <button class="btn btn-sm" :disabled="rn" @click="doBreakdown">
                 <Loader2 v-if="rt === 'storyboard_breaker'" :size="11" class="animate-spin" />
                 <svg v-else width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                {{ sbs.length ? '重新拆解' : 'AI 拆解分镜' }}
+                {{ sbs.length ? '다시 분해' : 'AI 스토리보드 분해' }}
               </button>
             </div>
           </div>
@@ -430,8 +430,8 @@
             <div class="shot-list">
               <div class="shot-list-head">
                 <div>
-                  <div class="shot-list-title">镜头序列</div>
-                  <div class="shot-list-sub">按镜头顺序检查内容与素材状态</div>
+                  <div class="shot-list-title">샷 순서</div>
+                  <div class="shot-list-sub">샷 순서대로 내용과 소재 상태를 확인하세요</div>
                 </div>
                 <span class="tag mono">{{ totalDuration }}s</span>
               </div>
@@ -445,15 +445,15 @@
                   <div class="shot-item-header">
                     <div class="shot-num">#{{ String(i+1).padStart(2,'0') }}</div>
                     <span class="tag" style="font-size:10px">{{ sb.shot_type || sb.shotType || '—' }}</span>
-                    <span v-if="getStoryboardCharacterIds(sb).length" class="tag" style="font-size:10px">{{ getStoryboardCharacterIds(sb).length }} 角色</span>
+                    <span v-if="getStoryboardCharacterIds(sb).length" class="tag" style="font-size:10px">{{ getStoryboardCharacterIds(sb).length }} 캐릭터</span>
                     <div class="shot-status">
-                      <div v-if="sb.imageUrl || sb.composedImage || sb.firstFrameImage" class="shot-dot has-img" title="已生成图片"></div>
-                      <div v-if="sb.videoUrl || sb.composedVideoUrl" class="shot-dot has-video" title="已生成视频"></div>
-                      <div v-if="sb.dialogue" class="shot-dot has-dialogue" title="有对白"></div>
+                      <div v-if="sb.imageUrl || sb.composedImage || sb.firstFrameImage" class="shot-dot has-img" title="이미지 생성됨"></div>
+                      <div v-if="sb.videoUrl || sb.composedVideoUrl" class="shot-dot has-video" title="영상 생성됨"></div>
+                      <div v-if="sb.dialogue" class="shot-dot has-dialogue" title="대사 있음"></div>
                     </div>
                   </div>
                   <div class="shot-body">
-                    <div class="shot-desc">{{ sb.description || sb.title || '无描述' }}</div>
+                    <div class="shot-desc">{{ sb.description || sb.title || '설명 없음' }}</div>
                   </div>
                   <div class="shot-meta">
                     <span class="mono dim" style="font-size:10px">{{ sb.duration || 10 }}s</span>
@@ -469,8 +469,8 @@
             <div class="detail-panel" v-if="selectedSb">
                 <div class="detail-head">
                   <div class="detail-head-copy">
-                    <span class="detail-head-title">镜头 #{{ sbs.indexOf(selectedSb) + 1 }}</span>
-                  <span class="detail-head-sub">{{ selectedSb.title || `镜头 ${sbs.indexOf(selectedSb) + 1}` }} · {{ selectedSb.shot_type || selectedSb.shotType || '未设置景别' }}</span>
+                    <span class="detail-head-title">샷 #{{ sbs.indexOf(selectedSb) + 1 }}</span>
+                  <span class="detail-head-sub">{{ selectedSb.title || `샷 ${sbs.indexOf(selectedSb) + 1}` }} · {{ selectedSb.shot_type || selectedSb.shotType || '샷 크기 미설정' }}</span>
                   </div>
                   <span class="tag mono">{{ (selectedSb.duration || 10) }}s</span>
                   <button class="btn btn-ghost btn-icon ml-auto" style="color:var(--error)" @click="deleteShot(selectedSb)">
@@ -480,62 +480,62 @@
               <div class="detail-body">
                 <div class="detail-hero">
                   <div class="detail-hero-copy">
-                    <div class="detail-hero-label">镜头概览</div>
-                    <div class="detail-hero-text">{{ selectedSb.description || selectedSb.title || '当前镜头还没有画面描述，建议先补充核心动作和构图。' }}</div>
+                    <div class="detail-hero-label">샷 개요</div>
+                    <div class="detail-hero-text">{{ selectedSb.description || selectedSb.title || '현재 샷에 화면 설명이 없습니다. 핵심 동작과 구도를 먼저 보강하세요.' }}</div>
                     <div class="detail-status-row">
                       <span class="tag">{{ getSceneName(selectedSb) }}</span>
-                      <span class="tag">{{ selectedSb.angle || '未设角度' }}</span>
-                      <span class="tag">{{ selectedSb.movement || '未设运镜' }}</span>
-                      <span class="tag" :class="getFirstFrame(selectedSb) ? 'tag-success' : ''">首帧 {{ getFirstFrame(selectedSb) ? '已生成' : '待生成' }}</span>
-                      <span class="tag" :class="getLastFrame(selectedSb) ? 'tag-success' : ''">尾帧 {{ getLastFrame(selectedSb) ? '已生成' : '待生成' }}</span>
-                      <span class="tag" :class="hasVid(selectedSb) ? 'tag-success' : ''">视频 {{ hasVid(selectedSb) ? '已生成' : '待生成' }}</span>
+                      <span class="tag">{{ selectedSb.angle || '각도 미설정' }}</span>
+                      <span class="tag">{{ selectedSb.movement || '카메라 움직임 미설정' }}</span>
+                      <span class="tag" :class="getFirstFrame(selectedSb) ? 'tag-success' : ''">첫 프레임 {{ getFirstFrame(selectedSb) ? '생성됨' : '생성 대기' }}</span>
+                      <span class="tag" :class="getLastFrame(selectedSb) ? 'tag-success' : ''">끝 프레임 {{ getLastFrame(selectedSb) ? '생성됨' : '생성 대기' }}</span>
+                      <span class="tag" :class="hasVid(selectedSb) ? 'tag-success' : ''">영상 {{ hasVid(selectedSb) ? '생성됨' : '생성 대기' }}</span>
                     </div>
                   </div>
                   <div class="detail-preview-grid">
                     <div class="detail-preview-card">
-                      <div class="detail-preview-title">首帧</div>
+                      <div class="detail-preview-title">첫 프레임</div>
                       <div class="detail-preview-media">
                         <img
                           v-if="getFirstFrame(selectedSb)"
                           :src="'/' + getFirstFrame(selectedSb)"
                           class="previewable-image"
-                          @click.stop="openImageViewer('/' + getFirstFrame(selectedSb), `镜头 #${sbs.indexOf(selectedSb) + 1} 首帧`)"
+                          @click.stop="openImageViewer('/' + getFirstFrame(selectedSb), `샷 #${sbs.indexOf(selectedSb) + 1} 첫 프레임`)"
                         />
-                        <div v-else class="detail-preview-empty">待生成</div>
+                        <div v-else class="detail-preview-empty">생성 대기</div>
                       </div>
                     </div>
                     <div class="detail-preview-card">
-                      <div class="detail-preview-title">尾帧</div>
+                      <div class="detail-preview-title">끝 프레임</div>
                       <div class="detail-preview-media">
                         <img
                           v-if="getLastFrame(selectedSb)"
                           :src="'/' + getLastFrame(selectedSb)"
                           class="previewable-image"
-                          @click.stop="openImageViewer('/' + getLastFrame(selectedSb), `镜头 #${sbs.indexOf(selectedSb) + 1} 尾帧`)"
+                          @click.stop="openImageViewer('/' + getLastFrame(selectedSb), `샷 #${sbs.indexOf(selectedSb) + 1} 끝 프레임`)"
                         />
-                        <div v-else class="detail-preview-empty">待生成</div>
+                        <div v-else class="detail-preview-empty">생성 대기</div>
                       </div>
                     </div>
                   </div>
                 </div>
                 <div class="detail-section">
                   <div class="detail-section-head">
-                    <span class="detail-section-title">镜头结构</span>
-                    <span class="detail-section-copy">景别、角度、运镜、场景绑定和时长</span>
+                    <span class="detail-section-title">샷 구조</span>
+                    <span class="detail-section-copy">샷 크기, 각도, 카메라 움직임, 장면 연결, 길이</span>
                   </div>
                   <div class="field-grid field-grid-4">
                     <label class="field">
-                      <span class="field-label">标题</span>
+                      <span class="field-label">제목</span>
                       <input :value="selectedSb.title || ''" class="input"
-                        @blur="updateField(selectedSb, 'title', $event.target.value)" placeholder="如：雪地逼近" />
+                        @blur="updateField(selectedSb, 'title', $event.target.value)" placeholder="예: 눈밭 접근" />
                     </label>
                     <label class="field">
-                      <span class="field-label">景别</span>
+                      <span class="field-label">샷 크기</span>
                       <input
                         list="shot-type-list"
                         :value="selectedSb.shot_type || selectedSb.shotType || ''"
                         class="input"
-                        placeholder="选择或输入景别"
+                        placeholder="샷 크기 선택 또는 입력"
                         @change="updateField(selectedSb, 'shot_type', $event.target.value)"
                       />
                       <datalist id="shot-type-list">
@@ -543,12 +543,12 @@
                       </datalist>
                     </label>
                     <label class="field">
-                      <span class="field-label">角度</span>
+                      <span class="field-label">각도</span>
                       <input
                         list="shot-angle-list"
                         :value="selectedSb.angle || ''"
                         class="input"
-                        placeholder="选择或输入角度"
+                        placeholder="각도 선택 또는 입력"
                         @change="updateField(selectedSb, 'angle', $event.target.value)"
                       />
                       <datalist id="shot-angle-list">
@@ -556,12 +556,12 @@
                       </datalist>
                     </label>
                     <label class="field">
-                      <span class="field-label">运镜</span>
+                      <span class="field-label">카메라 움직임</span>
                       <input
                         list="shot-movement-list"
                         :value="selectedSb.movement || ''"
                         class="input"
-                        placeholder="选择或输入运镜"
+                        placeholder="카메라 움직임 선택 또는 입력"
                         @change="updateField(selectedSb, 'movement', $event.target.value)"
                       />
                       <datalist id="shot-movement-list">
@@ -571,7 +571,7 @@
                   </div>
                   <div class="field-grid field-grid-4">
                     <label class="field">
-                      <span class="field-label">绑定角色</span>
+                      <span class="field-label">캐릭터 연결</span>
                       <div class="role-pills">
                         <button
                           v-for="char in chars"
@@ -582,31 +582,31 @@
                         >
                           {{ char.name }}
                         </button>
-                        <span v-if="!chars.length" class="dim" style="font-size:12px">当前集还没有角色</span>
+                        <span v-if="!chars.length" class="dim" style="font-size:12px">현재 회차에는 캐릭터가 없습니다</span>
                       </div>
                     </label>
                     <label class="field">
-                      <span class="field-label">绑定场景</span>
+                      <span class="field-label">장면 연결</span>
                       <select class="input" :value="selectedSb.scene_id || selectedSb.sceneId || ''"
                         @change="updateField(selectedSb, 'scene_id', $event.target.value ? Number($event.target.value) : null)">
-                        <option value="">未绑定场景</option>
+                        <option value="">연결된 장면 없음</option>
                         <option v-for="scene in scenes" :key="scene.id" :value="scene.id">
-                          {{ scene.location }} · {{ scene.time || '未设时间' }}
+                          {{ scene.location }} · {{ scene.time || '시간 미설정' }}
                         </option>
                       </select>
                     </label>
                     <label class="field">
-                      <span class="field-label">地点</span>
+                      <span class="field-label">장소</span>
                       <input :value="selectedSb.location || ''" class="input"
-                        @blur="updateField(selectedSb, 'location', $event.target.value)" placeholder="场景地点" />
+                        @blur="updateField(selectedSb, 'location', $event.target.value)" placeholder="장면 장소" />
                     </label>
                     <label class="field">
-                      <span class="field-label">时间</span>
+                      <span class="field-label">시간</span>
                       <input :value="selectedSb.time || ''" class="input"
-                        @blur="updateField(selectedSb, 'time', $event.target.value)" placeholder="如：深夜 / 清晨" />
+                        @blur="updateField(selectedSb, 'time', $event.target.value)" placeholder="예: 심야 / 새벽" />
                     </label>
                     <label class="field">
-                      <span class="field-label">时长</span>
+                      <span class="field-label">길이</span>
                       <input :value="selectedSb.duration || 10" class="input" type="number" min="1" max="60"
                         @blur="updateField(selectedSb, 'duration', Number($event.target.value))" />
                     </label>
@@ -614,64 +614,64 @@
                 </div>
                 <div class="detail-section">
                   <div class="detail-section-head">
-                    <span class="detail-section-title">画面语义</span>
-                    <span class="detail-section-copy">动作、结果、氛围和对白</span>
+                    <span class="detail-section-title">화면 의미</span>
+                    <span class="detail-section-copy">동작, 결과, 분위기와 대사</span>
                   </div>
                   <div class="field-grid field-grid-2">
                     <label class="field">
-                      <span class="field-label">动作</span>
+                      <span class="field-label">동작</span>
                       <textarea :value="selectedSb.action || ''" class="textarea" rows="3"
-                        @blur="updateField(selectedSb, 'action', $event.target.value)" placeholder="谁在做什么，表情和动作细节是什么" />
+                        @blur="updateField(selectedSb, 'action', $event.target.value)" placeholder="누가 무엇을 하는지, 표정과 동작 디테일을 적으세요" />
                     </label>
                     <label class="field">
-                      <span class="field-label">结果</span>
+                      <span class="field-label">결과</span>
                       <textarea :value="selectedSb.result || ''" class="textarea" rows="3"
-                        @blur="updateField(selectedSb, 'result', $event.target.value)" placeholder="镜头结束时的状态变化或画面结果" />
+                        @blur="updateField(selectedSb, 'result', $event.target.value)" placeholder="샷 종료 시 상태 변화 또는 화면 결과" />
                     </label>
                   </div>
                   <div class="field-grid field-grid-2">
                     <label class="field">
-                      <span class="field-label">画面描述</span>
+                      <span class="field-label">화면 설명</span>
                       <textarea :value="selectedSb.description || ''" class="textarea" rows="4"
-                        @blur="updateField(selectedSb, 'description', $event.target.value)" placeholder="描述画面内容..." />
+                        @blur="updateField(selectedSb, 'description', $event.target.value)" placeholder="화면 내용을 설명하세요..." />
                     </label>
                     <label class="field">
-                      <span class="field-label">氛围</span>
+                      <span class="field-label">분위기</span>
                       <textarea :value="selectedSb.atmosphere || ''" class="textarea" rows="4"
-                        @blur="updateField(selectedSb, 'atmosphere', $event.target.value)" placeholder="光线、色调、空气感、环境氛围" />
+                        @blur="updateField(selectedSb, 'atmosphere', $event.target.value)" placeholder="빛, 색감, 공기감, 환경 분위기" />
                     </label>
                   </div>
                   <label class="field">
-                    <span class="field-label">对白 / 旁白</span>
+                    <span class="field-label">대사 / 내레이션</span>
                     <textarea :value="selectedSb.dialogue || ''" class="textarea" rows="3"
-                      @blur="updateField(selectedSb, 'dialogue', $event.target.value)" placeholder="角色名：台词内容 或 旁白：内容" />
+                      @blur="updateField(selectedSb, 'dialogue', $event.target.value)" placeholder="캐릭터명: 대사 내용 또는 내레이션: 내용" />
                   </label>
                 </div>
                 <div class="detail-section">
                   <div class="detail-section-head">
-                    <span class="detail-section-title">生成提示</span>
-                    <span class="detail-section-copy">分别服务图片、视频、配乐和音效生成</span>
+                    <span class="detail-section-title">생성 프롬프트</span>
+                    <span class="detail-section-copy">이미지, 영상, 배경음악, 효과음 생성에 각각 사용됩니다</span>
                   </div>
                   <label class="field">
-                    <span class="field-label">静态画面提示词</span>
+                    <span class="field-label">정적 이미지 프롬프트</span>
                     <textarea :value="selectedSb.image_prompt || selectedSb.imagePrompt || ''" class="textarea" rows="4"
-                      @blur="updateField(selectedSb, 'image_prompt', $event.target.value)" placeholder="用于首帧、尾帧和镜头图片的单帧画面提示词" />
+                      @blur="updateField(selectedSb, 'image_prompt', $event.target.value)" placeholder="첫 프레임, 끝 프레임, 샷 이미지에 사용할 단일 프레임 프롬프트" />
                   </label>
                   <label class="field">
-                    <span class="field-label">视频提示词</span>
+                    <span class="field-label">영상 프롬프트</span>
                     <textarea :value="selectedSb.video_prompt || selectedSb.videoPrompt || ''" class="textarea" rows="5"
-                      @blur="updateField(selectedSb, 'video_prompt', $event.target.value)" placeholder="按 3 秒分段的视频提示词..." />
+                      @blur="updateField(selectedSb, 'video_prompt', $event.target.value)" placeholder="3초 단위로 나눈 영상 프롬프트..." />
                   </label>
                   <div class="field-grid field-grid-2">
                     <label class="field">
-                      <span class="field-label">配乐提示词</span>
+                      <span class="field-label">배경음악 프롬프트</span>
                       <textarea :value="selectedSb.bgm_prompt || selectedSb.bgmPrompt || ''" class="textarea" rows="3"
-                        @blur="updateField(selectedSb, 'bgm_prompt', $event.target.value)" placeholder="如：压抑低频弦乐，缓慢推进" />
+                        @blur="updateField(selectedSb, 'bgm_prompt', $event.target.value)" placeholder="예: 낮게 깔리는 현악, 느린 전개" />
                     </label>
                     <label class="field">
-                      <span class="field-label">音效提示词</span>
+                      <span class="field-label">효과음 프롬프트</span>
                       <textarea :value="selectedSb.sound_effect || selectedSb.soundEffect || ''" class="textarea" rows="3"
-                        @blur="updateField(selectedSb, 'sound_effect', $event.target.value)" placeholder="如：风雪声、脚踩积雪、衣料摩擦声" />
+                        @blur="updateField(selectedSb, 'sound_effect', $event.target.value)" placeholder="예: 눈보라 소리, 눈 밟는 소리, 옷감 마찰음" />
                     </label>
                   </div>
                 </div>
@@ -681,7 +681,7 @@
 
           <div v-else-if="rn && rt === 'storyboard_breaker'" class="step-loading">
             <Loader2 :size="24" class="animate-spin" style="color:var(--accent)" />
-            <div class="loading-text">正在拆解分镜并生成提示词...</div>
+            <div class="loading-text">스토리보드를 분해하고 프롬프트를 생성하는 중...</div>
           </div>
 
           <div v-else class="step-empty">
@@ -690,13 +690,13 @@
                 <rect x="2" y="2" width="20" height="20" rx="2.5"/><line x1="7" y1="8" x2="7" y2="16"/><line x1="10" y1="8" x2="10" y2="16"/><line x1="13" y1="8" x2="13" y2="16"/>
               </svg>
             </div>
-            <div class="empty-title">将剧本拆解为分镜序列</div>
-            <div class="empty-desc">AI 自动分析剧本，生成镜头列表和视频提示词</div>
-            <div class="locked-config-banner">当前集视频模型：{{ lockedVideoConfigLabel }}</div>
+            <div class="empty-title">극본을 스토리보드 순서로 분해</div>
+            <div class="empty-desc">AI가 극본을 분석해 샷 목록과 영상 프롬프트를 생성합니다</div>
+            <div class="locked-config-banner">현재 회차 영상 모델:{{ lockedVideoConfigLabel }}</div>
             <button class="btn btn-primary" @click="doBreakdown">
               <Loader2 v-if="rt === 'storyboard_breaker'" :size="13" class="animate-spin" />
               <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              AI 拆解分镜
+              AI 스토리보드 분해
             </button>
           </div>
         </div>
@@ -710,9 +710,9 @@
           <div class="empty-visual">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
           </div>
-          <div class="empty-title">尚未准备就绪</div>
-          <div class="empty-desc">{{ !scriptContent ? '请先完成剧本编写' : '请先完成分镜拆解' }}</div>
-          <button class="btn btn-primary" @click="panel = 'script'">前往剧本</button>
+          <div class="empty-title">아직 준비되지 않았습니다</div>
+          <div class="empty-desc">{{ !scriptContent ? '먼저 극본 작성을 완료하세요' : '먼저 스토리보드 분해를 완료하세요' }}</div>
+          <button class="btn btn-primary" @click="panel = 'script'">극본으로 이동</button>
         </div>
 
         <template v-else>
@@ -720,7 +720,7 @@
             <div class="toolbar-left">
               <div class="step-indicator">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                <span class="step-name">制作工作台</span>
+                <span class="step-name">제작작업대</span>
               </div>
             </div>
             <div class="prod-tabs">
@@ -740,13 +740,13 @@
           <!-- Sub: Characters -->
           <div v-if="prodTab === 'chars'" class="prod-content">
             <div class="prod-section-bar">
-              <span class="dim" style="font-size:12px">{{ visualChars.length }} 个需生成形象角色</span>
+              <span class="dim" style="font-size:12px">{{ visualChars.length }} 개 이미지 생성 대상 캐릭터</span>
               <span class="tag">{{ lockedImageConfigLabel }}</span>
-              <span v-if="chars.length > visualChars.length" class="tag">旁白仅保留声音</span>
+              <span v-if="chars.length > visualChars.length" class="tag">내레이션은 음성만 유지</span>
               <div class="ml-auto flex gap-1">
                 <button class="btn btn-sm" @click="batchCharImages">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                  批量生成
+                  일괄 생성
                 </button>
               </div>
             </div>
@@ -757,21 +757,21 @@
                     v-if="c.image_url || c.imageUrl"
                     :src="'/' + (c.image_url || c.imageUrl)"
                     class="previewable-image"
-                    @click.stop="openImageViewer('/' + (c.image_url || c.imageUrl), `${c.name} 角色形象`)"
+                    @click.stop="openImageViewer('/' + (c.image_url || c.imageUrl), `${c.name} 캐릭터 이미지`)"
                   />
                   <div v-else class="asset-cover-empty">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                   </div>
-                  <span class="asset-cover-badge" :class="(c.image_url || c.imageUrl) ? 'is-ready' : (isPendingCharImage(c.id) ? 'is-pending' : '')">{{ (c.image_url || c.imageUrl) ? '已生成' : (isPendingCharImage(c.id) ? '生成中' : '待生成') }}</span>
+                  <span class="asset-cover-badge" :class="(c.image_url || c.imageUrl) ? 'is-ready' : (isPendingCharImage(c.id) ? 'is-pending' : '')">{{ (c.image_url || c.imageUrl) ? '생성됨' : (isPendingCharImage(c.id) ? '생성 중' : '생성 대기') }}</span>
                 </div>
                 <div class="asset-body">
                   <div class="asset-name">{{ c.name }}</div>
-                  <div class="asset-meta dim">{{ c.role || '角色' }}</div>
+                  <div class="asset-meta dim">{{ c.role || '캐릭터' }}</div>
                 </div>
                 <div class="asset-foot">
                   <span :class="['dot', (c.image_url || c.imageUrl) && 'ok', isPendingCharImage(c.id) && 'pending']" />
-                  <span class="dim" style="font-size:10px">{{ (c.image_url || c.imageUrl) ? '已生成' : (isPendingCharImage(c.id) ? '生成中' : '待生成') }}</span>
-                  <button class="btn btn-sm ml-auto" :disabled="isPendingCharImage(c.id)" @click="genCharImg(c.id)">{{ isPendingCharImage(c.id) ? '生成中' : '生成' }}</button>
+                  <span class="dim" style="font-size:10px">{{ (c.image_url || c.imageUrl) ? '생성됨' : (isPendingCharImage(c.id) ? '생성 중' : '생성 대기') }}</span>
+                  <button class="btn btn-sm ml-auto" :disabled="isPendingCharImage(c.id)" @click="genCharImg(c.id)">{{ isPendingCharImage(c.id) ? '생성 중' : '생성' }}</button>
                 </div>
               </div>
             </div>
@@ -780,12 +780,12 @@
           <!-- Sub: Scenes -->
           <div v-else-if="prodTab === 'scenes'" class="prod-content">
             <div class="prod-section-bar">
-              <span class="dim" style="font-size:12px">{{ scenes.length }} 个场景</span>
+              <span class="dim" style="font-size:12px">{{ scenes.length }}개 장면</span>
               <span class="tag">{{ lockedImageConfigLabel }}</span>
               <div class="ml-auto flex gap-1">
                 <button class="btn btn-sm" @click="batchSceneImages">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                  批量生成
+                  일괄 생성
                 </button>
               </div>
             </div>
@@ -796,12 +796,12 @@
                     v-if="s.image_url || s.imageUrl"
                     :src="'/' + (s.image_url || s.imageUrl)"
                     class="previewable-image"
-                    @click.stop="openImageViewer('/' + (s.image_url || s.imageUrl), `${s.location} 场景图`)"
+                    @click.stop="openImageViewer('/' + (s.image_url || s.imageUrl), `${s.location} 장면이미지`)"
                   />
                   <div v-else class="asset-cover-empty">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                   </div>
-                  <span class="asset-cover-badge" :class="(s.image_url || s.imageUrl) ? 'is-ready' : (isPendingSceneImage(s.id) ? 'is-pending' : '')">{{ (s.image_url || s.imageUrl) ? '已生成' : (isPendingSceneImage(s.id) ? '生成中' : '待生成') }}</span>
+                  <span class="asset-cover-badge" :class="(s.image_url || s.imageUrl) ? 'is-ready' : (isPendingSceneImage(s.id) ? 'is-pending' : '')">{{ (s.image_url || s.imageUrl) ? '생성됨' : (isPendingSceneImage(s.id) ? '생성 중' : '생성 대기') }}</span>
                 </div>
                 <div class="asset-body">
                   <div class="asset-name">{{ s.location }}</div>
@@ -809,8 +809,8 @@
                 </div>
                 <div class="asset-foot">
                   <span :class="['dot', (s.image_url || s.imageUrl) && 'ok', isPendingSceneImage(s.id) && 'pending']" />
-                  <span class="dim" style="font-size:10px">{{ (s.image_url || s.imageUrl) ? '已生成' : (isPendingSceneImage(s.id) ? '生成中' : '待生成') }}</span>
-                  <button class="btn btn-sm ml-auto" :disabled="isPendingSceneImage(s.id)" @click="genSceneImg(s.id)">{{ isPendingSceneImage(s.id) ? '生成中' : '生成' }}</button>
+                  <span class="dim" style="font-size:10px">{{ (s.image_url || s.imageUrl) ? '생성됨' : (isPendingSceneImage(s.id) ? '생성 중' : '생성 대기') }}</span>
+                  <button class="btn btn-sm ml-auto" :disabled="isPendingSceneImage(s.id)" @click="genSceneImg(s.id)">{{ isPendingSceneImage(s.id) ? '생성 중' : '생성' }}</button>
                 </div>
               </div>
             </div>
@@ -819,13 +819,13 @@
           <!-- Sub: Dubbing -->
           <div v-else-if="prodTab === 'dubbing'" class="prod-content">
             <div class="prod-section-bar">
-              <span class="dim" style="font-size:12px">{{ ttsEligibleCount }} 条可生成配音</span>
-              <span class="tag mono">{{ ttsGeneratedCount }}/{{ ttsEligibleCount }} 已生成</span>
+              <span class="dim" style="font-size:12px">{{ ttsEligibleCount }} 개 더빙 생성 가능</span>
+              <span class="tag mono">{{ ttsGeneratedCount }}/{{ ttsEligibleCount }} 생성됨</span>
               <span class="tag">{{ lockedAudioConfigLabel }}</span>
               <div class="ml-auto flex gap-1">
                 <button class="btn btn-sm" @click="batchShotTTS">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
-                  批量生成
+                  일괄 생성
                 </button>
               </div>
             </div>
@@ -834,8 +834,8 @@
               <div class="empty-visual">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
               </div>
-              <div class="empty-title">当前没有可生成的配音</div>
-              <div class="empty-desc">先在分镜里填写“角色名：台词”或“旁白：文案”，这里就会出现待生成的语音镜头。</div>
+              <div class="empty-title">현재 생성할 더빙이 없습니다</div>
+              <div class="empty-desc">스토리보드에 “캐릭터명: 대사” 또는 “내레이션: 문안”을 입력하면 생성 대기 음성 샷이 여기에 표시됩니다.</div>
             </div>
 
             <div v-else class="dub-grid">
@@ -846,19 +846,19 @@
                       <span class="frame-num">#{{ String(sb.storyboard_number || sb.storyboardNumber || i + 1).padStart(2, '0') }}</span>
                       <span class="frame-badge">{{ getDialogueSpeaker(sb) }}</span>
                     </div>
-                    <div class="dub-desc">{{ getDialogueText(sb) || '未填写文本' }}</div>
+                    <div class="dub-desc">{{ getDialogueText(sb) || '텍스트 미입력' }}</div>
                     </div>
-                    <span class="tag" :class="hasTTS(sb) ? 'tag-success' : ''">{{ hasTTS(sb) ? '已生成' : '待生成' }}</span>
+                    <span class="tag" :class="hasTTS(sb) ? 'tag-success' : ''">{{ hasTTS(sb) ? '생성됨' : '생성 대기' }}</span>
                   </div>
                 <div class="dub-meta">
-                  <span class="dim">{{ sb.shot_type || sb.shotType || '未设景别' }}</span>
+                  <span class="dim">{{ sb.shot_type || sb.shotType || '샷 크기 미설정' }}</span>
                   <span class="dim">{{ sb.duration || 10 }}s</span>
-                  <span class="dim">{{ sb.location || '未设地点' }}</span>
+                  <span class="dim">{{ sb.location || '장소 미설정' }}</span>
                 </div>
                 <div class="dub-foot">
                   <audio v-if="hasTTS(sb)" :src="'/' + getTTSUrl(sb)" controls preload="none" class="dub-audio" />
-                  <div v-else class="dim" style="font-size:12px">尚未生成语音文件</div>
-                  <button class="btn btn-sm ml-auto" @click="genShotTTS(sb)">生成配音</button>
+                  <div v-else class="dim" style="font-size:12px">아직 음성 파일이 생성되지 않았습니다</div>
+                  <button class="btn btn-sm ml-auto" @click="genShotTTS(sb)">더빙 생성</button>
                 </div>
               </div>
             </div>
@@ -867,25 +867,25 @@
           <!-- Sub: Shots -->
           <div v-else-if="prodTab === 'shots'" class="prod-content">
             <div class="prod-section-bar">
-              <span class="dim" style="font-size:12px">{{ sbs.length }} 个镜头</span>
-              <span class="tag mono">{{ shotImgCount }}/{{ sbs.length }} 已有帧图</span>
+              <span class="dim" style="font-size:12px">{{ sbs.length }} 개 샷</span>
+              <span class="tag mono">{{ shotImgCount }}/{{ sbs.length }} 프레임 이미지 있음</span>
               <span class="tag">{{ lockedImageConfigLabel }}</span>
               <div class="ml-auto flex gap-1">
-                <BaseSelect v-model="frameMode" :options="frameModeOptions" placeholder="帧模式" searchable style="width:100px" />
+                <BaseSelect v-model="frameMode" :options="frameModeOptions" placeholder="프레임 모드" searchable style="width:100px" />
                 <button v-if="gridImagePath" class="btn btn-sm" @click="reopenGridPreview">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
-                  查看当前宫格图
+                  현재 그리드 이미지 보기
                 </button>
                 <button class="btn btn-primary btn-sm" @click="openGridTool">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                  宫格图工具
+                  그리드 이미지 도구
                 </button>
               </div>
             </div>
 
             <div v-if="gridHistory.length" class="grid-history-panel">
               <div v-if="gridImagePath" class="latest-grid-strip">
-                <button class="latest-grid-strip-thumb" @click="openImageViewer('/' + gridImagePath, '当前宫格图')">
+                <button class="latest-grid-strip-thumb" @click="openImageViewer('/' + gridImagePath, '현재 그리드 이미지')">
                   <img :src="'/' + gridImagePath" class="previewable-image" />
                 </button>
                 <div class="latest-grid-strip-copy">
@@ -893,25 +893,25 @@
                     <span class="tag mono">{{ gridActualLayout.rows }}x{{ gridActualLayout.cols }}</span>
                     <span class="tag" v-if="gridRecoveredMode">{{ gridRecoveredMode }}</span>
                   </div>
-                  <div class="latest-grid-strip-title">当前宫格图</div>
+                  <div class="latest-grid-strip-title">현재 그리드 이미지</div>
                   <div class="latest-grid-strip-meta">
                     <span v-if="gridRecoveredAt">{{ gridRecoveredAt }}</span>
-                    <span>可继续切割并分配</span>
+                    <span>계속 분할하고 배정 가능</span>
                   </div>
                 </div>
                 <div class="latest-grid-strip-actions">
-                  <button class="btn btn-sm" @click="reopenGridPreview">预览</button>
-                  <button class="btn btn-primary btn-sm" @click="continueGridSplit">继续切割</button>
+                  <button class="btn btn-sm" @click="reopenGridPreview">미리보기</button>
+                  <button class="btn btn-primary btn-sm" @click="continueGridSplit">계속 분할</button>
                 </div>
               </div>
               <div class="grid-history-head">
                 <div>
-                  <div class="grid-history-title">历史宫格图</div>
-                  <div class="grid-history-subtitle">按需展开切换不同宫格图，不默认占用第一屏</div>
+                  <div class="grid-history-title">그리드 이미지 기록</div>
+                  <div class="grid-history-subtitle">필요할 때 펼쳐 다른 그리드 이미지로 전환할 수 있으며 첫 화면을 기본으로 차지하지 않습니다</div>
                 </div>
                 <button class="btn btn-sm" @click="showAllGridHistory = !showAllGridHistory">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline :points="showAllGridHistory ? '18 15 12 9 6 15' : '6 9 12 15 18 9'"/></svg>
-                  {{ showAllGridHistory ? '收起历史宫格图' : `展开全部 (${gridHistory.length})` }}
+                  {{ showAllGridHistory ? '그리드 이미지 기록 접기' : `전체 펼치기 (${gridHistory.length})` }}
                 </button>
               </div>
               <div v-if="showAllGridHistory" class="grid-history-list">
@@ -950,10 +950,10 @@
                     <div class="frame-desc">{{ sb.description || sb.title || '—' }}</div>
                     <div class="frame-meta">
                       <span :class="['dot', getFirstFrame(sb) && 'ok', isPendingShotFrame(sb.id, 'first_frame') && 'pending']" />
-                      <span class="dim" style="font-size:11px">首帧</span>
+                      <span class="dim" style="font-size:11px">첫 프레임</span>
                       <span v-if="frameMode === 'first_last'" style="display:flex;align-items:center;gap:4px">
                         <span :class="['dot', getLastFrame(sb) && 'ok', isPendingShotFrame(sb.id, 'last_frame') && 'pending']" />
-                        <span class="dim" style="font-size:11px">尾帧</span>
+                        <span class="dim" style="font-size:11px">끝 프레임</span>
                       </span>
                     </div>
                   </div>
@@ -965,7 +965,7 @@
                           v-if="getFirstFrame(sb)"
                           :src="'/' + getFirstFrame(sb)"
                           class="previewable-image"
-                          @click.stop="openImageViewer('/' + getFirstFrame(sb), `镜头 #${String(i + 1).padStart(2, '0')} 首帧`)"
+                          @click.stop="openImageViewer('/' + getFirstFrame(sb), `샷 #${String(i + 1).padStart(2, '0')} 첫 프레임`)"
                         />
                         <div v-else class="frame-thumb-empty">
                           <Loader2 v-if="isPendingShotFrame(sb.id, 'first_frame')" :size="14" class="animate-spin" />
@@ -975,7 +975,7 @@
                           <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                         </span>
                       </div>
-                      <span class="frame-thumb-label">{{ isPendingShotFrame(sb.id, 'first_frame') ? '首帧生成中' : '首帧' }}</span>
+                      <span class="frame-thumb-label">{{ isPendingShotFrame(sb.id, 'first_frame') ? '첫 프레임생성 중' : '첫 프레임' }}</span>
                     </div>
                     <div v-if="frameMode === 'first_last'" class="frame-thumb-wrap">
                       <div class="frame-thumb" @click.stop="!isPendingShotFrame(sb.id, 'last_frame') && genShotFrame(sb, 'last_frame')">
@@ -983,7 +983,7 @@
                           v-if="getLastFrame(sb)"
                           :src="'/' + getLastFrame(sb)"
                           class="previewable-image"
-                          @click.stop="openImageViewer('/' + getLastFrame(sb), `镜头 #${String(i + 1).padStart(2, '0')} 尾帧`)"
+                          @click.stop="openImageViewer('/' + getLastFrame(sb), `샷 #${String(i + 1).padStart(2, '0')} 끝 프레임`)"
                         />
                         <div v-else class="frame-thumb-empty">
                           <Loader2 v-if="isPendingShotFrame(sb.id, 'last_frame')" :size="14" class="animate-spin" />
@@ -993,7 +993,7 @@
                           <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                         </span>
                       </div>
-                      <span class="frame-thumb-label">{{ isPendingShotFrame(sb.id, 'last_frame') ? '尾帧生成中' : '尾帧' }}</span>
+                      <span class="frame-thumb-label">{{ isPendingShotFrame(sb.id, 'last_frame') ? '끝 프레임생성 중' : '끝 프레임' }}</span>
                     </div>
                   </div>
                 </div>
@@ -1004,7 +1004,7 @@
             <div v-if="gridDialog" class="overlay" @click.self="gridDialog = false">
               <div class="card grid-tool">
                 <div class="grid-tool-head">
-                  <span style="font-size:15px;font-weight:600;font-family:var(--font-display)">宫格图工具</span>
+                  <span style="font-size:15px;font-weight:600;font-family:var(--font-display)">그리드 이미지 도구</span>
                   <button class="btn btn-ghost btn-icon ml-auto" @click="gridDialog = false">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
@@ -1023,17 +1023,17 @@
 
                   <div class="grid-config">
                     <label class="field" style="flex:0 0 auto" v-if="gridMode !== 'multi_ref'">
-                      <span class="field-label">宫格</span>
-                      <BaseSelect v-model="gridLayout" :options="gridLayoutOptions" placeholder="宫格" style="width:90px" />
+                      <span class="field-label">그리드</span>
+                      <BaseSelect v-model="gridLayout" :options="gridLayoutOptions" placeholder="그리드" style="width:90px" />
                     </label>
                     <div class="field" style="flex:1">
                       <span class="field-label">
-                        {{ gridMode === 'multi_ref' ? '选择目标镜头' : '选择镜头' }}
-                        <span class="dim" v-if="gridMode !== 'multi_ref'">(已选 {{ gridSelected.length }})</span>
+                        {{ gridMode === 'multi_ref' ? '대상 샷 선택' : '샷 선택' }}
+                        <span class="dim" v-if="gridMode !== 'multi_ref'">(선택됨 {{ gridSelected.length }})</span>
                       </span>
                     </div>
                     <div style="align-self:flex-end" v-if="gridMode !== 'multi_ref'">
-                      <button class="btn btn-sm" @click="gridSelectAll">{{ gridSelected.length === sbs.length ? '取消全选' : '全选' }}</button>
+                      <button class="btn btn-sm" @click="gridSelectAll">{{ gridSelected.length === sbs.length ? '전체 선택 해제' : '전체 선택' }}</button>
                     </div>
                   </div>
 
@@ -1048,12 +1048,12 @@
                   </div>
 
                   <div class="grid-tool-foot">
-                    <span v-if="gridCanStart" class="tag mono">{{ gridAutoLayout.rows }}x{{ gridAutoLayout.cols }} = {{ gridAutoLayout.rows * gridAutoLayout.cols }}格</span>
+                    <span v-if="gridCanStart" class="tag mono">{{ gridAutoLayout.rows }}x{{ gridAutoLayout.cols }} = {{ gridAutoLayout.rows * gridAutoLayout.cols }}칸</span>
                     <span class="dim" style="font-size:11px">{{ gridPromptLoading ? gridPromptStatus : gridSummary }}</span>
                     <button class="btn btn-primary ml-auto" :disabled="!gridCanStart || gridPromptLoading" @click="generateGridPrompt">
                       <Loader2 v-if="gridPromptLoading" :size="12" class="animate-spin" />
                       <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                      {{ gridPromptLoading ? '生成中' : '生成提示词' }}
+                      {{ gridPromptLoading ? '생성 중' : '프롬프트 생성' }}
                     </button>
                   </div>
                 </div>
@@ -1063,32 +1063,32 @@
                   <div class="grid-prompt-summary">
                     <div class="grid-prompt-label">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                      宫格图提示词
-                      <span v-if="gridPromptSource" class="tag ml-8">{{ gridPromptSource === 'agent' ? 'AI生成' : '模板兜底' }}</span>
+                      그리드 이미지 프롬프트
+                      <span v-if="gridPromptSource" class="tag ml-8">{{ gridPromptSource === 'agent' ? 'AI 생성' : '템플릿 대체' }}</span>
                     </div>
-                    <div class="grid-prompt-text">{{ gridPromptText || '（等待生成）' }}</div>
+                    <div class="grid-prompt-text">{{ gridPromptText || '（생성 대기）' }}</div>
                   </div>
 
                   <div class="grid-blank-preview" :style="gridBlankStyle">
                     <div v-for="(cell, i) in gridCellPrompts" :key="i" class="grid-blank-cell">
-                      <div class="grid-blank-cell-index">#{{ cell.shot_number }} {{ {first_frame:'首帧',last_frame:'尾帧',reference:'参考'}[cell.frame_type] || '' }}</div>
+                      <div class="grid-blank-cell-index">#{{ cell.shot_number }} {{ {first_frame:'첫 프레임',last_frame:'끝 프레임',reference:'참조'}[cell.frame_type] || '' }}</div>
                       <div class="grid-blank-cell-desc">{{ cell.prompt }}</div>
                     </div>
                     <div v-for="i in Math.max(0, (gridAutoLayout.rows * gridAutoLayout.cols) - gridCellPrompts.length)" :key="'empty-'+i" class="grid-blank-cell empty">
-                      <div class="grid-blank-cell-index">空</div>
+                      <div class="grid-blank-cell-index">비어 있음</div>
                       <div class="grid-blank-cell-desc">—</div>
                     </div>
                   </div>
 
                   <div class="grid-tool-foot">
-                    <button class="btn" @click="gridStep = 0">上一步</button>
+                    <button class="btn" @click="gridStep = 0">이전 단계</button>
                     <button class="btn ml-auto" @click="generateGridPrompt" :disabled="gridPromptLoading">
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                      重新生成
+                      다시 생성
                     </button>
                     <button class="btn btn-primary" @click="startGridGen">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                      生成宫格图
+                      그리드 이미지 생성
                     </button>
                   </div>
                 </div>
@@ -1096,7 +1096,7 @@
                 <!-- Step 2: Generating -->
                 <div v-else-if="gridStep === 2" class="grid-tool-body" style="align-items:center;justify-content:center;min-height:300px">
                   <Loader2 :size="28" class="animate-spin" style="color:var(--accent)" />
-                  <div class="loading-text" style="margin-top:12px">宫格图生成中...</div>
+                  <div class="loading-text" style="margin-top:12px">그리드 이미지 생성 중...</div>
                   <div class="dim" style="font-size:11px;margin-top:6px">{{ gridStatusText }}</div>
                 </div>
 
@@ -1109,7 +1109,7 @@
                           <img
                             :src="'/' + gridImagePath"
                             class="grid-preview-img previewable-image"
-                            @click.stop="openImageViewer('/' + gridImagePath, '宫格图预览')"
+                            @click.stop="openImageViewer('/' + gridImagePath, '그리드 이미지 미리보기')"
                           />
                           <div class="grid-overlay" :style="gridOverlayStyle">
                             <button
@@ -1125,41 +1125,41 @@
                         </div>
                       </div>
                       <div class="grid-adjust-summary">
-                        <span class="tag mono">{{ gridActualLayout.rows }}x{{ gridActualLayout.cols }} = {{ gridActualLayout.rows * gridActualLayout.cols }}格</span>
-                        <span class="dim" style="font-size:12px">{{ gridAssignedCount }}/{{ gridAssignments.length }} 格已分配</span>
-                        <span class="tag" v-if="gridAssignedCount < gridAssignments.length">未分配格子会被忽略，不会写回分镜</span>
+                        <span class="tag mono">{{ gridActualLayout.rows }}x{{ gridActualLayout.cols }} = {{ gridActualLayout.rows * gridActualLayout.cols }}칸</span>
+                        <span class="dim" style="font-size:12px">{{ gridAssignedCount }}/{{ gridAssignments.length }} 칸 배정됨</span>
+                        <span class="tag" v-if="gridAssignedCount < gridAssignments.length">배정되지 않은 칸은 무시되며 스토리보드에 반영되지 않습니다</span>
                       </div>
                     </div>
                     <div class="grid-assignment-pane">
                       <div class="grid-assign-head">
-                        <div class="grid-assign-title">格子分配</div>
-                        <div class="grid-assign-subtitle">切分后由你自己决定每格对应哪个分镜</div>
+                        <div class="grid-assign-title">칸 배정</div>
+                        <div class="grid-assign-subtitle">분할 후 각 칸이 어느 스토리보드에 대응하는지 직접 정하세요</div>
                       </div>
                       <div v-if="gridAssignmentTotalPages > 1" class="grid-assign-pagination">
-                        <button class="btn btn-sm" :disabled="gridAssignmentPage === 0" @click="gridAssignmentPage--">上一页</button>
-                        <span class="dim">第 {{ gridAssignmentPage + 1 }}/{{ gridAssignmentTotalPages }} 页</span>
+                        <button class="btn btn-sm" :disabled="gridAssignmentPage === 0" @click="gridAssignmentPage--">이전 페이지</button>
+                        <span class="dim">제 {{ gridAssignmentPage + 1 }}/{{ gridAssignmentTotalPages }} 페이지</span>
                         <span class="dim">{{ gridAssignmentPageStart + 1 }}-{{ gridAssignmentPageEnd }} / {{ gridAssignments.length }}</span>
-                        <button class="btn btn-sm ml-auto" :disabled="gridAssignmentPage >= gridAssignmentTotalPages - 1" @click="gridAssignmentPage++">下一页</button>
+                        <button class="btn btn-sm ml-auto" :disabled="gridAssignmentPage >= gridAssignmentTotalPages - 1" @click="gridAssignmentPage++">다음 페이지</button>
                       </div>
                       <div class="grid-assign-columns">
-                        <span>格</span>
-                        <span>镜头</span>
-                        <span>类型</span>
-                        <span>当前绑定</span>
+                        <span>칸</span>
+                        <span>샷</span>
+                        <span>유형</span>
+                        <span>현재 연결</span>
                       </div>
                       <div class="grid-assign-info">
                         <div v-for="item in pagedGridAssignments" :key="item.index" :class="['grid-assign-row', activeGridCell === item.index && 'active']">
-                          <span class="grid-assign-index">格{{ item.index + 1 }}</span>
+                          <span class="grid-assign-index">칸{{ item.index + 1 }}</span>
                           <BaseSelect
                             :model-value="item.assignment.storyboard_id"
                             :options="gridAssignmentShotOptions"
-                            placeholder="选择镜头"
+                            placeholder="샷 선택"
                             @update:model-value="updateGridAssignment(item.index, 'storyboard_id', $event)"
                           />
                           <BaseSelect
                             :model-value="item.assignment.frame_type"
                             :options="gridFrameTypeOptions"
-                            placeholder="帧类型"
+                            placeholder="프레임 유형"
                             style="width:100%"
                             @update:model-value="updateGridAssignment(item.index, 'frame_type', $event)"
                           />
@@ -1169,10 +1169,10 @@
                     </div>
                   </div>
                   <div class="grid-tool-foot">
-                    <button class="btn" @click="gridStep = 1">返回</button>
+                    <button class="btn" @click="gridStep = 1">돌아가기</button>
                     <button class="btn btn-primary ml-auto" @click="doGridSplit">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                      切分并分配
+                      분할하고 배정
                     </button>
                   </div>
                 </div>
@@ -1180,9 +1180,9 @@
                 <!-- Step 4: Done -->
                 <div v-else-if="gridStep === 4" class="grid-tool-body" style="align-items:center;justify-content:center;min-height:200px">
                   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  <div style="font-size:17px;font-weight:700;font-family:var(--font-display);margin-top:8px">分配完成</div>
-                  <div class="dim" style="font-size:13px;margin-top:4px">{{ gridAssignedCount }} 格已分配</div>
-                  <button class="btn btn-primary" style="margin-top:16px" @click="gridDialog = false; refresh()">关闭</button>
+                  <div style="font-size:17px;font-weight:700;font-family:var(--font-display);margin-top:8px">배정 완료</div>
+                  <div class="dim" style="font-size:13px;margin-top:4px">{{ gridAssignedCount }} 칸 배정됨</div>
+                  <button class="btn btn-primary" style="margin-top:16px" @click="gridDialog = false; refresh()">닫기</button>
                 </div>
               </div>
             </div>
@@ -1191,12 +1191,12 @@
           <!-- Sub: Videos -->
           <div v-else-if="prodTab === 'videos'" class="prod-content">
             <div class="prod-section-bar">
-              <span class="dim" style="font-size:12px">{{ sbs.length }} 个镜头</span>
-              <span class="tag mono">{{ shotVidCount }}/{{ sbs.length }} 已生成</span>
+              <span class="dim" style="font-size:12px">{{ sbs.length }} 개 샷</span>
+              <span class="tag mono">{{ shotVidCount }}/{{ sbs.length }} 생성됨</span>
               <div class="ml-auto flex gap-1">
                 <button class="btn btn-sm" @click="batchVideos">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                  批量视频
+                  영상 일괄 생성
                 </button>
               </div>
             </div>
@@ -1215,27 +1215,27 @@
                     v-else-if="hasImg(sb)"
                     :src="'/' + getStoryboardCover(sb)"
                     class="previewable-image"
-                    @click.stop="openImageViewer('/' + getStoryboardCover(sb), `镜头 #${String(i + 1).padStart(2, '0')} 参考图`)"
+                    @click.stop="openImageViewer('/' + getStoryboardCover(sb), `샷 #${String(i + 1).padStart(2, '0')} 참조 이미지`)"
                   />
                   <div v-else class="prod-cover-empty">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
                   </div>
                   <span class="prod-idx">#{{ String(i+1).padStart(2,'0') }}</span>
-                  <span v-if="hasComposed(sb)" class="prod-overlay-badge">已合成</span>
+                  <span v-if="hasComposed(sb)" class="prod-overlay-badge">합성됨</span>
                 </div>
                 <div class="prod-info">
                   <div class="prod-desc truncate">{{ sb.description || sb.title || '—' }}</div>
-                  <div class="prod-meta-line">{{ sb.shot_type || sb.shotType || '未设景别' }} · {{ sb.duration || 10 }}s</div>
+                  <div class="prod-meta-line">{{ sb.shot_type || sb.shotType || '샷 크기 미설정' }} · {{ sb.duration || 10 }}s</div>
                   <div class="prod-dots">
-                    <span :class="['dot', hasImg(sb) && 'ok']" /><span style="font-size:10px">图</span>
-                    <span :class="['dot', hasVid(sb) && 'ok', isPendingVideo(sb.id) && 'pending']" /><span style="font-size:10px">{{ isPendingVideo(sb.id) ? '视频生成中' : '视频' }}</span>
+                    <span :class="['dot', hasImg(sb) && 'ok']" /><span style="font-size:10px">이미지</span>
+                    <span :class="['dot', hasVid(sb) && 'ok', isPendingVideo(sb.id) && 'pending']" /><span style="font-size:10px">{{ isPendingVideo(sb.id) ? '영상 생성 중' : '영상' }}</span>
                   </div>
                   <div v-if="videoFailMessage(sb.id)" class="prod-error">{{ videoFailMessage(sb.id) }}</div>
                 </div>
                 <div class="prod-actions">
                   <button class="btn btn-sm" :disabled="isPendingVideo(sb.id)" @click="genVid(sb)">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                    {{ isPendingVideo(sb.id) ? '生成中' : '生成视频' }}
+                    {{ isPendingVideo(sb.id) ? '생성 중' : '영상 생성' }}
                   </button>
                 </div>
               </div>
@@ -1245,12 +1245,12 @@
           <!-- Sub: Compose -->
           <div v-else-if="prodTab === 'compose'" class="prod-content">
             <div class="prod-section-bar">
-              <span class="dim" style="font-size:12px">{{ sbs.length }} 个镜头</span>
-              <span class="tag mono">{{ composedCount }}/{{ sbs.length }} 已合成</span>
+              <span class="dim" style="font-size:12px">{{ sbs.length }} 개 샷</span>
+              <span class="tag mono">{{ composedCount }}/{{ sbs.length }} 합성됨</span>
               <div class="ml-auto flex gap-1">
                 <button class="btn btn-sm" @click="batchCompose">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                  批量合成
+                  일괄 합성
                 </button>
               </div>
             </div>
@@ -1277,28 +1277,28 @@
                     v-else-if="hasImg(sb)"
                     :src="'/' + getStoryboardCover(sb)"
                     class="previewable-image"
-                    @click.stop="openImageViewer('/' + getStoryboardCover(sb), `镜头 #${String(i + 1).padStart(2, '0')} 参考图`)"
+                    @click.stop="openImageViewer('/' + getStoryboardCover(sb), `샷 #${String(i + 1).padStart(2, '0')} 참조 이미지`)"
                   />
                   <div v-else class="prod-cover-empty">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
                   </div>
                   <span class="prod-idx">#{{ String(i+1).padStart(2,'0') }}</span>
-                  <span v-if="hasComposed(sb)" class="prod-overlay-badge">已合成</span>
+                  <span v-if="hasComposed(sb)" class="prod-overlay-badge">합성됨</span>
                 </div>
                 <div class="prod-info">
                   <div class="prod-desc truncate">{{ sb.description || sb.title || '—' }}</div>
-                  <div class="prod-meta-line">{{ sb.shot_type || sb.shotType || '未设景别' }} · {{ sb.duration || 10 }}s</div>
+                  <div class="prod-meta-line">{{ sb.shot_type || sb.shotType || '샷 크기 미설정' }} · {{ sb.duration || 10 }}s</div>
                   <div class="prod-dots">
-                    <span :class="['dot', hasVid(sb) && 'ok']" /><span style="font-size:10px">视频</span>
-                    <span :class="['dot', hasTTS(sb) && 'ok']" /><span style="font-size:10px">配音</span>
-                    <span :class="['dot', hasComposed(sb) && 'ok', isPendingCompose(sb.id) && 'pending']" /><span style="font-size:10px">{{ isPendingCompose(sb.id) ? '合成中' : '合成' }}</span>
+                    <span :class="['dot', hasVid(sb) && 'ok']" /><span style="font-size:10px">영상</span>
+                    <span :class="['dot', hasTTS(sb) && 'ok']" /><span style="font-size:10px">더빙</span>
+                    <span :class="['dot', hasComposed(sb) && 'ok', isPendingCompose(sb.id) && 'pending']" /><span style="font-size:10px">{{ isPendingCompose(sb.id) ? '합성 중' : '합성' }}</span>
                   </div>
                   <div v-if="composeFailMessage(sb.id)" class="prod-error">{{ composeFailMessage(sb.id) }}</div>
                 </div>
                 <div class="prod-actions">
                   <button class="btn btn-sm" :disabled="!hasVid(sb) || isPendingCompose(sb.id)" @click="doCompose(sb)">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                    {{ isPendingCompose(sb.id) ? '合成中' : (hasComposed(sb) ? '重新合成' : '开始合成') }}
+                    {{ isPendingCompose(sb.id) ? '합성 중' : (hasComposed(sb) ? '다시 합성' : '합성 시작') }}
                   </button>
                 </div>
               </div>
@@ -1315,20 +1315,20 @@
           <div class="empty-visual">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           </div>
-          <div class="empty-title">尚未准备就绪</div>
-          <div class="empty-desc">请先完成分镜和制作流程</div>
-          <button class="btn btn-primary" @click="panel = 'script'">前往剧本</button>
+          <div class="empty-title">아직 준비되지 않았습니다</div>
+          <div class="empty-desc">먼저 스토리보드와 제작 과정을 완료하세요</div>
+          <button class="btn btn-primary" @click="panel = 'script'">극본으로 이동</button>
         </div>
         <div v-else class="export-split">
           <div class="export-main">
             <template v-if="mergeUrl">
               <video :src="'/' + mergeUrl" controls class="export-video" />
               <div class="export-bar">
-                <span class="tag tag-success">拼接完成</span>
-                <span class="dim" style="font-size:12px">{{ sbs.length }} 镜头 · {{ totalDuration }}s</span>
+                <span class="tag tag-success">이어붙이기 완료</span>
+                <span class="dim" style="font-size:12px">{{ sbs.length }} 샷 · {{ totalDuration }}s</span>
                 <a :href="'/' + mergeUrl" download class="btn btn-primary ml-auto">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  下载视频
+                  영상 다운로드
                 </a>
               </div>
             </template>
@@ -1337,17 +1337,17 @@
                 <div class="empty-visual">
                   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
                 </div>
-                <div class="empty-title">拼接全集视频</div>
-                <div class="empty-desc">将 {{ composedCount }} 个已合成镜头拼接为完整视频</div>
+                <div class="empty-title">전체 회차 영상 이어붙이기</div>
+                <div class="empty-desc">{{ composedCount }}개의 합성된 샷을 완성 영상으로 이어붙입니다</div>
                 <button class="btn btn-primary" :disabled="composedCount === 0" @click="doMerge" style="margin-top:12px">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                  开始拼接
+                  이어붙이기 시작
                 </button>
               </div>
             </template>
           </div>
           <div class="export-list">
-            <div class="export-list-head">镜头概览</div>
+            <div class="export-list-head">샷 개요</div>
             <div class="export-list-body">
               <div v-for="(sb, i) in sbs" :key="sb.id" class="exp-row">
                 <span class="mono dim" style="font-size:10px">#{{ String(i+1).padStart(2,'0') }}</span>
@@ -1369,7 +1369,7 @@
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
           </svg>
-          {{ prevStepLabel || '上一步' }}
+          {{ prevStepLabel || '이전 단계' }}
         </button>
         <button
           v-else-if="panel === 'production'"
@@ -1380,7 +1380,7 @@
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
           </svg>
-          {{ prodTabDefs[Math.max(0, prodTabIdx - 1)]?.label || '上一步' }}
+          {{ prodTabDefs[Math.max(0, prodTabIdx - 1)]?.label || '이전 단계' }}
         </button>
 
         <div class="bubble-dots">
@@ -1399,7 +1399,7 @@
           :disabled="!canGoNext"
           @click="goNextStep"
         >
-          {{ nextStepLabel || '下一步' }}
+          {{ nextStepLabel || '다음 단계' }}
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
           </svg>
@@ -1410,7 +1410,7 @@
           :disabled="panel === 'production' && prodTab === 'compose' && !canExport"
           @click="goNextProd"
         >
-          {{ prodTabIdx < prodTabDefs.length - 1 ? (prodTabDefs[prodTabIdx + 1]?.label || '下一步') : '进入导出' }}
+          {{ prodTabIdx < prodTabDefs.length - 1 ? (prodTabDefs[prodTabIdx + 1]?.label || '다음 단계') : '내보내기로 이동' }}
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
           </svg>
@@ -1420,13 +1420,13 @@
       <div v-if="imageViewer.open && imageViewer.src" class="overlay image-viewer-overlay" @click.self="closeImageViewer">
         <div class="card image-viewer-dialog">
           <div class="image-viewer-head">
-            <div class="image-viewer-title">{{ imageViewer.title || '图片预览' }}</div>
+            <div class="image-viewer-title">{{ imageViewer.title || '이미지 미리보기' }}</div>
             <button class="btn btn-ghost btn-icon" @click="closeImageViewer">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
           <div class="image-viewer-body">
-            <img :src="imageViewer.src" :alt="imageViewer.title || '图片预览'" class="image-viewer-img" />
+            <img :src="imageViewer.src" :alt="imageViewer.title || '이미지 미리보기'" class="image-viewer-img" />
           </div>
         </div>
       </div>
@@ -1473,12 +1473,12 @@ const prodTabIdx = computed({
 })
 const frameMode = ref('first')
 const fallbackVoiceProfiles = [
-  { id: 'alloy', label: 'Alloy', gender: '中性', traits: '平衡、自然、克制', suitable: '通用叙述、旁白、需要稳定输出的角色' },
-  { id: 'echo', label: 'Echo', gender: '男声', traits: '低沉、稳重、冷静', suitable: '成熟男性、父辈、旁白、压迫感角色' },
-  { id: 'fable', label: 'Fable', gender: '男声', traits: '温暖、讲述感、表现力强', suitable: '男主、成长型角色、叙事担当' },
-  { id: 'onyx', label: 'Onyx', gender: '男声', traits: '深沉、有力、权威', suitable: '反派、强势角色、掌控型人物' },
-  { id: 'nova', label: 'Nova', gender: '女声', traits: '温柔、甜润、亲和', suitable: '女主、母亲、柔和配角' },
-  { id: 'shimmer', label: 'Shimmer', gender: '女声', traits: '明亮、活泼、年轻', suitable: '少女、轻快角色、跳脱配角' },
+  { id: 'alloy', label: 'Alloy', gender: '중성', traits: '균형감, 자연스러움, 절제됨', suitable: '범용 내레이션、내레이션、안정적인 출력이 필요한 캐릭터' },
+  { id: 'echo', label: 'Echo', gender: '남성 음성', traits: '낮고 안정적이며 침착함', suitable: '성숙한 남성、아버지 세대、내레이션、압박감 있는 캐릭터' },
+  { id: 'fable', label: 'Fable', gender: '남성 음성', traits: '따뜻함, 서사감, 강한 표현력', suitable: '남자 주인공、성장형 캐릭터、서사 담당' },
+  { id: 'onyx', label: 'Onyx', gender: '남성 음성', traits: '깊고 힘 있으며 권위적', suitable: '악역、강한 캐릭터、주도형 인물' },
+  { id: 'nova', label: 'Nova', gender: '여성 음성', traits: '부드러움, 달콤함, 친근함', suitable: '여자 주인공、어머니、부드러운 조연' },
+  { id: 'shimmer', label: 'Shimmer', gender: '여성 음성', traits: '밝음, 활발함, 젊음', suitable: '소녀、경쾌한 캐릭터、톡톡 튀는 조연' },
 ]
 const voiceProfiles = ref(fallbackVoiceProfiles)
 const voiceSelectOptions = computed(() => voiceProfiles.value.map(v => ({ label: `${v.label} · ${v.traits}`, value: v.id })))
@@ -1488,7 +1488,7 @@ const videoConfigSelectOptions = computed(() => videoConfigs.value.map(c => {
   const label = modelName ? `${modelName} (${c.provider})` : `${c.name} (${c.provider})`
   return { label, value: c.id }
 }))
-const frameModeOptions = [{ label: '仅首帧', value: 'first' }, { label: '首尾帧', value: 'first_last' }]
+const frameModeOptions = [{ label: '첫 프레임만', value: 'first' }, { label: '첫/끝 프레임', value: 'first_last' }]
 const gridLayoutOptions = [
   { label: '2x2', value: '2x2' },
   { label: '3x3', value: '3x3' },
@@ -1508,7 +1508,7 @@ const failedComposeMessages = ref({})
 const imageViewer = ref({ open: false, src: '', title: '' })
 
 function configLabel(config) {
-  if (!config) return '未配置'
+  if (!config) return '설정 없음'
   let modelName = ''
   try { const m = JSON.parse(config.model || '[]'); modelName = Array.isArray(m) ? (m[0] || '') : (m || '') } catch { modelName = config.model || '' }
   return modelName ? `${config.name} · ${modelName} (${config.provider})` : `${config.name} (${config.provider})`
@@ -1569,7 +1569,7 @@ function composeFailMessage(id) {
 
 function isNarratorCharacter(char) {
   const text = `${char?.name || ''} ${char?.role || ''}`.toLowerCase()
-  return text.includes('旁白') || text.includes('narrator') || text.includes('画外音')
+  return text.includes('내레이션') || text.includes('narrator') || text.includes('오프 보이스')
 }
 
 const visualChars = computed(() => chars.value.filter(c => !isNarratorCharacter(c)))
@@ -1609,9 +1609,9 @@ const gridAssignmentPage = ref(0)
 const gridStorageKey = computed(() => `huobao:grid:${dramaId}:${epId.value || episodeNumber}`)
 
 const gridModes = [
-  { id: 'first_frame', label: '首帧', desc: '每格=一个镜头的首帧' },
-  { id: 'first_last', label: '首尾帧', desc: '每镜头占一行：左首帧，右尾帧' },
-  { id: 'multi_ref', label: '多参考', desc: '所有格子=同一镜头的参考图' },
+  { id: 'first_frame', label: '첫 프레임', desc: '각 칸 = 한 샷의 첫 프레임' },
+  { id: 'first_last', label: '첫/끝 프레임', desc: '각 샷은 한 줄 사용: 왼쪽 첫 프레임, 오른쪽 끝 프레임' },
+  { id: 'multi_ref', label: '다중 참조', desc: '모든 칸 = 같은 샷의 참조 이미지' },
 ]
 
 const gridLayoutShape = computed(() => {
@@ -1633,17 +1633,17 @@ const gridCanStart = computed(() => {
 const gridSummary = computed(() => {
   if (gridMode.value === 'multi_ref') {
     const idx = sbs.value.findIndex(s => s.id === gridSingleTarget.value) + 1
-    return gridSingleTarget.value ? `${gridLayoutShape.value.rows}x${gridLayoutShape.value.cols} 参考图 → 镜头 #${idx}` : '请选择一个镜头'
+    return gridSingleTarget.value ? `${gridLayoutShape.value.rows}x${gridLayoutShape.value.cols} 참조 이미지 → 샷 #${idx}` : '샷 하나를 선택하세요'
   }
-  if (!gridSelected.value.length) return '请选择镜头'
+  if (!gridSelected.value.length) return '샷을 선택하세요'
   const count = gridSelected.value.length
   if (gridMode.value === 'first_last') {
     const { rows, cols } = gridLayoutShape.value
-    return `${count} 个镜头 → ${rows}x${cols} 宫格（按首尾帧风格生成，切分后再手动分配）`
+    return `${count}개 샷 → ${rows}x${cols} 그리드(첫/끝 프레임 흐름으로 생성한 뒤 분할 후 직접 배정)`
   }
   const { rows, cols } = gridLayoutShape.value
   const cells = rows * cols
-  return `${count} 个镜头 → ${rows}x${cols} 宫格（先生成宫格图，切分后再手动分配）`
+  return `${count} 개 샷 → ${rows}x${cols} 그리드(먼저 그리드 이미지를 생성한 뒤 분할 후 직접 배정)`
 })
 
 function createGridAssignments() {
@@ -1668,21 +1668,21 @@ const gridAssignableShotIds = computed(() => {
   return ids.filter(id => sbs.value.some(s => s.id === id))
 })
 const gridAssignmentShotOptions = computed(() => [
-  { label: '未分配', value: null },
+  { label: '미배정', value: null },
   ...gridAssignableShotIds.value.map((id) => {
     const index = sbs.value.findIndex(s => s.id === id) + 1
     const sb = sbs.value.find(s => s.id === id)
     return {
-      label: `#${String(index).padStart(2, '0')} ${sb?.title || sb?.description || '镜头'}`,
+      label: `#${String(index).padStart(2, '0')} ${sb?.title || sb?.description || '샷'}`,
       value: id,
     }
   }),
 ])
 const gridFrameTypeOptions = computed(() => {
   return [
-    { label: '首帧', value: 'first_frame' },
-    { label: '尾帧', value: 'last_frame' },
-    { label: '参考图', value: 'reference' },
+    { label: '첫 프레임', value: 'first_frame' },
+    { label: '끝 프레임', value: 'last_frame' },
+    { label: '참조 이미지', value: 'reference' },
   ]
 })
 const gridAssignedCount = computed(() => gridAssignments.value.filter(item => !!item.storyboard_id).length)
@@ -1711,17 +1711,17 @@ function resetGridAssignments() {
 }
 
 function gridCellLabel(a) {
-  if (!a?.storyboard_id) return '未分配'
+  if (!a?.storyboard_id) return '미배정'
   const idx = sbs.value.findIndex(s => s.id === a.storyboard_id) + 1
-  const suffix = { first_frame: '首', last_frame: '尾', reference: '参' }[a.frame_type] || ''
+  const suffix = { first_frame: '첫', last_frame: '끝', reference: '참조' }[a.frame_type] || ''
   return `#${idx}${suffix ? ` ${suffix}` : ''}`
 }
 
 function gridCellTitle(id) {
-  if (!id) return '未分配'
+  if (!id) return '미배정'
   const idx = sbs.value.findIndex(s => s.id === id) + 1
   const sb = sbs.value.find(s => s.id === id)
-  return `#${String(idx).padStart(2, '0')} ${sb?.title || sb?.description || '镜头'}`
+  return `#${String(idx).padStart(2, '0')} ${sb?.title || sb?.description || '샷'}`
 }
 
 function updateGridAssignment(index, field, value) {
@@ -1771,10 +1771,10 @@ function goNextProd() {
 }
 
 // Script step navigation
-const stepLabels = ['原始内容', 'AI 改写', '提取', '音色', '分镜']
+const stepLabels = ['원본 내용', 'AI 수정', '추출', '음색', '스토리보드']
 const prevStepLabel = computed(() => scriptStep.value > 0 ? stepLabels[scriptStep.value - 1] : '')
 const nextStepLabel = computed(() => {
-  if (scriptStep.value === 4) return '进入制作'
+  if (scriptStep.value === 4) return '제작으로 이동'
   return stepLabels[scriptStep.value + 1] || ''
 })
 const canGoNext = computed(() => {
@@ -1889,7 +1889,7 @@ function parseGridLayoutFromFrameType(value) {
 
 function continueGridSplit() {
   if (!gridImagePath.value) {
-    toast.warning('还没有可继续切割的宫格图')
+    toast.warning('계속 자를 수 있는 그리드 이미지가 없습니다')
     return
   }
   if (!gridAssignmentsState.value.length) resetGridAssignments()
@@ -1905,11 +1905,11 @@ function getGridPromptShotIds() {
 
 async function generateGridPrompt() {
   if (!gridCanStart.value) {
-    toast.warning('请先选择镜头')
+    toast.warning('먼저 샷을 선택하세요')
     return
   }
   gridPromptLoading.value = true
-  gridPromptStatus.value = '正在调用 AI 生成宫格提示词...'
+  gridPromptStatus.value = 'AI로 그리드 프롬프트를 생성하는 중...'
   gridPromptText.value = ''
   gridCellPrompts.value = []
   gridPromptSource.value = ''
@@ -1932,15 +1932,15 @@ async function generateGridPrompt() {
 
     if (gridPromptText.value) {
       resetGridAssignments()
-      gridPromptStatus.value = gridPromptSource.value === 'agent' ? 'AI 提示词已生成' : '已使用模板提示词'
+      gridPromptStatus.value = gridPromptSource.value === 'agent' ? 'AI 프롬프트가 생성되었습니다' : '템플릿 프롬프트를 사용했습니다'
       gridStep.value = 1
     } else {
       gridPromptStatus.value = ''
-      toast.error('提示词生成失败')
+      toast.error('프롬프트 생성 실패')
     }
   } catch (e) {
     gridPromptStatus.value = ''
-    toast.error(e?.message || '生成提示词失败')
+    toast.error(e?.message || '프롬프트 생성 실패')
   } finally {
     gridPromptLoading.value = false
   }
@@ -1958,7 +1958,7 @@ async function startGridGen() {
   gridActualLayout.value = { rows, cols }
   if (!gridAssignmentsState.value.length) resetGridAssignments()
   gridStep.value = 2
-  gridStatusText.value = '提交生成请求...'
+  gridStatusText.value = '생성 요청 제출 중...'
   try {
     const res = await gridAPI.generate({
       storyboard_ids: ids,
@@ -1970,7 +1970,7 @@ async function startGridGen() {
     })
     gridGenId.value = res.image_generation_id
     gridActualLayout.value = res.grid || { rows, cols }
-    gridStatusText.value = '等待图片生成...'
+    gridStatusText.value = '이미지 생성 대기 중...'
     pollGridStatus()
   } catch (e) {
     toast.error(e.message)
@@ -1983,7 +1983,7 @@ async function pollGridStatus() {
     await new Promise(r => setTimeout(r, 3000))
     try {
       const res = await gridAPI.status(gridGenId.value)
-      gridStatusText.value = `状态: ${res.status}`
+      gridStatusText.value = `상태: ${res.status}`
       if (res.status === 'completed' && res.local_path) {
         gridImagePath.value = res.local_path
         gridGenId.value = gridGenId.value || res.id || null
@@ -1992,13 +1992,13 @@ async function pollGridStatus() {
         return
       }
       if (res.status === 'failed') {
-        toast.error(res.error_msg || '生成失败')
+        toast.error(res.error_msg || '생성 실패')
         gridStep.value = 0
         return
       }
     } catch {}
   }
-  toast.error('生成超时'); gridStep.value = 0
+  toast.error('생성 시간 초과'); gridStep.value = 0
 }
 
 async function loadLatestGridImage() {
@@ -2060,13 +2060,13 @@ async function doGridSplit() {
       .filter(item => !!item.storyboard_id)
       .map(item => ({ storyboard_id: item.storyboard_id, frame_type: item.frame_type }))
     if (!assignments.length) {
-      toast.warning('请至少分配一个格子')
+      toast.warning('최소 한 칸을 배정하세요')
       return
     }
     await gridAPI.split({ image_generation_id: gridGenId.value, rows, cols, assignments })
     persistGridImagePath(gridImagePath.value)
     gridStep.value = 4
-    toast.success('切分分配完成')
+    toast.success('분할 배정 완료')
   } catch (e) {
     toast.error(e.message)
   }
@@ -2081,50 +2081,50 @@ const shotVidCount = computed(() => sbs.value.filter(s => s.video_url || s.video
 const visualCharTotal = computed(() => visualChars.value.length)
 
 const prodTabDefs = computed(() => [
-  { id: 'chars', label: '角色形象', icon: Users, badge: visualCharTotal.value ? `${charImgCount.value}/${visualCharTotal.value}` : '' },
-  { id: 'scenes', label: '场景图片', icon: MapPin, badge: sceneImgCount.value ? `${sceneImgCount.value}/${scenes.value.length}` : '' },
-  { id: 'dubbing', label: '配音生成', icon: Mic2, badge: '' },
-  { id: 'shots', label: '镜头图片', icon: ImageIcon, badge: shotImgCount.value ? `${shotImgCount.value}/${sbs.value.length}` : '' },
-  { id: 'videos', label: '视频生成', icon: Video, badge: shotVidCount.value ? `${shotVidCount.value}/${sbs.value.length}` : '' },
-  { id: 'compose', label: '视频合成', icon: Layers, badge: composedCount.value ? `${composedCount.value}/${sbs.value.length}` : '' },
+  { id: 'chars', label: '캐릭터 이미지', icon: Users, badge: visualCharTotal.value ? `${charImgCount.value}/${visualCharTotal.value}` : '' },
+  { id: 'scenes', label: '장면 이미지', icon: MapPin, badge: sceneImgCount.value ? `${sceneImgCount.value}/${scenes.value.length}` : '' },
+  { id: 'dubbing', label: '더빙 생성', icon: Mic2, badge: '' },
+  { id: 'shots', label: '샷 이미지', icon: ImageIcon, badge: shotImgCount.value ? `${shotImgCount.value}/${sbs.value.length}` : '' },
+  { id: 'videos', label: '영상 생성', icon: Video, badge: shotVidCount.value ? `${shotVidCount.value}/${sbs.value.length}` : '' },
+  { id: 'compose', label: '영상 합성', icon: Layers, badge: composedCount.value ? `${composedCount.value}/${sbs.value.length}` : '' },
 ])
 
 const mainStageDefs = [
-  { id: 'script', label: '剧本', desc: '内容改写与整理', icon: FileText },
-  { id: 'assets', label: '资产', desc: '角色、场景与音色', icon: FolderKanban },
-  { id: 'storyboard', label: '分镜', desc: '镜头制作与合成', icon: Clapperboard },
-  { id: 'export', label: '导出', desc: '拼接与成片输出', icon: Download },
+  { id: 'script', label: '극본', desc: '내용 수정 및 정리', icon: FileText },
+  { id: 'assets', label: '자산', desc: '캐릭터, 장면, 음색', icon: FolderKanban },
+  { id: 'storyboard', label: '스토리보드', desc: '샷 제작 및 합성', icon: Clapperboard },
+  { id: 'export', label: '내보내기', desc: '이어붙이기와 완성본 출력', icon: Download },
 ]
 
 const sidebarSections = computed(() => ([
   {
     id: 'script',
-    label: '剧本',
+    label: '극본',
     items: [
-      { key: 'script:raw', label: '原始内容', desc: '', icon: FileText, done: !!rawContent.value },
-      { key: 'script:rewrite', label: 'AI 改写', desc: '', icon: FileText, done: !!scriptContent.value },
-      { key: 'script:extract', label: '提取', desc: '', icon: Users, done: !!chars.value.length },
-      { key: 'script:voice', label: '音色', desc: '', icon: Mic2, done: !!chars.value.length && charsVoiced.value === chars.value.length },
-      { key: 'script:storyboard', label: '分镜', desc: '', icon: Clapperboard, done: !!sbs.value.length },
+      { key: 'script:raw', label: '원본 내용', desc: '', icon: FileText, done: !!rawContent.value },
+      { key: 'script:rewrite', label: 'AI 수정', desc: '', icon: FileText, done: !!scriptContent.value },
+      { key: 'script:extract', label: '추출', desc: '', icon: Users, done: !!chars.value.length },
+      { key: 'script:voice', label: '음색', desc: '', icon: Mic2, done: !!chars.value.length && charsVoiced.value === chars.value.length },
+      { key: 'script:storyboard', label: '스토리보드', desc: '', icon: Clapperboard, done: !!sbs.value.length },
     ],
   },
   {
     id: 'production',
-    label: '制作',
+    label: '제작',
     items: [
-      { key: 'prod:chars', label: '角色形象', desc: '', icon: Users, done: prodStepDone('chars') },
-      { key: 'prod:scenes', label: '场景图片', desc: '', icon: MapPin, done: prodStepDone('scenes') },
-      { key: 'prod:dubbing', label: '配音生成', desc: '', icon: Mic2, done: prodStepDone('dubbing') },
-      { key: 'prod:shots', label: '镜头图片', desc: '', icon: ImageIcon, done: prodStepDone('shots') },
-      { key: 'prod:videos', label: '视频生成', desc: '', icon: Video, done: prodStepDone('videos') },
-      { key: 'prod:compose', label: '视频合成', desc: '', icon: Layers, done: prodStepDone('compose') },
+      { key: 'prod:chars', label: '캐릭터 이미지', desc: '', icon: Users, done: prodStepDone('chars') },
+      { key: 'prod:scenes', label: '장면 이미지', desc: '', icon: MapPin, done: prodStepDone('scenes') },
+      { key: 'prod:dubbing', label: '더빙 생성', desc: '', icon: Mic2, done: prodStepDone('dubbing') },
+      { key: 'prod:shots', label: '샷 이미지', desc: '', icon: ImageIcon, done: prodStepDone('shots') },
+      { key: 'prod:videos', label: '영상 생성', desc: '', icon: Video, done: prodStepDone('videos') },
+      { key: 'prod:compose', label: '영상 합성', desc: '', icon: Layers, done: prodStepDone('compose') },
     ],
   },
   {
     id: 'export',
-    label: '导出',
+    label: '내보내기',
     items: [
-      { key: 'export:merge', label: '拼接导出', desc: '', icon: Download, done: !!mergeUrl.value },
+      { key: 'export:merge', label: '이어붙여 내보내기', desc: '', icon: Download, done: !!mergeUrl.value },
     ],
   },
 ]))
@@ -2193,29 +2193,29 @@ function goMainStage(stageId) {
 const activeSubSteps = computed(() => {
   if (activeMainStage.value === 'script') {
     return [
-      { key: 'script:raw', label: '原始内容', done: !!rawContent.value },
-      { key: 'script:rewrite', label: 'AI 改写', done: !!scriptContent.value },
+      { key: 'script:raw', label: '원본 내용', done: !!rawContent.value },
+      { key: 'script:rewrite', label: 'AI 수정', done: !!scriptContent.value },
     ]
   }
   if (activeMainStage.value === 'assets') {
     return [
-      { key: 'script:extract', label: '提取角色场景', done: !!chars.value.length },
-      { key: 'script:voice', label: '分配音色', done: !!chars.value.length && charsVoiced.value === chars.value.length },
-      { key: 'prod:chars', label: '角色形象', done: !visualCharTotal.value || charImgCount.value === visualCharTotal.value },
-      { key: 'prod:scenes', label: '场景图片', done: !scenes.value.length || sceneImgCount.value === scenes.value.length },
+      { key: 'script:extract', label: '추출캐릭터장면', done: !!chars.value.length },
+      { key: 'script:voice', label: '음색 배정', done: !!chars.value.length && charsVoiced.value === chars.value.length },
+      { key: 'prod:chars', label: '캐릭터 이미지', done: !visualCharTotal.value || charImgCount.value === visualCharTotal.value },
+      { key: 'prod:scenes', label: '장면 이미지', done: !scenes.value.length || sceneImgCount.value === scenes.value.length },
     ]
   }
   if (activeMainStage.value === 'storyboard') {
     return [
-      { key: 'script:storyboard', label: '分镜拆解', done: !!sbs.value.length },
-      { key: 'prod:dubbing', label: '配音生成', done: !ttsEligibleCount.value || ttsGeneratedCount.value === ttsEligibleCount.value },
-      { key: 'prod:shots', label: '镜头图片', done: !!sbs.value.length && shotImgCount.value === sbs.value.length },
-      { key: 'prod:videos', label: '视频生成', done: !!sbs.value.length && shotVidCount.value === sbs.value.length },
-      { key: 'prod:compose', label: '视频合成', done: !!sbs.value.length && composedCount.value === sbs.value.length },
+      { key: 'script:storyboard', label: '스토리보드 분해', done: !!sbs.value.length },
+      { key: 'prod:dubbing', label: '더빙 생성', done: !ttsEligibleCount.value || ttsGeneratedCount.value === ttsEligibleCount.value },
+      { key: 'prod:shots', label: '샷 이미지', done: !!sbs.value.length && shotImgCount.value === sbs.value.length },
+      { key: 'prod:videos', label: '영상 생성', done: !!sbs.value.length && shotVidCount.value === sbs.value.length },
+      { key: 'prod:compose', label: '영상 합성', done: !!sbs.value.length && composedCount.value === sbs.value.length },
     ]
   }
   return [
-    { key: 'export:merge', label: '拼接导出', done: !!mergeUrl.value },
+    { key: 'export:merge', label: '이어붙여 내보내기', done: !!mergeUrl.value },
   ]
 })
 
@@ -2239,11 +2239,11 @@ const sidebarJumpSteps = computed(() => {
 const bubbleSteps = computed(() => {
   if (panel.value === 'script') {
     return [
-      { key: 'script:raw', label: '原始内容', done: !!rawContent.value },
-      { key: 'script:rewrite', label: 'AI 改写', done: !!scriptContent.value },
-      { key: 'script:extract', label: '提取', done: !!chars.value.length },
-      { key: 'script:voice', label: '音色', done: !!chars.value.length && charsVoiced.value === chars.value.length },
-      { key: 'script:storyboard', label: '分镜', done: !!sbs.value.length },
+      { key: 'script:raw', label: '원본 내용', done: !!rawContent.value },
+      { key: 'script:rewrite', label: 'AI 수정', done: !!scriptContent.value },
+      { key: 'script:extract', label: '추출', done: !!chars.value.length },
+      { key: 'script:voice', label: '음색', done: !!chars.value.length && charsVoiced.value === chars.value.length },
+      { key: 'script:storyboard', label: '스토리보드', done: !!sbs.value.length },
     ]
   }
   if (panel.value === 'production') {
@@ -2301,14 +2301,14 @@ const pipelineProgress = computed(() => {
 })
 
 const currentStageLabel = computed(() => {
-  if (panel.value === 'script') return `剧本阶段 · ${stepLabels[scriptStep.value]}`
-  if (panel.value === 'production') return `制作阶段 · ${prodTabDefs.value[prodTabIdx.value]?.label || '制作'}`
-  return mergeUrl.value ? '导出阶段 · 成片已生成' : '导出阶段 · 等待拼接'
+  if (panel.value === 'script') return `극본 단계 · ${stepLabels[scriptStep.value]}`
+  if (panel.value === 'production') return `제작 단계 · ${prodTabDefs.value[prodTabIdx.value]?.label || '제작'}`
+  return mergeUrl.value ? '내보내기 단계 · 완성본 생성됨' : '내보내기 단계 · 이어붙이기 대기'
 })
 
 const currentMainStageLabel = computed(() => {
   const current = mainStageDefs.find(stage => stage.id === activeMainStage.value)
-  return current?.label || '工作台'
+  return current?.label || '작업대'
 })
 
 const currentSubStageLabel = computed(() => {
@@ -2335,12 +2335,12 @@ const totalDuration = computed(() => sbs.value.reduce((s, sb) => s + (sb.duratio
 
 const selectedSb = ref(null)
 const shotTypes = [
-  '大远景', '远景', '全景', '中景', '中近景', '近景', '特写', '大特写',
-  '双人镜头', '三人镜头', '群像', '背影', '侧面', '正面', '俯视', '仰视',
-  '过肩', '主观视角', '航拍', '运动镜头',
+  '초원경', '원경', '풀샷', '미디엄샷', '미디엄 클로즈업', '클로즈샷', '클로즈업', '익스트림 클로즈업',
+  '투샷', '쓰리샷', '군상', '뒷모습', '측면', '정면', '하이앵글', '로우앵글',
+  '오버숄더', '주관 시점', '항공샷', '무빙샷',
 ]
-const shotAngles = ['平视', '仰视', '俯视', '侧拍', '背拍', '斜侧', '主观视角', '过肩']
-const shotMovements = ['固定', '推镜', '拉镜', '摇镜', '移镜', '跟拍', '升降', '手持', '环绕']
+const shotAngles = ['아이레벨', '로우앵글', '하이앵글', '측면 촬영', '후면 촬영', '사선 측면', '주관 시점', '오버숄더']
+const shotMovements = ['고정', '푸시인', '풀아웃', '팬', '트래킹', '팔로우', '틸트/크레인', '핸드헬드', '오비트']
 
 function updateField(sb, field, value) {
   const current = sb[field] ?? sb[toCamel(field)]
@@ -2378,13 +2378,13 @@ function toggleStoryboardCharacter(sb, charId) {
 
 function getSceneName(sb) {
   const sceneId = sb?.scene_id || sb?.sceneId
-  if (!sceneId) return '未绑定场景'
+  if (!sceneId) return '연결된 장면 없음'
   const scene = scenes.value.find(s => s.id === sceneId)
-  return scene ? `${scene.location} · ${scene.time || '未设时间'}` : `场景 #${sceneId}`
+  return scene ? `${scene.location} · ${scene.time || '시간 미설정'}` : `장면 #${sceneId}`
 }
 
 async function deleteShot(sb) {
-  if (!confirm('确定删除此镜头？')) return
+  if (!confirm('이 샷을 삭제할까요?')) return
   const idx = sbs.value.indexOf(sb)
   await storyboardAPI.del(sb.id)
   await refresh()
@@ -2398,11 +2398,11 @@ const scriptSteps = computed(() => {
   const hasVoice = charsVoiced.value > 0 && hasChars
   const hasSbs = sbs.value.length > 0
   return [
-    { label: '原始内容', state: rawContent.value ? 'done' : 'active', spinning: false },
-    { label: 'AI 改写', state: hasScript ? 'done' : (rawContent.value ? 'active' : ''), spinning: rt.value === 'script_rewriter' },
-    { label: '提取', state: hasChars ? 'done' : (hasScript ? 'active' : ''), spinning: rt.value === 'extractor' },
-    { label: '音色', state: hasVoice ? 'done' : (hasChars ? 'active' : ''), spinning: rt.value === 'voice_assigner' },
-    { label: '分镜', state: hasSbs ? 'done' : (hasVoice ? 'active' : ''), spinning: rt.value === 'storyboard_breaker' },
+    { label: '원본 내용', state: rawContent.value ? 'done' : 'active', spinning: false },
+    { label: 'AI 수정', state: hasScript ? 'done' : (rawContent.value ? 'active' : ''), spinning: rt.value === 'script_rewriter' },
+    { label: '추출', state: hasChars ? 'done' : (hasScript ? 'active' : ''), spinning: rt.value === 'extractor' },
+    { label: '음색', state: hasVoice ? 'done' : (hasChars ? 'active' : ''), spinning: rt.value === 'voice_assigner' },
+    { label: '스토리보드', state: hasSbs ? 'done' : (hasVoice ? 'active' : ''), spinning: rt.value === 'storyboard_breaker' },
   ]
 })
 
@@ -2439,40 +2439,40 @@ async function refresh() {
 
 function saveRaw() { episodeAPI.update(epId.value, { content: localRaw.value }); episode.value.content = localRaw.value }
 function saveScr() { episodeAPI.update(epId.value, { script_content: localScript.value }); episode.value.script_content = localScript.value }
-function doRewrite() { saveRaw(); runAgent('script_rewriter', '请读取剧本并改写为格式化剧本，然后保存', dramaId, epId.value, refresh) }
+function doRewrite() { saveRaw(); runAgent('script_rewriter', '극본을 읽고 형식화된 극본으로 수정한 뒤 저장하세요', dramaId, epId.value, refresh) }
 function skipRewrite() {
   const raw = (localRaw.value || rawContent.value || '').trim()
   if (!raw) {
-    toast.warning('请先填写原始内容')
+    toast.warning('먼저 원본 내용을 입력하세요')
     return
   }
   localScript.value = raw
   saveScr()
-  toast.success('已跳过 AI 改写，当前将直接使用原始内容')
+  toast.success('AI 수정을 건너뛰었습니다. 현재 원본 내용을 바로 사용합니다')
   scriptStep.value = 2
 }
-function doExtract() { saveScr(); runAgent('extractor', '请从剧本中提取所有角色和场景信息，提取时自动与项目已有数据进行去重合并', dramaId, epId.value, refresh) }
-function doVoice() { runAgent('voice_assigner', '请为所有角色分配合适的音色', dramaId, epId.value, refresh) }
+function doExtract() { saveScr(); runAgent('extractor', '극본에서 모든 캐릭터와 장면 정보를 추출하고 프로젝트 기존 데이터와 자동으로 중복 제거해 병합하세요', dramaId, epId.value, refresh) }
+function doVoice() { runAgent('voice_assigner', '모든 캐릭터에 적절한 음색을 배정하세요', dramaId, epId.value, refresh) }
 async function batchGenSamples() {
   const pending = chars.value.filter(c => (c.voice_style || c.voiceStyle) && !(c.voice_sample_url || c.voiceSampleUrl))
   if (!pending.length) {
-    toast.info(charsVoiced.value ? '所有角色的试听文件已生成' : '请先分配音色')
+    toast.info(charsVoiced.value ? '모든 캐릭터의 미리듣기 파일이 생성되었습니다' : '먼저 음색을 배정하세요')
     return
   }
   const results = await Promise.allSettled(pending.map(c => characterAPI.voiceSample(c.id, epId.value)))
   const okCount = results.filter(r => r.status === 'fulfilled').length
   const failCount = results.length - okCount
-  if (okCount) toast.success(`已生成 ${okCount} 份试听文件`)
-  if (failCount) toast.error(`${failCount} 份试听文件生成失败`)
+  if (okCount) toast.success(`생성됨 ${okCount} 개 미리듣기 파일`)
+  if (failCount) toast.error(`${failCount} 개 미리듣기 파일 생성 실패`)
   await refresh()
 }
 function doBreakdown() {
   const cfg = videoConfigs.value.find(c => c.id === lockedVideoConfigId.value)
-  const label = cfg ? `${cfg.name} (${cfg.provider})` : '默认'
-  runAgent('storyboard_breaker', `请拆解分镜并生成视频提示词。视频模型：${label}，请根据该模型的特性和时长限制生成合适的视频提示词。`, dramaId, epId.value, refresh)
+  const label = cfg ? `${cfg.name} (${cfg.provider})` : '기본값'
+  runAgent('storyboard_breaker', `스토리보드를 분해하고 영상 프롬프트를 생성하세요. 영상 모델: ${label}. 해당 모델의 특성과 길이 제한에 맞는 영상 프롬프트를 생성하세요.`, dramaId, epId.value, refresh)
 }
-async function genSample(id) { try { await characterAPI.voiceSample(id, epId.value); toast.success('试听已生成'); refresh() } catch (e) { toast.error(e.message) } }
-async function addShot() { await storyboardAPI.create({ episode_id: epId.value, storyboard_number: sbs.value.length + 1, title: `镜头${sbs.value.length + 1}`, duration: 10 }); refresh() }
+async function genSample(id) { try { await characterAPI.voiceSample(id, epId.value); toast.success('미리듣기가 생성되었습니다'); refresh() } catch (e) { toast.error(e.message) } }
+async function addShot() { await storyboardAPI.create({ episode_id: epId.value, storyboard_number: sbs.value.length + 1, title: `샷${sbs.value.length + 1}`, duration: 10 }); refresh() }
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -2492,7 +2492,7 @@ async function genCharImg(id) {
   try {
     if (!isPendingCharImage(id)) pendingCharImageIds.value.push(id)
     await characterAPI.generateImage(id, epId.value)
-    toast.success('角色图片生成中')
+    toast.success('캐릭터 이미지 생성 중')
     await refresh()
     watchAsyncResult(() => {
       const char = chars.value.find(c => c.id === id)
@@ -2507,10 +2507,10 @@ async function genCharImg(id) {
 }
 function batchCharImages() {
   const ids = visualChars.value.filter(c => !(c.image_url || c.imageUrl)).map(c => c.id)
-  if (!ids.length) { toast.info('所有角色图片已生成'); return }
+  if (!ids.length) { toast.info('모든 캐릭터 이미지가 생성되었습니다'); return }
   pendingCharImageIds.value = [...new Set([...pendingCharImageIds.value, ...ids])]
   characterAPI.batchImages(ids, epId.value).then(async () => {
-    toast.success('角色图片批量生成中')
+    toast.success('캐릭터 이미지 일괄 생성 중')
     await refresh()
     watchAsyncResult(() => ids.every(id => {
       const char = chars.value.find(c => c.id === id)
@@ -2527,7 +2527,7 @@ async function genSceneImg(id) {
   try {
     if (!isPendingSceneImage(id)) pendingSceneImageIds.value.push(id)
     await sceneAPI.generateImage(id, epId.value)
-    toast.success('场景图片生成中')
+    toast.success('장면 이미지 생성 중')
     await refresh()
     watchAsyncResult(() => {
       const scene = scenes.value.find(s => s.id === id)
@@ -2542,10 +2542,10 @@ async function genSceneImg(id) {
 }
 function batchSceneImages() {
   const ids = scenes.value.filter(s => !(s.image_url || s.imageUrl)).map(s => s.id)
-  if (!ids.length) { toast.info('所有场景图片已生成'); return }
+  if (!ids.length) { toast.info('모든 장면 이미지가 생성되었습니다'); return }
   pendingSceneImageIds.value = [...new Set([...pendingSceneImageIds.value, ...ids])]
   ids.forEach(id => { sceneAPI.generateImage(id, epId.value).then(() => refresh()).catch(e => toast.error(e.message)) })
-  toast.success('场景图片批量生成中')
+  toast.success('장면 이미지 일괄 생성 중')
   watchAsyncResult(() => ids.every(id => {
     const scene = scenes.value.find(s => s.id === id)
     const done = !!(scene?.image_url || scene?.imageUrl)
@@ -2554,8 +2554,8 @@ function batchSceneImages() {
   }), 36)
 }
 
-const IGNORE_TTS_SPEAKERS = /^(环境音|环境声|音效|效果音|sfx|sound ?effect|bgm|背景音|背景音乐|ambient)$/i
-const IGNORE_TTS_TEXT = /^(无|无对白|无台词|无旁白|无需配音|无需对白|none|null|n\/a|na|环境音|环境声|音效|效果音|纯音效|纯环境音|只有环境音|仅环境音|背景音|背景音乐|bgm|sfx|ambient)$/i
+const IGNORE_TTS_SPEAKERS = /^(환경음|환경음|효과음|효과음|sfx|sound ?effect|bgm|배경음|배경음악|ambient)$/i
+const IGNORE_TTS_TEXT = /^(없음|없음대사|대사 없음|없음내레이션|필요 없음더빙|필요 없음대사|none|null|n\/a|na|환경음|환경음|효과음|효과음|순수효과음|순수환경음|만 있음환경음|만환경음|배경음|배경음악|bgm|sfx|ambient)$/i
 
 function getDialogueSpeakerRaw(sb) {
   const dialogue = sb?.dialogue?.trim() || ''
@@ -2583,27 +2583,27 @@ function hasTTS(sb) { return !!(sb?.tts_audio_url || sb?.ttsAudioUrl) }
 function getTTSUrl(sb) { return sb?.tts_audio_url || sb?.ttsAudioUrl || '' }
 function getDialogueSpeaker(sb) {
   const speaker = getDialogueSpeakerRaw(sb)
-  if (!speaker) return '旁白'
+  if (!speaker) return '내레이션'
   return speaker
 }
 async function genShotTTS(sb) {
   try {
     await storyboardAPI.generateTTS(sb.id)
-    toast.success(`镜头 #${sb.storyboard_number || sb.storyboardNumber || sb.id} 配音已生成`)
+    toast.success(`샷 #${sb.storyboard_number || sb.storyboardNumber || sb.id} 더빙 생성됨`)
     await refresh()
   } catch (e) { toast.error(e.message) }
 }
 async function batchShotTTS() {
   const pending = sbs.value.filter(sb => hasDialogue(sb) && !hasTTS(sb))
   if (!pending.length) {
-    toast.info(ttsEligibleCount.value ? '所有镜头配音已生成' : '当前没有可生成的对白或旁白')
+    toast.info(ttsEligibleCount.value ? '모든 샷 더빙이 생성되었습니다' : '현재 생성할 대사나 내레이션이 없습니다')
     return
   }
   const results = await Promise.allSettled(pending.map(sb => storyboardAPI.generateTTS(sb.id)))
   const okCount = results.filter(r => r.status === 'fulfilled').length
   const failCount = results.length - okCount
-  if (okCount) toast.success(`已生成 ${okCount} 条镜头配音`)
-  if (failCount) toast.error(`${failCount} 条镜头配音生成失败`)
+  if (okCount) toast.success(`생성됨 ${okCount} 개 샷 더빙`)
+  if (failCount) toast.error(`${failCount} 개샷 더빙 생성 실패`)
   await refresh()
 }
 
@@ -2651,20 +2651,20 @@ function buildShotImagePrompt(sb, frameType) {
   const action = sb.action || ''
   const atmosphere = sb.atmosphere || ''
   const frameHint = frameType === 'first_frame'
-    ? '生成这个镜头的起始关键帧，突出建立关系和动作开始瞬间'
-    : '生成这个镜头的结束关键帧，突出动作结束、情绪落点或结果状态'
+    ? '이 샷의 시작 키프레임을 생성하되 관계 형성과 동작 시작 순간을 강조하세요'
+    : '이 샷의 종료 키프레임을 생성하되 동작 종료, 감정의 도착점 또는 결과 상태를 강조하세요'
 
   return [
-    title ? `镜头标题：${title}` : '',
-    description ? `画面描述：${description}` : '',
-    shotType ? `景别：${shotType}` : '',
-    angle ? `机位：${angle}` : '',
-    movement ? `运镜：${movement}` : '',
-    charactersText ? `角色：${charactersText}` : '',
-    location ? `地点：${location}` : '',
-    time ? `时间：${time}` : '',
-    action ? `动作：${action}` : '',
-    atmosphere ? `氛围：${atmosphere}` : '',
+    title ? `샷 제목：${title}` : '',
+    description ? `화면 설명：${description}` : '',
+    shotType ? `샷 크기：${shotType}` : '',
+    angle ? `카메라 위치：${angle}` : '',
+    movement ? `카메라 움직임：${movement}` : '',
+    charactersText ? `캐릭터：${charactersText}` : '',
+    location ? `장소：${location}` : '',
+    time ? `시간：${time}` : '',
+    action ? `동작：${action}` : '',
+    atmosphere ? `분위기：${atmosphere}` : '',
     frameHint,
   ].filter(Boolean).join('；')
 }
@@ -2683,7 +2683,7 @@ async function genShotFrame(sb, frameType) {
       reference_images: referenceImages.length ? referenceImages : undefined,
     }
     await imageAPI.generate(body)
-    toast.success(frameType === 'first_frame' ? '首帧生成中' : '尾帧生成中')
+    toast.success(frameType === 'first_frame' ? '첫 프레임생성 중' : '끝 프레임생성 중')
     await refresh()
     watchAsyncResult(() => {
       const target = sbs.value.find(s => s.id === sb.id)
@@ -2714,7 +2714,7 @@ async function genVid(sb) {
     delete failedVideoMessages.value[sb.id]
     if (!isPendingVideo(sb.id)) pendingVideoIds.value.push(sb.id)
     const generation = await videoAPI.generate(params)
-    toast.success('视频生成中')
+    toast.success('영상 생성 중')
     await refresh()
     pollVideoGeneration(generation?.id, sb.id)
   } catch (e) {
@@ -2740,14 +2740,14 @@ async function pollVideoGeneration(generationId, storyboardId) {
       if (res?.status === 'completed') {
         pendingVideoIds.value = pendingVideoIds.value.filter(item => item !== storyboardId)
         delete failedVideoMessages.value[storyboardId]
-        toast.success('视频生成完成')
+        toast.success('영상 생성 완료')
         return
       }
       if (res?.status === 'failed') {
         pendingVideoIds.value = pendingVideoIds.value.filter(item => item !== storyboardId)
         failedVideoMessages.value = {
           ...failedVideoMessages.value,
-          [storyboardId]: res?.error_msg || res?.errorMsg || '视频生成失败',
+          [storyboardId]: res?.error_msg || res?.errorMsg || '영상 생성 실패',
         }
         toast.error(failedVideoMessages.value[storyboardId])
         return
@@ -2757,16 +2757,16 @@ async function pollVideoGeneration(generationId, storyboardId) {
   pendingVideoIds.value = pendingVideoIds.value.filter(item => item !== storyboardId)
   failedVideoMessages.value = {
     ...failedVideoMessages.value,
-    [storyboardId]: '视频生成超时',
+    [storyboardId]: '영상 생성 시간 초과',
   }
-  toast.error('视频生成超时')
+  toast.error('영상 생성 시간 초과')
 }
 async function doCompose(sb) {
   try {
     delete failedComposeMessages.value[sb.id]
     if (!isPendingCompose(sb.id)) pendingComposeIds.value.push(sb.id)
     await composeAPI.shot(sb.id)
-    toast.success('合成完成')
+    toast.success('합성 완료')
     pendingComposeIds.value = pendingComposeIds.value.filter(item => item !== sb.id)
     refresh()
   } catch (e) {
@@ -2797,16 +2797,16 @@ function batchVideos() {
 async function batchCompose() {
   await composeAPI.all(epId.value)
   pendingComposeIds.value = [...new Set(sbs.value.filter(sb => !!sb.video_url || !!sb.videoUrl).map(sb => sb.id))]
-  toast.success('批量合成已开始')
+  toast.success('일괄 합성을 시작했습니다')
   pollComposeStatus()
 }
 async function doMerge() {
-  await mergeAPI.merge(epId.value); toast.success('拼接中...')
+  await mergeAPI.merge(epId.value); toast.success('이어붙이는 중...')
   const poll = setInterval(async () => {
     try { mergeData.value = await mergeAPI.status(epId.value) } catch {}
     if (mergeData.value?.status === 'completed' || mergeData.value?.status === 'failed') {
       clearInterval(poll)
-      mergeData.value.status === 'completed' ? toast.success('拼接完成') : toast.error('拼接失败')
+      mergeData.value.status === 'completed' ? toast.success('이어붙이기 완료') : toast.error('이어붙이기 실패')
     }
   }, 3000)
 }
@@ -2825,14 +2825,14 @@ async function pollComposeStatus() {
       if (failedItems.length) {
         const next = { ...failedComposeMessages.value }
         failedItems.forEach((item) => {
-          next[item.id] = item.error_msg || item.errorMsg || '视频合成失败'
+          next[item.id] = item.error_msg || item.errorMsg || '영상 합성 실패'
         })
         failedComposeMessages.value = next
       }
 
       if (!processingIds.length) {
-        if (failedItems.length) toast.error(`有 ${failedItems.length} 个镜头合成失败`)
-        else toast.success('批量合成完成')
+        if (failedItems.length) toast.error(`${failedItems.length} 개 샷 합성 실패`)
+        else toast.success('일괄 합성 완료')
         return
       }
     } catch {}
@@ -2859,9 +2859,9 @@ async function loadConfigs() {
 
 function inferVoiceGender(name, desc = []) {
   const text = `${name} ${Array.isArray(desc) ? desc.join(' ') : ''}`
-  if (/[男|青年|大爷|学长|boy|man|male]/i.test(text)) return '男声'
-  if (/[女|少女|御姐|奶奶|girl|woman|female]/i.test(text)) return '女声'
-  return '中性'
+  if (/[남성|청년|중장년 남성|선배|boy|man|male]/i.test(text)) return '남성 음성'
+  if (/[여성|소녀|성숙한 여성|할머니|girl|woman|female]/i.test(text)) return '여성 음성'
+  return '중성'
 }
 
 function mapVoiceProfile(v) {
@@ -2870,8 +2870,8 @@ function mapVoiceProfile(v) {
     id: v.voice_id,
     label: v.voice_name || v.voice_id,
     gender: inferVoiceGender(v.voice_name || v.voice_id, desc),
-    traits: desc.length ? desc.slice(0, 2).join('、') : `${v.language || '多语言'}音色`,
-    suitable: desc.length > 2 ? desc.slice(2).join('、') : `${v.language || '通用'}角色`,
+    traits: desc.length ? desc.slice(0, 2).join('、') : `${v.language || '다국어'}음색`,
+    suitable: desc.length > 2 ? desc.slice(2).join('、') : `${v.language || '범용'}캐릭터`,
   }
 }
 

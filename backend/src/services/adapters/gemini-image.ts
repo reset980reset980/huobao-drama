@@ -1,9 +1,9 @@
 /**
- * Gemini 图片生成 Adapter
+ * Gemini 이미지生成 Adapter
  * 认证: 同时兼容两种方式
  * 1. URL Query 参数 ?key=
  * 2. Header 认证（x-goog-api-key / Authorization: Bearer）
- * 请求: Google REST 风格的 contents[].parts[] 结构
+ * 请求: Google REST 风칸的 contents[].parts[] 结构
  * 响应: base64 编码在 inlineData.data 中，无 URL
  */
 import type {
@@ -21,11 +21,11 @@ export class GeminiImageAdapter implements ImageProviderAdapter {
   provider = 'gemini'
 
   buildGenerateRequest(config: AIConfig, record: ImageGenerationRecord): ProviderRequest {
-    // Gemini 模型名格式: "models/gemini-2.5-flash-image" 或直接 "gemini-2.5-flash-image"
+    // Gemini 모델名칸式: "models/gemini-2.5-flash-image" 或直接 "gemini-2.5-flash-image"
     const modelName = record.model || config.model || 'gemini-2.5-flash-image'
     const model = modelName.startsWith('models/') ? modelName : `models/${modelName}`
 
-    // Google REST 风格请求体
+    // Google REST 风칸请求体
     const parts: any[] = []
     if (record.referenceImages) {
       try {

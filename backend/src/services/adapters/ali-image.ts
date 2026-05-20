@@ -1,5 +1,5 @@
 /**
- * 阿里云百炼（万相）图片生成 Adapter
+ * 阿里云百炼（万相）이미지生成 Adapter
  * API 文档: https://help.aliyun.com/zh/model-studio/text-to-image-v2-api-reference
  */
 import type { ImageProviderAdapter, ImageGenerationRecord } from './types'
@@ -56,12 +56,12 @@ export class AliImageAdapter implements ImageProviderAdapter {
     taskId?: string
     imageUrl?: string
   } {
-    // PENDING 表示异步任务已创建
+    // PENDING 表示异步任务已생성
     if (result.output?.task_status === 'PENDING' && result.output?.task_id) {
       return { isAsync: true, taskId: result.output.task_id }
     }
 
-    // 同步模式：直接返回图片 URL
+    // 同步模式：直接返回이미지 URL
     if (result.output?.choices?.[0]?.message?.content?.[0]?.image) {
       return {
         isAsync: false,
@@ -69,7 +69,7 @@ export class AliImageAdapter implements ImageProviderAdapter {
       }
     }
 
-    // 未知响应格式
+    // 未知响应칸式
     throw new Error(`Unexpected Ali image response: ${JSON.stringify(result).slice(0, 200)}`)
   }
 
@@ -124,10 +124,10 @@ export class AliImageAdapter implements ImageProviderAdapter {
   }
 
   /**
-   * 将 "1920x1080" 转换为阿里需要的 "1696*960" 格式
+   * 将 "1920x1080" 转换为阿里需要的 "1696*960" 칸式
    */
   private normalizeSize(size: string): string {
-    // 默认比例 16:9
+    // 기본값比例 16:9
     const [w, h] = size.split('x').map(Number)
     if (w && h) {
       // 映射到 Ali 支持的比例

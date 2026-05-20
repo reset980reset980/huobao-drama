@@ -1,6 +1,6 @@
 /**
- * MiniMax 视频生成 Adapter
- * API 风格：OpenAI Chat Completions content 数组格式
+ * MiniMax 영상 생성 Adapter
+ * API 风칸：OpenAI Chat Completions content 数组칸式
  */
 import type {
   VideoProviderAdapter,

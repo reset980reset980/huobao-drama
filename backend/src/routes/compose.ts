@@ -8,7 +8,7 @@ import { toSnakeCase } from '../utils/transform.js'
 
 const app = new Hono()
 
-// POST /storyboards/:id/compose — 合成单个镜头
+// POST /storyboards/:id/compose — 합성单个샷
 app.post('/storyboards/:id/compose', async (c) => {
   const id = Number(c.req.param('id'))
   try {
@@ -22,7 +22,7 @@ app.post('/storyboards/:id/compose', async (c) => {
   }
 })
 
-// POST /episodes/:id/compose-all — 批量合成全部镜头
+// POST /episodes/:id/compose-all — 일괄 합성全部샷
 app.post('/episodes/:id/compose-all', async (c) => {
   const episodeId = Number(c.req.param('id'))
   const storyboards = db.select().from(schema.storyboards)
@@ -59,7 +59,7 @@ app.post('/episodes/:id/compose-all', async (c) => {
   })
 })
 
-// GET /episodes/:id/compose-status — 查询批量合成状态
+// GET /episodes/:id/compose-status — 查询일괄 합성상태
 app.get('/episodes/:id/compose-status', async (c) => {
   const episodeId = Number(c.req.param('id'))
   const storyboards = db.select().from(schema.storyboards)
@@ -84,7 +84,7 @@ app.get('/episodes/:id/compose-status', async (c) => {
       storyboardNumber: sb.storyboardNumber,
       status: sb.status || 'pending',
       composedVideoUrl: sb.composedVideoUrl,
-      errorMsg: sb.status === 'compose_failed' ? '视频合成失败，请检查视频、配音或字幕素材' : '',
+      errorMsg: sb.status === 'compose_failed' ? '영상 합성에 실패했습니다. 영상, 더빙, 자막 소재를 확인하세요' : '',
     })),
   })
 })

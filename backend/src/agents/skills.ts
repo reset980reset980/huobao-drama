@@ -43,9 +43,9 @@ export function loadAgentSkills(agentType: string): string {
   if (!contents.length) return ''
 
   return [
-    '以下是该 Agent 专属的项目技能规范（SKILL.md）。',
-    '不同 Agent 会加载不同 skill；你只需要遵守当前注入的这些技能。',
-    '你必须在不违背当前工具边界的前提下优先遵守这些规范；若与用户明确要求冲突，以用户要求为准。',
+    '아래는 이 Agent 전용 프로젝트 Skill 규칙(SKILL.md)입니다.',
+    'Agent마다 다른 Skill을 로드합니다. 현재 주입된 Skill만 따르면 됩니다.',
+    '현재 도구 경계를 벗어나지 않는 범위에서 이 규칙을 우선 따르세요. 사용자의 명시 요청과 충돌하면 사용자 요청을 우선합니다.',
     '',
     contents.join('\n\n'),
   ].join('\n')

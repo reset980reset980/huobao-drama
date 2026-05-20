@@ -32,7 +32,7 @@ export async function downloadFile(url: string, subDir: string): Promise<string>
 }
 
 /**
- * 保存上传的文件
+ * 저장上传的文件
  */
 export async function saveUploadedFile(data: ArrayBuffer, subDir: string, originalName: string): Promise<string> {
   const dir = path.join(STORAGE_ROOT, subDir)
@@ -66,7 +66,7 @@ export function getAbsolutePath(relativePath: string): string {
 }
 
 /**
- * 保存 Base64 编码的图片数据到本地存储
+ * 저장 Base64 编码的이미지数据到本地存储
  * 用于 Gemini 等只返回 base64 数据的厂商
  */
 export async function saveBase64Image(base64Data: string, mimeType: string, subDir: string): Promise<string> {

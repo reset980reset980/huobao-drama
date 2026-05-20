@@ -1,5 +1,5 @@
 /**
- * 角色音色分配 Agent 工具
+ * 캐릭터 음색 배정 Agent 도구
  */
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
@@ -18,7 +18,7 @@ export function createVoiceTools(episodeId: number, dramaId: number) {
 
   const getCharacters = createTool({
     id: 'get_characters',
-    description: 'Get all characters for the current drama with their current voice assignments.',
+    description: '현재 드라마의 모든 캐릭터와 각 캐릭터의 현재 음색 배정 상태를 가져옵니다.',
     inputSchema: z.object({}),
     execute: async () => {
       const chars = db.select().from(schema.characters)
@@ -30,7 +30,7 @@ export function createVoiceTools(episodeId: number, dramaId: number) {
           role: c.role,
           personality: c.personality,
           description: c.description,
-          current_voice: c.voiceStyle || '未分配',
+          current_voice: c.voiceStyle || '미배정',
         })),
       }
       logTaskSuccess('VoiceTool', 'get-characters', { episodeId, dramaId, count: payload.characters.length })
@@ -40,7 +40,7 @@ export function createVoiceTools(episodeId: number, dramaId: number) {
 
   const listVoices = createTool({
     id: 'list_voices',
-    description: 'List all available voice options for TTS.',
+    description: 'TTS에 사용할 수 있는 모든 음색 옵션을 나열합니다.',
     inputSchema: z.object({}),
     execute: async () => {
       const provider = getEpisodeAudioProvider() || 'minimax'
@@ -51,24 +51,24 @@ export function createVoiceTools(episodeId: number, dramaId: number) {
           id: v.voiceId,
           name: v.voiceName,
           gender: inferGender(v.voiceName, desc),
-          traits: Array.isArray(desc) && desc.length ? desc.slice(0, 2).join('、') : `${v.language || '多语言'}音色`,
-          suitable_for: Array.isArray(desc) && desc.length > 2 ? desc.slice(2).join('、') : `${v.language || '通用'}角色`,
+          traits: Array.isArray(desc) && desc.length ? desc.slice(0, 2).join('、') : `${v.language || '다국어'}음색`,
+          suitable_for: Array.isArray(desc) && desc.length > 2 ? desc.slice(2).join('、') : `${v.language || '범용'}캐릭터`,
           language: v.language,
           provider,
         }
       }) : [
-        { id: 'alloy', name: 'Alloy', gender: '中性', traits: '平衡自然', suitable_for: '旁白、通用', language: '多语言', provider },
-        { id: 'echo', name: 'Echo', gender: '男声', traits: '低沉稳重', suitable_for: '成熟男性、旁白', language: '多语言', provider },
-        { id: 'fable', name: 'Fable', gender: '男声', traits: '温暖富有表现力', suitable_for: '年轻男性、故事叙述', language: '多语言', provider },
-        { id: 'onyx', name: 'Onyx', gender: '男声', traits: '深沉有力', suitable_for: '权威角色、反派', language: '多语言', provider },
-        { id: 'nova', name: 'Nova', gender: '女声', traits: '温柔甜美', suitable_for: '年轻女性、女主', language: '多语言', provider },
-        { id: 'shimmer', name: 'Shimmer', gender: '女声', traits: '明亮活泼', suitable_for: '活泼女性、少女', language: '多语言', provider },
+        { id: 'alloy', name: 'Alloy', gender: '중성', traits: '균형감 있고 자연스러움', suitable_for: '내레이션、범용', language: '다국어', provider },
+        { id: 'echo', name: 'Echo', gender: '남성 음성', traits: '낮고 안정적임', suitable_for: '성숙한 남성、내레이션', language: '다국어', provider },
+        { id: 'fable', name: 'Fable', gender: '남성 음성', traits: '따뜻하고 표현력이 풍부함', suitable_for: '젊은 남성、스토리텔링', language: '다국어', provider },
+        { id: 'onyx', name: 'Onyx', gender: '남성 음성', traits: '깊고 힘 있음', suitable_for: '권위 있는 캐릭터、악역', language: '다국어', provider },
+        { id: 'nova', name: 'Nova', gender: '여성 음성', traits: '부드럽고 달콤함', suitable_for: '젊은 여성、여자 주인공', language: '다국어', provider },
+        { id: 'shimmer', name: 'Shimmer', gender: '여성 음성', traits: '밝고 활발함', suitable_for: '활발한 여성、소녀', language: '다국어', provider },
       ]
 
       const payload = {
         provider,
         voices,
-        instruction: '根据角色的性别、性格、年龄来匹配最合适的音色，并且只能从当前集音频配置可用的音色列表中选择。',
+        instruction: '캐릭터의 성별, 성격, 나이에 맞는 가장 적절한 음색을 고르고 현재 회차의 오디오 설정에서 사용 가능한 음색 목록 중에서만 선택하세요.',
       }
       logTaskSuccess('VoiceTool', 'list-voices', { episodeId, provider, count: payload.voices.length })
       return payload
@@ -77,7 +77,7 @@ export function createVoiceTools(episodeId: number, dramaId: number) {
 
   const assignVoice = createTool({
     id: 'assign_voice',
-    description: 'Assign a voice to a character.',
+    description: '캐릭터에 음색을 배정합니다.',
     inputSchema: z.object({
       character_id: z.number().describe('Character ID'),
       voice_id: z.string().describe('Voice ID from list_voices'),
@@ -101,7 +101,7 @@ export function createVoiceTools(episodeId: number, dramaId: number) {
 function inferGender(name: string, desc: unknown) {
   const description = Array.isArray(desc) ? desc.join(' ') : ''
   const text = `${name} ${description}`
-  if (/[男|青年|大爷|学长|boy|man|male]/i.test(text)) return '男声'
-  if (/[女|少女|御姐|奶奶|girl|woman|female]/i.test(text)) return '女声'
-  return '中性'
+  if (/[男|青年|大爷|学长|boy|man|male]/i.test(text)) return '남성 음성'
+  if (/[女|소녀|御姐|奶奶|girl|woman|female]/i.test(text)) return '여성 음성'
+  return '중성'
 }

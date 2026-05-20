@@ -1,11 +1,11 @@
 /**
- * 角色/场景提取 Agent 工具
- * 工厂函数模式 — 注入 episodeId + dramaId
+ * 캐릭터/장면 추출 Agent 도구
+ * 팩토리 함수 패턴 - episodeId + dramaId를 주입합니다.
  *
- * 单 Agent 一步流程：
- * 1. 读取剧本内容
- * 2. 读取项目中已存在的角色/场景（用于去重）
- * 3. 提取角色/场景并智能去重后直接保存
+ * 단일 Agent 처리 흐름:
+ * 1. 극본 내용을 읽습니다.
+ * 2. 프로젝트에 이미 존재하는 캐릭터/장면을 읽어 중복 제거에 사용합니다.
+ * 3. 캐릭터/장면을 추출하고 중복 제거 후 바로 저장합니다.
  */
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
@@ -14,7 +14,7 @@ import { eq, and } from 'drizzle-orm'
 import { now } from '../../utils/response.js'
 import { logTaskProgress, logTaskSuccess } from '../../utils/task-logger.js'
 
-// ─── 关联辅助 ────────────────────────────────────────────────
+// ─── 연결 보조 함수 ────────────────────────────────────────────────
 function linkCharToEpisode(episodeId: number, characterId: number) {
   const ts = now()
   const existing = db.select().from(schema.episodeCharacters)
@@ -37,10 +37,10 @@ function linkSceneToEpisode(episodeId: number, sceneId: number) {
 
 export function createExtractTools(episodeId: number, dramaId: number) {
 
-  // 1. 读取剧本内容
+  // 1. 극본 내용 읽기
   const readScriptForExtraction = createTool({
     id: 'read_script_for_extraction',
-    description: 'Read the formatted screenplay for character/scene extraction.',
+    description: '캐릭터와 장면 추출을 위해 형식화된 극본을 읽습니다.',
     inputSchema: z.object({}),
     execute: async () => {
       const [ep] = db.select().from(schema.episodes)
@@ -53,10 +53,10 @@ export function createExtractTools(episodeId: number, dramaId: number) {
     },
   })
 
-  // 2. 读取项目中已存在的角色（用于去重判断）
+  // 2. 프로젝트에 이미 존재하는 캐릭터 읽기
   const readExistingCharacters = createTool({
     id: 'read_existing_characters',
-    description: 'Read all characters already existing in this drama project (for deduplication).',
+    description: '중복 제거를 위해 이 드라마 프로젝트에 이미 존재하는 모든 캐릭터를 읽습니다.',
     inputSchema: z.object({}),
     execute: async () => {
       const linkedIds = new Set(
@@ -82,10 +82,10 @@ export function createExtractTools(episodeId: number, dramaId: number) {
     },
   })
 
-  // 3. 读取项目中已存在的场景（用于去重判断）
+  // 3. 프로젝트에 이미 존재하는 장면 읽기
   const readExistingScenes = createTool({
     id: 'read_existing_scenes',
-    description: 'Read all scenes already existing in this drama project (for deduplication).',
+    description: '중복 제거를 위해 이 드라마 프로젝트에 이미 존재하는 모든 장면을 읽습니다.',
     inputSchema: z.object({}),
     execute: async () => {
       const linkedIds = new Set(
@@ -111,10 +111,10 @@ export function createExtractTools(episodeId: number, dramaId: number) {
     },
   })
 
-  // 4. 智能保存角色（按名字去重，与现有数据合并）
+  // 4. 캐릭터 저장 및 이름 기준 중복 병합
   const saveDedupCharacters = createTool({
     id: 'save_dedup_characters',
-    description: 'Save extracted characters with deduplication. Existing characters (same name) are merged/updated; new ones are created. All are linked to the current episode.',
+    description: '추출한 캐릭터를 중복 제거해 저장합니다. 같은 이름의 기존 캐릭터는 병합/업데이트하고 새 캐릭터는 생성한 뒤 현재 회차에 연결합니다.',
     inputSchema: z.object({
       characters: z.array(z.object({
         name: z.string(),
@@ -140,7 +140,7 @@ export function createExtractTools(episodeId: number, dramaId: number) {
           .find(c => c.name === char.name)
 
         if (existing) {
-          // 已存在：合并信息，保留 ID
+            // 기존 캐릭터: 정보를 병합하고 ID를 유지합니다.
           db.update(schema.characters).set({
             role: char.role || existing.role,
             description: char.description || existing.description,
@@ -151,7 +151,7 @@ export function createExtractTools(episodeId: number, dramaId: number) {
           linkCharToEpisode(episodeId, existing.id)
           results.merged++
         } else {
-          // 新增角色
+            // 새 캐릭터
           const res = db.insert(schema.characters).values({
             name: char.name,
             role: char.role || '',
@@ -169,7 +169,7 @@ export function createExtractTools(episodeId: number, dramaId: number) {
       }
 
       const payload = {
-        message: `角色保存完成：新增 ${results.created}，合并更新 ${results.merged}`,
+        message: `캐릭터 저장 완료: 신규 ${results.created}개, 병합 업데이트 ${results.merged}개`,
         ...results,
       }
       logTaskSuccess('ExtractTool', 'save-characters-complete', { episodeId, ...results })
@@ -177,10 +177,10 @@ export function createExtractTools(episodeId: number, dramaId: number) {
     },
   })
 
-  // 5. 智能保存场景（按地点+时间段去重，与现有数据合并）
+  // 5. 장면 저장 및 장소+시간대 기준 중복 병합
   const saveDedupScenes = createTool({
     id: 'save_dedup_scenes',
-    description: 'Save extracted scenes with deduplication. Existing scenes (same location+time) are reused; new ones are created. All are linked to the current episode.',
+    description: '추출한 장면을 중복 제거해 저장합니다. 같은 장소+시간대의 기존 장면은 재사용하고 새 장면은 생성한 뒤 현재 회차에 연결합니다.',
     inputSchema: z.object({
       scenes: z.array(z.object({
         location: z.string(),
@@ -198,18 +198,18 @@ export function createExtractTools(episodeId: number, dramaId: number) {
       })
 
       for (const scene of scenes) {
-        // 按地点+时间段精确匹配
+        // 장소+시간대를 정확히 비교합니다.
         const existing = db.select().from(schema.scenes)
           .where(eq(schema.scenes.dramaId, dramaId)).all()
           .filter(s => !s.deletedAt)
           .find(s => s.location === scene.location && s.time === (scene.time || ''))
 
         if (existing) {
-          // 已存在完全匹配的场景：直接关联
+          // 완전히 일치하는 장면: 바로 연결합니다.
           linkSceneToEpisode(episodeId, existing.id)
           results.reused++
         } else {
-          // 检查是否有同地点不同时段（保留现有，新增独立场景）
+          // 같은 장소라도 시간대가 다르면 별도 장면으로 생성합니다.
           const sameLocation = db.select().from(schema.scenes)
             .where(eq(schema.scenes.dramaId, dramaId)).all()
             .filter(s => !s.deletedAt)
@@ -230,7 +230,7 @@ export function createExtractTools(episodeId: number, dramaId: number) {
       }
 
       const payload = {
-        message: `场景保存完成：新增 ${results.created}，复用已有 ${results.reused}`,
+        message: `장면 저장 완료: 신규 ${results.created}개, 기존 재사용 ${results.reused}개`,
         ...results,
       }
       logTaskSuccess('ExtractTool', 'save-scenes-complete', { episodeId, ...results })

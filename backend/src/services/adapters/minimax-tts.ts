@@ -1,5 +1,5 @@
 /**
- * MiniMax 语音合成（TTS）Adapter
+ * MiniMax 语音합성（TTS）Adapter
  * API: POST /v1/t2a_v2
  * 响应: { data: { audio: "<hex>", status: 2 }, ... }
  */

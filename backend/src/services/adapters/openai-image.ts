@@ -1,7 +1,7 @@
 /**
- * OpenAI DALL-E 图片生成 Adapter
- * 端点: /v1/images/generations (注意 /v1 前缀)
- * 响应格式: { data: [{ url: "..." }] } 或 { data: [{ b64_json: "..." }] }
+ * OpenAI DALL-E 이미지生成 Adapter
+ * 端点: /v1/images/generations (주의 /v1 前缀)
+ * 响应칸式: { data: [{ url: "..." }] } 或 { data: [{ b64_json: "..." }] }
  */
 import type {
   ImageProviderAdapter,
@@ -17,7 +17,7 @@ export class OpenAIImageAdapter implements ImageProviderAdapter {
   provider = 'openai'
 
   buildGenerateRequest(config: AIConfig, record: ImageGenerationRecord): ProviderRequest {
-    // OpenAI 使用 size 字段，格式为 "1024x1024"
+    // OpenAI 使用 size 자段，칸式为 "1024x1024"
     const size = record.size || '1024x1024'
 
     const body: any = {
@@ -25,7 +25,7 @@ export class OpenAIImageAdapter implements ImageProviderAdapter {
       prompt: record.prompt,
       size,
       n: 1,
-      response_format: 'url', // 默认返回 URL，可选 'b64_json'
+      response_format: 'url', // 기본값返回 URL，可选 'b64_json'
     }
 
     return {

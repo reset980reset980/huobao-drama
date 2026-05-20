@@ -1,5 +1,5 @@
 /**
- * FFmpeg 多镜头拼接 — 将所有合成后的镜头视频拼接为一集
+ * FFmpeg 多샷拼接 — 将所有합성后的샷영상拼接为一회
  */
 import ffmpeg from 'fluent-ffmpeg'
 import fs from 'fs'
@@ -22,7 +22,7 @@ function toAbsPath(relativePath: string): string {
 }
 
 /**
- * 拼接一集的所有合成镜头视频
+ * 拼接一회的所有합성샷영상
  */
 export async function mergeEpisodeVideos(episodeId: number, dramaId: number): Promise<number> {
   const storyboards = db.select().from(schema.storyboards)
@@ -42,7 +42,7 @@ export async function mergeEpisodeVideos(episodeId: number, dramaId: number): Pr
 
   logTaskStart('MergeTask', 'episode-merge', { episodeId, dramaId, clips: videos.length })
 
-  // 创建 merge 记录
+  // 생성 merge 记录
   const ts = now()
   const res = db.insert(schema.videoMerges).values({
     episodeId,

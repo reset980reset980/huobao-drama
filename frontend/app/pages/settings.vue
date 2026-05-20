@@ -2,7 +2,7 @@
   <div class="settings-layout">
     <aside class="settings-nav">
       <div class="nav-group">
-        <div class="nav-group-label">基础</div>
+        <div class="nav-group-label">기본</div>
         <button v-for="t in baseTabs" :key="t.id" :class="['nav-item', { active: tab === t.id }]" @click="tab = t.id">
           <component :is="t.icon" :size="14" />
           {{ t.label }}
@@ -10,14 +10,14 @@
       </div>
       <div class="nav-advanced">
         <label class="advanced-toggle">
-          <span>Agent 高级配置</span>
+          <span>Agent 고급 설정</span>
           <input type="checkbox" v-model="showAdvanced" />
           <span class="advanced-slider"></span>
         </label>
-        <p class="advanced-note">仅展开 Agent 配置与 Skills。工作台功能和分镜字段保持默认可见。</p>
+        <p class="advanced-note">Agent 설정과 Skills만 펼칩니다. 작업대 기능과 스토리보드 필드는 기본으로 표시됩니다.</p>
       </div>
       <div v-if="showAdvanced" class="nav-group">
-        <div class="nav-group-label">高级</div>
+        <div class="nav-group-label">고급</div>
         <button v-for="t in advancedTabs" :key="t.id" :class="['nav-item', { active: tab === t.id }]" @click="tab = t.id">
           <component :is="t.icon" :size="14" />
           {{ t.label }}
@@ -27,31 +27,31 @@
 
     <div class="settings-content">
 
-      <!-- ===== AI 服务配置 ===== -->
+      <!-- ===== AI 서비스 설정 ===== -->
       <div v-if="tab === 'ai'" class="settings-scroll">
         <div class="settings-head">
           <div class="settings-brand">
             <div class="settings-brand-mark">
-              <img v-if="showBrandImage" :src="brandLogo" alt="火宝短剧" class="settings-brand-logo" @error="showBrandImage = false" />
-              <span v-else class="settings-brand-fallback">火</span>
+              <img v-if="showBrandImage" :src="brandLogo" alt="화보 드라마" class="settings-brand-logo" @error="showBrandImage = false" />
+              <span v-else class="settings-brand-fallback">화</span>
             </div>
             <div class="settings-brand-copy">
               <div class="settings-brand-kicker">Huobao Shorts</div>
-              <div class="settings-brand-name">火宝短剧</div>
+              <div class="settings-brand-name">화보 드라마</div>
             </div>
           </div>
-          <h2 class="settings-title">AI 服务配置</h2>
-          <p class="settings-desc">先用推荐模板快速落配置，再按服务类型微调。工作台创建集时会锁定所选图片、视频和音频能力。</p>
+          <h2 class="settings-title">AI 서비스 설정</h2>
+          <p class="settings-desc">추천 템플릿으로 빠르게 설정한 뒤 서비스 유형별로 조정하세요. 작업대에서 회차를 만들 때 선택한 이미지, 영상, 오디오 기능이 고정됩니다.</p>
         </div>
         <section class="setup-panel card">
           <div class="setup-panel-head">
             <div>
               <div class="setup-kicker">Quick Setup</div>
-              <div class="setup-title">火宝推荐配置</div>
-              <div class="setup-desc">一键写入文本、图片、视频、音频四类推荐配置，适合作为开箱默认方案。</div>
+              <div class="setup-title">화보추천 설정</div>
+              <div class="setup-desc">텍스트, 이미지, 영상, 오디오 네 가지 추천 설정을 한 번에 입력합니다. 기본 시작값으로 적합합니다.</div>
             </div>
             <button class="btn btn-primary" @click="presetDialog = true">
-              <Sparkles :size="14" /> 火宝一键配置
+              <Sparkles :size="14" /> 화보한 번에 설정
             </button>
           </div>
           <div class="preset-grid">
@@ -68,8 +68,8 @@
         <section class="setup-panel card">
           <div class="setup-panel-head compact">
             <div>
-              <div class="setup-title">快捷模板</div>
-              <div class="setup-desc">选择服务类型后，直接用模板填充推荐的 `provider / base URL / model`。</div>
+              <div class="setup-title">빠른 템플릿</div>
+              <div class="setup-desc">서비스 유형을 선택하면 추천 `provider / base URL / model`을 템플릿으로 채웁니다.</div>
             </div>
           </div>
           <div class="template-row">
@@ -90,8 +90,8 @@
                 <span class="section-title">{{ st.label }}</span>
                 <div class="section-subtitle">{{ serviceMeta[st.type].desc }}</div>
               </div>
-              <span v-if="countActive(st.type)" class="tag tag-accent">{{ countActive(st.type) }} 已启用</span>
-              <button class="btn btn-ghost btn-sm ml-auto" @click="startAddCfg(st.type)"><Plus :size="13" /> 添加</button>
+              <span v-if="countActive(st.type)" class="tag tag-accent">{{ countActive(st.type) }} 활성화됨</span>
+              <button class="btn btn-ghost btn-sm ml-auto" @click="startAddCfg(st.type)"><Plus :size="13" /> 추가</button>
             </div>
             <div class="config-list">
               <div v-for="c in byType(st.type)" :key="c.id" class="card config-row">
@@ -102,36 +102,36 @@
                       <span class="config-name">{{ c.name || `${c.provider}-${c.service_type}` }}</span>
                     </div>
                     <span class="config-model mono truncate">{{ fmtModel(c.model) }}</span>
-                    <span class="config-base mono truncate">{{ c.base_url || '未设置 Base URL' }}</span>
+                    <span class="config-base mono truncate">{{ c.base_url || 'Base URL 미설정' }}</span>
                   </div>
                 </div>
-                <span :class="['tag', c.api_key ? 'tag-success' : 'tag-error']">{{ c.api_key ? '已配置' : '无密钥' }}</span>
-                <button class="btn btn-ghost btn-sm" @click="testExistingCfg(c)">测试</button>
+                <span :class="['tag', c.api_key ? 'tag-success' : 'tag-error']">{{ c.api_key ? '설정됨' : '키 없음' }}</span>
+                <button class="btn btn-ghost btn-sm" @click="testExistingCfg(c)">테스트</button>
                 <label class="toggle"><input type="checkbox" :checked="c.is_active" @change="toggleCfg(c)"><span /></label>
                 <button class="btn btn-ghost btn-icon" @click="startEditCfg(c)"><Pencil :size="13" /></button>
                 <button class="btn btn-ghost btn-icon" @click="delCfg(c.id)"><Trash2 :size="13" /></button>
               </div>
-              <p v-if="!byType(st.type).length" class="config-empty">暂无配置</p>
+              <p v-if="!byType(st.type).length" class="config-empty">설정 없음</p>
             </div>
           </section>
         </div>
       </div>
 
-      <!-- ===== Agent 配置 ===== -->
+      <!-- ===== Agent 설정 ===== -->
       <div v-else-if="tab === 'agents'" class="settings-scroll">
         <div class="settings-head">
           <div class="settings-brand">
             <div class="settings-brand-mark">
-              <img v-if="showBrandImage" :src="brandLogo" alt="火宝短剧" class="settings-brand-logo" @error="showBrandImage = false" />
-              <span v-else class="settings-brand-fallback">火</span>
+              <img v-if="showBrandImage" :src="brandLogo" alt="화보 드라마" class="settings-brand-logo" @error="showBrandImage = false" />
+              <span v-else class="settings-brand-fallback">화</span>
             </div>
             <div class="settings-brand-copy">
               <div class="settings-brand-kicker">Huobao Shorts</div>
-              <div class="settings-brand-name">火宝短剧</div>
+              <div class="settings-brand-name">화보 드라마</div>
             </div>
           </div>
-          <h2 class="settings-title">Agent 配置</h2>
-          <p class="settings-desc">高级区只保留 Agent 运行配置。这里可以调整模型、提示词和参数，保存后立即生效。</p>
+          <h2 class="settings-title">Agent 설정</h2>
+          <p class="settings-desc">고급 영역에는 Agent 실행 설정만 둡니다. 여기서 모델, 프롬프트, 파라미터를 조정할 수 있고 저장 즉시 적용됩니다.</p>
         </div>
         <div class="agent-list">
           <div v-for="a in agentDefs" :key="a.type" class="card agent-card">
@@ -141,14 +141,14 @@
                 <div style="font-weight:600;font-size:14px">{{ a.label }}</div>
                 <div class="dim" style="font-size:12px">{{ a.type }}</div>
               </div>
-              <span v-if="getAgentCfg(a.type)" class="tag tag-success">已配置</span>
-              <span v-else class="tag">默认</span>
+              <span v-if="getAgentCfg(a.type)" class="tag tag-success">설정됨</span>
+              <span v-else class="tag">기본값</span>
               <ChevronDown :size="14" :style="{ transform: editingAgent === a.type ? 'rotate(180deg)' : '', transition: '0.2s' }" />
             </div>
             <div v-if="editingAgent === a.type" class="agent-card-body">
               <label class="field">
-                <span class="field-label">模型 <span class="dim">(留空使用 AI 服务默认)</span></span>
-                <BaseSelect v-model="agentForm.model" :options="textModelSelectOptions" placeholder="— 使用 AI 服务默认 —" searchable />
+                <span class="field-label">모델 <span class="dim">(비워 두면 AI 서비스 기본값 사용)</span></span>
+                <BaseSelect v-model="agentForm.model" :options="textModelSelectOptions" placeholder="— AI 서비스 기본값 사용 —" searchable />
               </label>
               <div class="field-row">
                 <label class="field">
@@ -162,16 +162,16 @@
               </div>
               <label class="field">
                 <span class="field-label">System Prompt</span>
-                <textarea v-model="agentForm.system_prompt" class="textarea" rows="12" placeholder="Agent 系统提示词..." />
+                <textarea v-model="agentForm.system_prompt" class="textarea" rows="12" placeholder="Agent 시스템 프롬프트..." />
               </label>
               <div class="agent-card-foot">
-                <button class="btn btn-ghost btn-sm" @click="resetAgentPrompt(a.type)">恢复默认</button>
+                <button class="btn btn-ghost btn-sm" @click="resetAgentPrompt(a.type)">기본값 복원</button>
                 <span v-if="agentSaved === a.type" class="tag tag-success" style="margin-left:8px">
-                  <Check :size="10" /> 已保存
+                  <Check :size="10" /> 저장됨
                 </span>
                 <button class="btn btn-primary btn-sm ml-auto" :disabled="agentSaving" @click="saveAgentCfg(a.type)">
                   <Loader2 v-if="agentSaving" :size="12" class="animate-spin" />
-                  保存
+                  저장
                 </button>
               </div>
             </div>
@@ -179,11 +179,11 @@
         </div>
       </div>
 
-      <!-- ===== Skills 编辑 ===== -->
+      <!-- ===== Skills 편집 ===== -->
       <div v-else-if="tab === 'skills'" class="skills-layout">
-        <!-- Agent 左侧列表 -->
+        <!-- Agent 왼쪽 목록 -->
         <aside class="skills-agent-list">
-          <div class="skills-agent-title">Agent 列表</div>
+          <div class="skills-agent-title">Agent 목록</div>
           <button
             v-for="a in agentDefs"
             :key="a.type"
@@ -196,17 +196,17 @@
           </button>
         </aside>
 
-        <!-- Skill 管理右侧主区域 -->
+        <!-- Skill 관리 영역 -->
         <div class="settings-scroll skills-main">
           <div class="settings-head">
             <div class="settings-brand">
               <div class="settings-brand-mark">
-                <img v-if="showBrandImage" :src="brandLogo" alt="火宝短剧" class="settings-brand-logo" @error="showBrandImage = false" />
-                <span v-else class="settings-brand-fallback">火</span>
+                <img v-if="showBrandImage" :src="brandLogo" alt="화보 드라마" class="settings-brand-logo" @error="showBrandImage = false" />
+                <span v-else class="settings-brand-fallback">화</span>
               </div>
               <div class="settings-brand-copy">
                 <div class="settings-brand-kicker">Huobao Shorts</div>
-                <div class="settings-brand-name">火宝短剧</div>
+                <div class="settings-brand-name">화보 드라마</div>
               </div>
             </div>
             <div style="display:flex;align-items:center;gap:10px">
@@ -216,22 +216,22 @@
                 <div class="dim" style="font-size:12px">{{ selectedAgentType }} — Skills</div>
               </div>
             </div>
-            <p class="settings-desc" style="margin-top:10px">Skills 仅作为 Agent 的高级提示词层使用，不影响工作台常规功能入口。</p>
+            <p class="settings-desc" style="margin-top:10px">Skills는 Agent의 고급 프롬프트 레이어로만 사용되며 작업대의 일반 기능 진입에는 영향을 주지 않습니다.</p>
             <button class="btn btn-primary btn-sm" @click="startAddSkill">
-              <Plus :size="13" /> 新增 Skill
+              <Plus :size="13" /> Skill 추가
             </button>
           </div>
 
-          <!-- 无 skill 提示 -->
+          <!-- Skill 없음 안내 -->
           <div v-if="!currentSkills.length" class="step-empty" style="padding:48px 24px">
             <div class="empty-visual">
               <FileText :size="28" />
             </div>
-            <div class="empty-title">暂无 Skill</div>
-            <div class="empty-desc">点击右上角「新增 Skill」创建第一个提示词文件</div>
+            <div class="empty-title">Skill 없음</div>
+            <div class="empty-desc">오른쪽 위의 「Skill 추가」를 눌러 첫 프롬프트 파일을 만드세요</div>
           </div>
 
-          <!-- Skill 列表 -->
+          <!-- Skill 목록 -->
           <div class="skill-list" v-else>
             <div v-for="s in currentSkills" :key="s.id" class="card skill-card">
               <div class="skill-card-head" @click="toggleSkillEdit(s.id)">
@@ -251,16 +251,16 @@
                   class="textarea mono"
                   rows="20"
                   style="font-size:12px;line-height:1.6"
-                  placeholder="编写 SKILL.md 内容..."
+                  placeholder="SKILL.md 내용 작성..."
                 />
                 <div class="skill-card-foot">
                   <span class="dim" style="font-size:11px">skills/{{ selectedAgentType }}/{{ s.id }}/SKILL.md</span>
                   <span v-if="skillSaved === s.id" class="tag tag-success" style="margin-left:8px">
-                    <Check :size="10" /> 已保存
+                    <Check :size="10" /> 저장됨
                   </span>
                   <button class="btn btn-primary btn-sm ml-auto" :disabled="skillSaving" @click="saveSkill(s.id)">
                     <Loader2 v-if="skillSaving" :size="12" class="animate-spin" />
-                    保存
+                    저장
                   </button>
                 </div>
               </div>
@@ -276,8 +276,8 @@
         <div class="config-modal-head">
           <div>
             <div class="setup-kicker">{{ cfgEditId ? 'Edit Config' : 'New Config' }}</div>
-            <h2 class="modal-title">{{ cfgEditId ? '编辑服务配置' : `添加${serviceMeta[cfgForm.service_type].label}服务` }}</h2>
-            <div class="modal-note">推荐先选择模板，系统会自动填入更合理的 `Base URL` 与默认模型。</div>
+            <h2 class="modal-title">{{ cfgEditId ? '서비스 설정 편집' : `추가${serviceMeta[cfgForm.service_type].label}서비스` }}</h2>
+            <div class="modal-note">먼저 템플릿을 선택하면 더 적절한 `Base URL`과 기본 모델이 자동 입력됩니다.</div>
           </div>
           <span class="tag tag-accent">{{ serviceMeta[cfgForm.service_type].label }}</span>
         </div>
@@ -293,24 +293,24 @@
           </button>
         </div>
         <label class="field">
-          <span class="field-label">配置名称</span>
-          <input v-model="cfgForm.name" class="input" placeholder="如 火宝默认图像服务" />
+          <span class="field-label">설정 이름</span>
+          <input v-model="cfgForm.name" class="input" placeholder="예: 화보 기본 이미지 서비스" />
         </label>
-        <label class="field"><span class="field-label">服务商</span>
-          <BaseSelect v-model="cfgForm.provider" :options="providerSelectOptions" placeholder="选择服务商" searchable />
+        <label class="field"><span class="field-label">서비스 제공자</span>
+          <BaseSelect v-model="cfgForm.provider" :options="providerSelectOptions" placeholder="서비스 제공자 선택" searchable />
         </label>
         <label class="field">
-          <span class="field-label">优先级</span>
+          <span class="field-label">우선순위</span>
           <input v-model.number="cfgForm.priority" class="input" type="number" min="0" max="999" />
-          <span class="field-hint">数值越高越优先。工作台默认会优先使用同类型里优先级最高的启用配置。</span>
+          <span class="field-hint">숫자가 높을수록 우선됩니다. 작업대는 같은 유형의 활성 설정 중 우선순위가 가장 높은 항목을 기본 사용합니다.</span>
         </label>
         <label class="field"><span class="field-label">API Key</span><input v-model="cfgForm.api_key" class="input" type="password" placeholder="sk-..." /></label>
         <label class="field"><span class="field-label">Base URL</span><input v-model="cfgForm.base_url" class="input" placeholder="https://..." /></label>
         <div class="endpoint-hint">
-          <span class="dim">实际端点前缀：</span>
+          <span class="dim">실제 엔드포인트 접두사:</span>
           <span class="mono">{{ endpointHint }}</span>
         </div>
-        <label class="field"><span class="field-label">模型（逗号分隔）</span><input v-model="cfgForm.modelStr" class="input" placeholder="model-name" /></label>
+        <label class="field"><span class="field-label">모델(쉼표로 구분)</span><input v-model="cfgForm.modelStr" class="input" placeholder="model-name" /></label>
         <div v-if="cfgTestResult" class="test-result" :class="{ ok: cfgTestResult.reachable, bad: !cfgTestResult.reachable }">
           <div class="test-result-head">
             <span class="tag" :class="cfgTestResult.reachable ? 'tag-success' : 'tag-error'">{{ cfgTestResult.status || 'ERROR' }}</span>
@@ -322,10 +322,10 @@
         <div class="modal-actions">
           <button type="button" class="btn btn-ghost" :disabled="cfgTesting" @click="testDraftCfg">
             <Loader2 v-if="cfgTesting" :size="12" class="animate-spin" />
-            <span v-else>测试配置</span>
+            <span v-else>설정 테스트</span>
           </button>
-          <button type="button" class="btn" @click="cfgDialog = false">取消</button>
-          <button type="submit" class="btn btn-primary">保存</button>
+          <button type="button" class="btn" @click="cfgDialog = false">취소</button>
+          <button type="submit" class="btn btn-primary">저장</button>
         </div>
       </form>
     </div>
@@ -336,16 +336,16 @@
         <div class="config-modal-head">
           <div>
             <div class="setup-kicker">Huobao Preset</div>
-            <h2 class="modal-title">火宝一键配置</h2>
-            <div class="modal-note">按火宝推荐链路自动创建或更新 4 条服务配置，并同时初始化 5 个 Agent 的默认模型。</div>
+            <h2 class="modal-title">화보한 번에 설정</h2>
+            <div class="modal-note">화보 추천 경로에 따라 서비스 설정 4개를 자동 생성 또는 업데이트하고 5개 Agent의 기본 모델도 함께 초기화합니다.</div>
           </div>
-          <span class="tag tag-success">推荐</span>
+          <span class="tag tag-success">추천</span>
         </div>
         <div class="huobao-grid">
           <label class="field">
-            <span class="field-label">Huobao API Key <span class="dim">(统一用于文本 / 图片 / 视频 / 音频)</span></span>
-            <input v-model="huobaoForm.apiKey" class="input" type="password" placeholder="用于 api.chatfire.site 全链路服务" />
-            <span class="field-hint">还没有账号？<a href="https://api.chatfire.site/" target="_blank" rel="noopener">立即注册 →</a></span>
+            <span class="field-label">Huobao API Key <span class="dim">(텍스트 / 이미지 / 영상 / 오디오 공통 사용)</span></span>
+            <input v-model="huobaoForm.apiKey" class="input" type="password" placeholder="api.chatfire.site 전체 서비스에 사용" />
+            <span class="field-hint">아직 계정이 없나요?<a href="https://api.chatfire.site/" target="_blank" rel="noopener">지금 가입 →</a></span>
           </label>
         </div>
         <div class="preset-grid compact">
@@ -359,8 +359,8 @@
           </article>
         </div>
         <div class="modal-actions">
-          <button type="button" class="btn" @click="presetDialog = false">取消</button>
-          <button type="submit" class="btn btn-primary">创建并启用</button>
+          <button type="button" class="btn" @click="presetDialog = false">취소</button>
+          <button type="submit" class="btn btn-primary">생성하고 활성화</button>
         </div>
       </form>
     </div>
@@ -368,22 +368,22 @@
     <!-- Add Skill Dialog -->
     <div v-if="addSkillDialog" class="overlay" @click.self="addSkillDialog = false">
       <form class="modal card" @submit.prevent="confirmAddSkill">
-        <h2 class="modal-title">新增 Skill — {{ selectedAgentLabel }}</h2>
+        <h2 class="modal-title">Skill 추가 — {{ selectedAgentLabel }}</h2>
         <label class="field">
-          <span class="field-label">Skill 目录名 <span class="dim">(英文，唯一)</span></span>
-          <input v-model="newSkillForm.id" class="input" placeholder="如 custom-extraction" />
+          <span class="field-label">Skill 디렉터리 이름 <span class="dim">(영문, 고유값)</span></span>
+          <input v-model="newSkillForm.id" class="input" placeholder="예: custom-extraction" />
         </label>
         <label class="field">
-          <span class="field-label">名称</span>
-          <input v-model="newSkillForm.name" class="input" placeholder="如 自定义提取规则" />
+          <span class="field-label">이름</span>
+          <input v-model="newSkillForm.name" class="input" placeholder="예: 사용자 지정 추출 규칙" />
         </label>
         <label class="field">
-          <span class="field-label">描述</span>
-          <input v-model="newSkillForm.description" class="input" placeholder="简短描述此 Skill 的用途" />
+          <span class="field-label">설명</span>
+          <input v-model="newSkillForm.description" class="input" placeholder="이 Skill의 용도를 짧게 설명하세요" />
         </label>
         <div class="modal-actions">
-          <button type="button" class="btn" @click="addSkillDialog = false">取消</button>
-          <button type="submit" class="btn btn-primary" :disabled="!newSkillForm.id">创建</button>
+          <button type="button" class="btn" @click="addSkillDialog = false">취소</button>
+          <button type="submit" class="btn btn-primary" :disabled="!newSkillForm.id">생성</button>
         </div>
       </form>
     </div>
@@ -401,10 +401,10 @@ const showBrandImage = ref(true)
 const tab = ref('ai')
 const showAdvanced = ref(false)
 const baseTabs = [
-  { id: 'ai', label: 'AI 服务', icon: Cpu },
+  { id: 'ai', label: 'AI 서비스', icon: Cpu },
 ]
 const advancedTabs = [
-  { id: 'agents', label: 'Agent 配置', icon: Bot },
+  { id: 'agents', label: 'Agent 설정', icon: Bot },
   { id: 'skills', label: 'Skills', icon: FileText },
 ]
 watch(showAdvanced, (v) => {
@@ -420,40 +420,40 @@ const cfgTesting = ref(false)
 const cfgTestResult = ref(null)
 const cfgForm = reactive({ name: '', provider: '', api_key: '', base_url: '', modelStr: '', service_type: 'text', priority: 0 })
 const huobaoForm = reactive({ apiKey: '' })
-const serviceTypes = [{ type: 'text', label: '文本' }, { type: 'image', label: '图片' }, { type: 'video', label: '视频' }, { type: 'audio', label: '音频' }]
+const serviceTypes = [{ type: 'text', label: '텍스트' }, { type: 'image', label: '이미지' }, { type: 'video', label: '영상' }, { type: 'audio', label: '오디오' }]
 const providers = ['ali', 'chatfire', 'gemini', 'minimax', 'openai', 'openrouter', 'vidu', 'volcengine']
 const providerSelectOptions = computed(() => providers.map(p => ({ label: p, value: p })))
 const serviceMeta = {
-  text: { label: '文本', desc: '剧本改写、角色场景提取、分镜拆解等 Agent 文本能力' },
-  image: { label: '图片', desc: '角色图、场景图、镜头图与首尾帧等静态图像生成' },
-  video: { label: '视频', desc: '镜头视频生成，支持单图、多图和首尾帧模式' },
-  audio: { label: '音频', desc: '角色试听、旁白与对白语音生成' },
+  text: { label: '텍스트', desc: '극본 수정, 캐릭터/장면 추출, 스토리보드 분해 등 Agent 텍스트 기능' },
+  image: { label: '이미지', desc: '캐릭터, 장면, 샷 이미지와 첫/끝 프레임 등 정적 이미지 생성' },
+  video: { label: '영상', desc: '샷 영상 생성. 단일 이미지, 다중 이미지, 첫/끝 프레임 모드를 지원합니다.' },
+  audio: { label: '오디오', desc: '캐릭터 미리듣기, 내레이션, 대사 음성 생성' },
 }
 const providerPresets = {
   text: {
-    chatfire: { label: 'ChatFire 推荐', baseUrl: 'https://api.chatfire.site', models: ['gemini-3-pro-preview'] },
-    openrouter: { label: 'OpenRouter 推荐', baseUrl: 'https://openrouter.ai/api', models: ['google/gemini-3-flash-preview'] },
-    openai: { label: 'OpenAI 推荐', baseUrl: 'https://api.openai.com', models: ['gpt-4.1-mini'] },
+    chatfire: { label: 'ChatFire 추천', baseUrl: 'https://api.chatfire.site', models: ['gemini-3-pro-preview'] },
+    openrouter: { label: 'OpenRouter 추천', baseUrl: 'https://openrouter.ai/api', models: ['google/gemini-3-flash-preview'] },
+    openai: { label: 'OpenAI 추천', baseUrl: 'https://api.openai.com', models: ['gpt-4.1-mini'] },
   },
   image: {
-    chatfire: { label: 'ChatFire 推荐', baseUrl: 'https://api.chatfire.site', models: ['doubao-seedream-4-5-251128'] },
-    gemini: { label: 'Gemini 推荐', baseUrl: 'https://api.chatfire.site', models: ['gemini-3-pro-image-preview'] },
-    volcengine: { label: '火山推荐', baseUrl: 'https://ark.cn-beijing.volces.com', models: ['doubao-seedream-4-0-250828'] },
+    chatfire: { label: 'ChatFire 추천', baseUrl: 'https://api.chatfire.site', models: ['doubao-seedream-4-5-251128'] },
+    gemini: { label: 'Gemini 추천', baseUrl: 'https://api.chatfire.site', models: ['gemini-3-pro-image-preview'] },
+    volcengine: { label: '화산엔진 추천', baseUrl: 'https://ark.cn-beijing.volces.com', models: ['doubao-seedream-4-0-250828'] },
   },
   video: {
-    volcengine: { label: '火宝视频', baseUrl: 'https://api.chatfire.site/volcengine', models: ['doubao-seedance-1-5-pro-251215'] },
-    vidu: { label: 'Vidu 推荐', baseUrl: 'https://api.vidu.com', models: ['viduq3-turbo'] },
-    ali: { label: '阿里推荐', baseUrl: 'https://dashscope.aliyuncs.com', models: ['wan2.6-i2v-flash'] },
+    volcengine: { label: '화보영상', baseUrl: 'https://api.chatfire.site/volcengine', models: ['doubao-seedance-1-5-pro-251215'] },
+    vidu: { label: 'Vidu 추천', baseUrl: 'https://api.vidu.com', models: ['viduq3-turbo'] },
+    ali: { label: '알리 추천', baseUrl: 'https://dashscope.aliyuncs.com', models: ['wan2.6-i2v-flash'] },
   },
   audio: {
-    minimax: { label: '火宝音频', baseUrl: 'https://api.chatfire.site/minimax', models: ['speech-2.8-hd'] },
+    minimax: { label: '화보오디오', baseUrl: 'https://api.chatfire.site/minimax', models: ['speech-2.8-hd'] },
   },
 }
 const huobaoPresetCards = [
-  { serviceType: 'text', label: '文本', provider: 'chatfire', baseUrl: 'https://api.chatfire.site', model: 'gemini-3-pro-preview', priority: 100 },
-  { serviceType: 'image', label: '图片', provider: 'gemini', baseUrl: 'https://api.chatfire.site', model: 'gemini-3-pro-image-preview', priority: 99 },
-  { serviceType: 'video', label: '视频', provider: 'volcengine', baseUrl: 'https://api.chatfire.site/volcengine', model: 'doubao-seedance-1-5-pro-251215', priority: 98 },
-  { serviceType: 'audio', label: '音频', provider: 'minimax', baseUrl: 'https://api.chatfire.site/minimax', model: 'speech-2.8-hd', priority: 97 },
+  { serviceType: 'text', label: '텍스트', provider: 'chatfire', baseUrl: 'https://api.chatfire.site', model: 'gemini-3-pro-preview', priority: 100 },
+  { serviceType: 'image', label: '이미지', provider: 'gemini', baseUrl: 'https://api.chatfire.site', model: 'gemini-3-pro-image-preview', priority: 99 },
+  { serviceType: 'video', label: '영상', provider: 'volcengine', baseUrl: 'https://api.chatfire.site/volcengine', model: 'doubao-seedance-1-5-pro-251215', priority: 98 },
+  { serviceType: 'audio', label: '오디오', provider: 'minimax', baseUrl: 'https://api.chatfire.site/minimax', model: 'speech-2.8-hd', priority: 97 },
 ]
 const endpointPrefixes = {
   chatfire: '/v1',
@@ -470,7 +470,7 @@ const endpointHint = computed(() => {
   const provider = cfgForm.provider
   const base = cfgForm.base_url || 'https://...'
   const prefix = endpointPrefixes[provider] || ''
-  if (!provider) return '选择服务商后显示推荐端点前缀'
+  if (!provider) return '서비스 제공자를 선택하면 추천 엔드포인트 접두사가 표시됩니다'
   return `${base}${prefix}`
 })
 
@@ -492,7 +492,7 @@ function applyProviderPreset(type, provider) {
 
 async function loadCfgs() { try { cfgs.value = await aiConfigAPI.list() } catch (e) { toast.error(e.message) } }
 async function toggleCfg(c) { await aiConfigAPI.update(c.id, { is_active: !c.is_active }); loadCfgs() }
-async function delCfg(id) { await aiConfigAPI.del(id); toast.success('已删除'); loadCfgs() }
+async function delCfg(id) { await aiConfigAPI.del(id); toast.success('삭제됨'); loadCfgs() }
 function startAddCfg(t) {
   cfgEditId.value = null
   cfgTestResult.value = null
@@ -519,8 +519,8 @@ async function testCfgPayload(payload) {
   cfgTesting.value = true
   try {
     cfgTestResult.value = await aiConfigAPI.test(payload)
-    if (cfgTestResult.value.reachable) toast.success('端点已响应')
-    else toast.warning('端点未通过测试')
+    if (cfgTestResult.value.reachable) toast.success('엔드포인트가 응답했습니다')
+    else toast.warning('엔드포인트 테스트를 통과하지 못했습니다')
   } catch (e) {
     toast.error(e.message)
   } finally {
@@ -547,17 +547,17 @@ async function testExistingCfg(c) {
   })
 }
 async function saveCfg() {
-  if (!cfgForm.provider) { toast.warning('选择服务商'); return }
+  if (!cfgForm.provider) { toast.warning('서비스 제공자 선택'); return }
   const models = cfgForm.modelStr.split(',').map(s => s.trim()).filter(Boolean)
   try {
     if (cfgEditId.value) await aiConfigAPI.update(cfgEditId.value, { name: cfgForm.name, provider: cfgForm.provider, api_key: cfgForm.api_key, base_url: cfgForm.base_url, model: models, priority: cfgForm.priority })
     else await aiConfigAPI.create({ service_type: cfgForm.service_type, provider: cfgForm.provider, name: cfgForm.name || `${cfgForm.provider}-${cfgForm.service_type}`, api_key: cfgForm.api_key, base_url: cfgForm.base_url, model: models, priority: cfgForm.priority })
-    cfgDialog.value = false; toast.success('已保存'); loadCfgs()
+    cfgDialog.value = false; toast.success('저장됨'); loadCfgs()
   } catch (e) { toast.error(e.message) }
 }
 async function applyHuobaoPreset() {
   if (!huobaoForm.apiKey) {
-    toast.warning('请填写 Huobao API Key')
+    toast.warning('Huobao API Key를 입력하세요')
     return
   }
   try {
@@ -565,7 +565,7 @@ async function applyHuobaoPreset() {
     await loadCfgs()
     await loadAgents()
     presetDialog.value = false
-    toast.success('火宝推荐配置与默认 Agent LLM 已写入')
+    toast.success('화보추천 설정과 기본 Agent LLM이 저장되었습니다')
   } catch (e) {
     toast.error(e.message)
   }
@@ -579,99 +579,99 @@ const agentSaved = ref(null)
 const agentForm = reactive({ model: '', temperature: 0.7, max_tokens: 4096, system_prompt: '' })
 
 const agentDefs = [
-  { type: 'script_rewriter', label: '剧本改写', icon: '📝' },
-  { type: 'extractor', label: '角色场景提取', icon: '🔍' },
-  { type: 'storyboard_breaker', label: '分镜拆解', icon: '🎬' },
-  { type: 'voice_assigner', label: '音色分配', icon: '🎙' },
-  { type: 'grid_prompt_generator', label: '图片提示词生成', icon: '🖼' },
+  { type: 'script_rewriter', label: '극본 수정', icon: '📝' },
+  { type: 'extractor', label: '캐릭터/장면 추출', icon: '🔍' },
+  { type: 'storyboard_breaker', label: '스토리보드 분해', icon: '🎬' },
+  { type: 'voice_assigner', label: '음색 배정', icon: '🎙' },
+  { type: 'grid_prompt_generator', label: '이미지 프롬프트 생성', icon: '🖼' },
 ]
 
 const defaultPrompts = {
-  script_rewriter: `你是专业编剧，擅长将小说改编为短剧剧本。
+  script_rewriter: `당신은 소설을 숏폼 드라마 극본으로 각색하는 데 능한 전문 작가입니다.
 
-工作流程：
-1. 调用 read_episode_script 读取原始内容
-2. 根据读取到的内容，自己进行改写（输出格式化剧本格式）
-3. 调用 save_script 保存改写后的完整剧本
+작업 흐름:
+1. read_episode_script를 호출해 원본 내용을 읽습니다.
+2. 읽은 내용을 직접 형식화된 극본으로 수정합니다.
+3. save_script를 호출해 수정된 전체 극본을 저장합니다.
 
-格式化剧本格式：
-- 场景头：## S编号 | 内景/外景 · 地点 | 时间段
-- 动作描写：自然段落，不包含镜头语言
-- 对白：角色名：（状态/表情）台词内容
-- 每个场景 30-60 秒内容`,
-  extractor: `你是制片助理，擅长从剧本中提取角色和场景信息，并在提取时与项目已有数据进行智能去重。
+형식화된 극본 형식:
+- 장면 헤더: ## S번호 | 실내/실외 · 장소 | 시간대
+- 동작 묘사：자연스러운 문단, 카메라 언어 제외
+- 대사: 캐릭터명: (상태/표정) 대사 내용
+- 각 장면은 30-60초 분량`,
+  extractor: `당신은 극본에서 캐릭터와 장면 정보를 추출하고 프로젝트 기존 데이터와 지능적으로 중복 제거하는 데 능한 제작 조수입니다.
 
-工作流程：
-1. 调用 read_script_for_extraction 读取格式化剧本
-2. 调用 read_existing_characters 读取项目中已存在的角色列表（用于去重）
-3. 调用 read_existing_scenes 读取项目中已存在的场景列表（用于去重）
-4. 分析剧本内容，提取所有角色信息
-5. 对每个角色：若同名已存在则合并更新，若不存在则新增
-6. 调用 save_dedup_characters 保存角色（去重合并，自动处理新增和更新）
-7. 分析剧本内容，提取所有场景信息
-8. 对每个场景：若同地点+时间段已存在则复用，若不存在则新增
-9. 调用 save_dedup_scenes 保存场景（去重合并，自动处理新增和复用）
+작업 흐름:
+1. read_script_for_extraction을 호출해 형식화된 극본을 읽습니다.
+2. read_existing_characters로 프로젝트의 기존 캐릭터 목록을 읽어 중복 제거 기준으로 삼습니다.
+3. read_existing_scenes로 프로젝트의 기존 장면 목록을 읽어 중복 제거 기준으로 삼습니다.
+4. 극본을 분석해 모든 캐릭터 정보를 추출합니다.
+5. 캐릭터별로 같은 이름이 있으면 병합 업데이트하고, 없으면 새로 추가합니다.
+6. save_dedup_characters를 호출해 캐릭터를 저장합니다.
+7. 극본을 분석해 모든 장면 정보를 추출합니다.
+8. 장면별로 같은 장소와 시간대가 있으면 재사용하고, 없으면 새로 추가합니다.
+9. save_dedup_scenes를 호출해 장면을 저장합니다.
 
-去重规则：
-- 角色：按名字精确匹配，同名保留现有（合并信息）
-- 场景：按【地点+时间段】精确匹配；同地点不同时段视为新场景
+중복 제거 규칙:
+- 캐릭터: 이름을 정확히 비교하고 같은 이름은 기존 항목에 병합합니다.
+- 장면: 장소와 시간대를 함께 정확히 비교하며 같은 장소라도 시간대가 다르면 새 장면으로 봅니다.
 
-提取要求：
-- 角色要包含完整的外貌特征描述（发型、服装、体态等）
-- 场景要包含光线、色调、氛围等视觉信息
-- 不要遗漏任何有台词或重要动作的角色`,
-  storyboard_breaker: `你是资深影视分镜师，擅长将剧本拆解为分镜方案。
+추출 요구사항:
+- 캐릭터에는 헤어스타일, 의상, 체형 등 외형 특징을 충분히 포함합니다.
+- 장면에는 빛, 색감, 분위기 같은 시각 정보를 포함합니다.
+- 대사나 중요한 행동이 있는 캐릭터를 누락하지 마세요`,
+  storyboard_breaker: `당신은 극본을 스토리보드 계획으로 분해하는 데 능한 시니어 영상 스토리보드 아티스트입니다.
 
-工作流程：
-1. 调用 read_storyboard_context 读取剧本、角色列表、场景列表
-2. 将剧本拆解为镜头序列（每个镜头 10-15 秒）
-3. 为每个镜头生成视频提示词（video_prompt）
-4. 调用 save_storyboards 保存所有分镜`,
-  voice_assigner: `你是配音导演，擅长为角色选择合适的音色。
+작업 흐름:
+1. read_storyboard_context를 호출해 극본, 캐릭터 목록, 장면 목록을 읽습니다.
+2. 극본을 샷 순서로 분해합니다. 각 샷은 10-15초를 권장합니다.
+3. 각 샷에 video_prompt를 포함한 영상 생성 프롬프트를 작성합니다.
+4. save_storyboards를 호출해 모든 스토리보드를 저장합니다.`,
+  voice_assigner: `당신은 캐릭터에 어울리는 음색을 고르는 데 능한 더빙 디렉터입니다.
 
-工作流程：
-1. 调用 list_voices 获取可用音色列表
-2. 调用 get_characters 获取所有角色信息
-3. 根据每个角色的性别、性格、年龄、角色定位，选择最匹配的音色
-4. 对每个角色调用 assign_voice 分配音色，并说明选择理由
+작업 흐름:
+1. list_voices를 호출해 사용 가능한 음색 목록을 가져옵니다.
+2. get_characters를 호출해 모든 캐릭터 정보를 가져옵니다.
+3. 캐릭터별 성별, 성격, 나이, 역할을 기준으로 가장 잘 맞는 음색을 고릅니다.
+4. 각 캐릭터에 assign_voice를 호출해 음색을 배정하고 선택 이유를 설명합니다.
 
-注意：每个角色都必须分配音色，不要遗漏。`,
-  grid_prompt_generator: `你是专业的 AI 图像提示词工程师，擅长为角色、场景和宫格图生成高质量的英文提示词。
+주의：모든 캐릭터에 반드시 음색을 배정하고 누락하지 마세요.`,
+  grid_prompt_generator: `당신은 캐릭터, 장면, 그리드 이미지를 위한 고품질 영어 프롬프트를 만드는 전문 AI 이미지 프롬프트 엔지니어입니다.
 
-你将收到用户的请求，告知要生成哪种类型的提示词：
-- "角色" → 生成角色图片提示词
-- "场景" → 生成场景图片提示词
-- "宫格" → 生成宫格图提示词
+사용자의 요청에 따라 다음 유형의 프롬프트를 생성합니다:
+- "캐릭터" → 캐릭터 이미지 프롬프트
+- "장면" → 장면 이미지 프롬프트
+- "그리드" → 생성그리드 이미지 프롬프트
 
-## 角色图片提示词
+## 캐릭터 이미지 프롬프트
 
-工作流程：
-1. 调用 read_characters 读取所有角色信息
-2. 根据角色外貌特征（appearance）、性格（personality）、定位（role）生成英文提示词
-3. 提示词结构：[外貌描述]，[性格/气质]，[角色定位]，[电影感]，[高质量]，[无文字水印]
+작업 흐름:
+1. read_characters를 호출해 모든 캐릭터 정보를 읽습니다.
+2. 외형(appearance), 성격(personality), 역할(role)을 기준으로 영어 프롬프트를 생성합니다.
+3. 프롬프트 구조: [외형 설명], [성격/분위기], [역할], [영화적], [고품질], [문자/워터마크 없음]
 
-## 场景图片提示词
+## 장면 이미지 프롬프트
 
-工作流程：
-1. 调用 read_scenes 读取所有场景信息
-2. 根据场景地点（location）、时间段（time）、已有描述（prompt）生成英文提示词
-3. 提示词结构：[地点]，[时间/光线/氛围]，[已有描述]，[电影感场景]，[高质量]，[无文字水印]
+작업 흐름:
+1. read_scenes를 호출해 모든 장면 정보를 읽습니다.
+2. 장소(location), 시간대(time), 기존 설명(prompt)을 기준으로 영어 프롬프트를 생성합니다.
+3. 프롬프트 구조: [장소], [시간/빛/분위기], [기존 설명], [영화적 장면], [고품질], [문자/워터마크 없음]
 
-## 宫格图提示词（参考 skills/grid-image-generator/SKILL.md）
+## 그리드 이미지 프롬프트（참조 skills/grid-image-generator/SKILL.md）
 
-工作流程：
-1. 调用 read_shots_for_grid 读取选中镜头的详细信息
-2. 根据 mode 调用 generate_grid_prompt：
-   - first_frame 模式：每格=一个镜头的首帧，NxN 风格统一
-   - first_last 模式：每个镜头占2格（左首右尾），同一行风格连续
-   - multi_ref 模式：所有格子都是同一镜头的不同参考角度
-3. 返回 grid_prompt（整体提示词）和 cell_prompts（每格提示词）
+작업 흐름:
+1. read_shots_for_grid를 호출해 선택한 샷의 상세 정보를 읽습니다.
+2. mode에 따라 generate_grid_prompt를 호출합니다.
+   - first_frame 모드: 각 칸은 한 샷의 첫 프레임이며 NxN 스타일을 통일합니다.
+   - first_last 모드: 각 샷은 2칸을 사용하며 왼쪽은 첫 프레임, 오른쪽은 끝 프레임입니다.
+   - multi_ref 모드: 모든 칸은 같은 샷의 서로 다른 참조 각도입니다.
+3. grid_prompt(전체 프롬프트)와 cell_prompts(칸별 프롬프트)를 반환합니다.
 
-提示词规范：
-- 使用英文提示词
-- 必须包含 "consistent art style" 保持风格统一
-- 必须包含 "cinematic quality"
-- 避免出现文字或水印`,
+프롬프트 규칙:
+- 영어 프롬프트 사용
+- "consistent art style"을 포함해 스타일 일관성을 유지합니다.
+- 반드시 포함 "cinematic quality"
+- 문자나 워터마크가 나오지 않게 하세요`,
 }
 
 function getAgentCfg(type) {
@@ -713,7 +713,7 @@ function toggleAgentEdit(type) {
 
 function resetAgentPrompt(type) {
   agentForm.system_prompt = defaultPrompts[type] || ''
-  toast.info('已恢复默认提示词，点击保存生效')
+  toast.info('기본 프롬프트를 복원했습니다. 저장하면 적용됩니다.')
 }
 
 async function saveAgentCfg(type) {
@@ -736,7 +736,7 @@ async function saveAgentCfg(type) {
     }
     await loadAgents()
     agentSaved.value = type
-    toast.success(`${agentDefs.find(a => a.type === type)?.label} 配置已保存`)
+    toast.success(`${agentDefs.find(a => a.type === type)?.label} 설정이 저장되었습니다`)
     setTimeout(() => { if (agentSaved.value === type) agentSaved.value = null }, 3000)
   } catch (e) {
     toast.error(e.message)
@@ -791,19 +791,19 @@ async function confirmAddSkill() {
     await skillsAPI.create({ id: skillId, name: newSkillForm.name, description: newSkillForm.description })
     addSkillDialog.value = false
     await loadAllSkills()
-    toast.success('Skill 创建成功')
+    toast.success('Skill이 생성되었습니다')
   } catch (e) {
     toast.error(e.message)
   }
 }
 
 async function deleteSkill(id) {
-  if (!confirm(`确定删除 Skill「${id}」？`)) return
+  if (!confirm(`정말 삭제할까요 Skill「${id}」？`)) return
   try {
     await skillsAPI.del(id)
     if (editingSkill.value === id) editingSkill.value = null
     await loadAllSkills()
-    toast.success('已删除')
+    toast.success('삭제됨')
   } catch (e) {
     toast.error(e.message)
   }
@@ -826,7 +826,7 @@ async function saveSkill(id) {
     await skillsAPI.update(id, skillContent.value)
     await loadAllSkills()
     skillSaved.value = id
-    toast.success(`已保存`)
+    toast.success(`저장됨`)
     setTimeout(() => { if (skillSaved.value === id) skillSaved.value = null }, 3000)
   } catch (e) {
     toast.error(e.message)
@@ -1045,7 +1045,7 @@ onMounted(() => { loadCfgs(); loadAgents(); loadAllSkills() })
 .agent-card-body { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid var(--border); padding-top: 16px; }
 .agent-card-foot { display: flex; align-items: center; gap: 8px; padding-top: 8px; }
 
-/* Skills 布局 */
+/* Skills layout */
 .skills-layout { display: flex; height: 100%; overflow: hidden; }
 .skills-agent-list {
   width: 200px; flex-shrink: 0; border-right: 1px solid var(--border);
