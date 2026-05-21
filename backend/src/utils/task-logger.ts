@@ -70,7 +70,7 @@ function sanitizeValue(value: unknown): unknown {
     for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
       const lower = key.toLowerCase()
       if (['authorization', 'api_key', 'apikey', 'apiKey', 'token', 'access_token'].includes(key) ||
-        lower.includes('authorization') || lower.includes('token') || lower.includes('apikey') || lower.includes('api_key')) {
+        lower.includes('authorization') || lower.includes('token') || lower.includes('apikey') || lower.includes('api_key') || lower === 'x-goog-api-key') {
         out[key] = '***'
         continue
       }

@@ -1,8 +1,6 @@
 /**
  * Gemini 이미지生成 Adapter
- * 认证: 同时兼容两种方式
- * 1. URL Query 参数 ?key=
- * 2. Header 认证（x-goog-api-key / Authorization: Bearer）
+ * 인증: URL Query ?key=와 x-goog-api-key 헤더를 사용합니다.
  * 请求: Google REST 风칸的 contents[].parts[] 结构
  * 响应: base64 编码在 inlineData.data 中，无 URL
  */
@@ -68,7 +66,6 @@ export class GeminiImageAdapter implements ImageProviderAdapter {
       headers: {
         'Content-Type': 'application/json',
         'x-goog-api-key': config.apiKey,
-        'Authorization': `Bearer ${config.apiKey}`,
       },
       body,
     }
@@ -115,7 +112,6 @@ export class GeminiImageAdapter implements ImageProviderAdapter {
       method: 'GET',
       headers: {
         'x-goog-api-key': config.apiKey,
-        'Authorization': `Bearer ${config.apiKey}`,
       },
       body: undefined,
     }

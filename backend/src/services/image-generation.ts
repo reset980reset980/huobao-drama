@@ -133,7 +133,7 @@ async function processImageGeneration(id: number, config: AIConfig) {
       signal: AbortSignal.timeout(600_000),
     })
 
-    if (!resp.ok) throw new Error(`API error ${resp.status}: ${await resp.text()}`)
+    if (!resp.ok) throw new Error(formatImageProviderError(resp.status, await resp.text()))
     const result = await resp.json() as any
     logTaskPayload('ImageTask', 'response payload', {
       id,
@@ -169,12 +169,24 @@ async function processImageGeneration(id: number, config: AIConfig) {
     logTaskProgress('ImageTask', 'poll-start', { id, taskId, provider: config.provider })
     await pollImageTask(id, config, taskId!)
   } catch (err: any) {
-    logTaskError('ImageTask', 'process', { id, provider: config.provider, error: err.message })
+    const message = localizeImageError(err.message)
+    logTaskError('ImageTask', 'process', { id, provider: config.provider, error: message })
     db.update(schema.imageGenerations)
-      .set({ status: 'failed', errorMsg: err.message, updatedAt: now() })
+      .set({ status: 'failed', errorMsg: message, updatedAt: now() })
       .where(eq(schema.imageGenerations.id, id))
       .run()
   }
+}
+
+function formatImageProviderError(status: number, text: string) {
+  return localizeImageError(`API error ${status}: ${text}`)
+}
+
+function localizeImageError(message: string) {
+  if (/无效的\s*API\s*Key|invalid\s*api\s*key|invalid_api_key/i.test(message)) {
+    return '이미지 생성 API 키가 유효하지 않습니다. 설정 > AI 서비스 > 이미지에서 현재 provider에 맞는 키와 Base URL을 확인하세요.'
+  }
+  return message.replace(/无效的\s*API\s*Key/gi, 'API 키가 유효하지 않습니다')
 }
 
 async function normalizeReferenceImages(raw: string | null | undefined): Promise<string[]> {
