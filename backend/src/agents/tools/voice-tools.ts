@@ -56,14 +56,7 @@ export function createVoiceTools(episodeId: number, dramaId: number) {
           language: v.language,
           provider,
         }
-      }) : [
-        { id: 'alloy', name: 'Alloy', gender: '중성', traits: '균형감 있고 자연스러움', suitable_for: '내레이션、범용', language: '다국어', provider },
-        { id: 'echo', name: 'Echo', gender: '남성 음성', traits: '낮고 안정적임', suitable_for: '성숙한 남성、내레이션', language: '다국어', provider },
-        { id: 'fable', name: 'Fable', gender: '남성 음성', traits: '따뜻하고 표현력이 풍부함', suitable_for: '젊은 남성、스토리텔링', language: '다국어', provider },
-        { id: 'onyx', name: 'Onyx', gender: '남성 음성', traits: '깊고 힘 있음', suitable_for: '권위 있는 캐릭터、악역', language: '다국어', provider },
-        { id: 'nova', name: 'Nova', gender: '여성 음성', traits: '부드럽고 달콤함', suitable_for: '젊은 여성、여자 주인공', language: '다국어', provider },
-        { id: 'shimmer', name: 'Shimmer', gender: '여성 음성', traits: '밝고 활발함', suitable_for: '활발한 여성、소녀', language: '다국어', provider },
-      ]
+      }) : fallbackVoicesForProvider(provider)
 
       const payload = {
         provider,
@@ -96,6 +89,30 @@ export function createVoiceTools(episodeId: number, dramaId: number) {
   })
 
   return { getCharacters, listVoices, assignVoice }
+}
+
+function fallbackVoicesForProvider(provider: string) {
+  if (provider.toLowerCase() === 'gemini') {
+    return [
+      { id: 'Kore', name: 'Kore', gender: '중성', traits: '단단하고 명료함', suitable_for: '내레이션、주도적인 인물、진지한 장면', language: '다국어', provider },
+      { id: 'Puck', name: 'Puck', gender: '남성 음성', traits: '밝고 경쾌함', suitable_for: '젊은 남성、활발한 캐릭터', language: '다국어', provider },
+      { id: 'Charon', name: 'Charon', gender: '남성 음성', traits: '침착하고 정보 전달형', suitable_for: '성숙한 남성、설명 장면', language: '다국어', provider },
+      { id: 'Fenrir', name: 'Fenrir', gender: '남성 음성', traits: '강하고 흥분감 있음', suitable_for: '갈등 장면、긴장감 있는 인물', language: '다국어', provider },
+      { id: 'Aoede', name: 'Aoede', gender: '여성 음성', traits: '산뜻하고 부드러움', suitable_for: '여자 주인공、밝은 조연', language: '다국어', provider },
+      { id: 'Leda', name: 'Leda', gender: '여성 음성', traits: '젊고 맑음', suitable_for: '소녀、젊은 여성', language: '다국어', provider },
+      { id: 'Sulafat', name: 'Sulafat', gender: '중성', traits: '따뜻하고 안정적임', suitable_for: '감성 내레이션、차분한 인물', language: '다국어', provider },
+      { id: 'Vindemiatrix', name: 'Vindemiatrix', gender: '여성 음성', traits: '부드럽고 섬세함', suitable_for: '성숙한 여성、감정 연기', language: '다국어', provider },
+    ]
+  }
+
+  return [
+    { id: 'alloy', name: 'Alloy', gender: '중성', traits: '균형감 있고 자연스러움', suitable_for: '내레이션、범용', language: '다국어', provider },
+    { id: 'echo', name: 'Echo', gender: '남성 음성', traits: '낮고 안정적임', suitable_for: '성숙한 남성、내레이션', language: '다국어', provider },
+    { id: 'fable', name: 'Fable', gender: '남성 음성', traits: '따뜻하고 표현력이 풍부함', suitable_for: '젊은 남성、스토리텔링', language: '다국어', provider },
+    { id: 'onyx', name: 'Onyx', gender: '남성 음성', traits: '깊고 힘 있음', suitable_for: '권위 있는 캐릭터、악역', language: '다국어', provider },
+    { id: 'nova', name: 'Nova', gender: '여성 음성', traits: '부드럽고 달콤함', suitable_for: '젊은 여성、여자 주인공', language: '다국어', provider },
+    { id: 'shimmer', name: 'Shimmer', gender: '여성 음성', traits: '밝고 활발함', suitable_for: '활발한 여성、소녀', language: '다국어', provider },
+  ]
 }
 
 function inferGender(name: string, desc: unknown) {

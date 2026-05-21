@@ -1531,6 +1531,16 @@ const fallbackVoiceProfiles = [
   { id: 'nova', label: 'Nova', gender: '여성 음성', traits: '부드러움, 달콤함, 친근함', suitable: '여자 주인공、어머니、부드러운 조연' },
   { id: 'shimmer', label: 'Shimmer', gender: '여성 음성', traits: '밝음, 활발함, 젊음', suitable: '소녀、경쾌한 캐릭터、톡톡 튀는 조연' },
 ]
+const geminiVoiceProfiles = [
+  { id: 'Kore', label: 'Kore', gender: '중성', traits: '단단함, 명료함, 안정감', suitable: '내레이션、주도적인 인물、진지한 장면' },
+  { id: 'Puck', label: 'Puck', gender: '남성 음성', traits: '밝음, 경쾌함, 에너지', suitable: '젊은 남성、활발한 캐릭터、코믹한 장면' },
+  { id: 'Charon', label: 'Charon', gender: '남성 음성', traits: '정보 전달형, 침착함', suitable: '설명、차분한 남성、안정적인 대사' },
+  { id: 'Fenrir', label: 'Fenrir', gender: '남성 음성', traits: '흥분감, 강한 표현', suitable: '갈등 장면、강한 남성、긴장감 있는 대사' },
+  { id: 'Aoede', label: 'Aoede', gender: '여성 음성', traits: '산뜻함, 부드러움', suitable: '여자 주인공、밝은 조연、따뜻한 장면' },
+  { id: 'Leda', label: 'Leda', gender: '여성 음성', traits: '젊음, 맑음', suitable: '소녀、젊은 여성、감정선이 가벼운 장면' },
+  { id: 'Sulafat', label: 'Sulafat', gender: '중성', traits: '따뜻함, 안정감', suitable: '감성 내레이션、차분한 인물、위로하는 대사' },
+  { id: 'Vindemiatrix', label: 'Vindemiatrix', gender: '여성 음성', traits: '부드러움, 섬세함', suitable: '성숙한 여성、감정 연기、속삭이는 장면' },
+]
 const voiceProfiles = ref(fallbackVoiceProfiles)
 const voiceSelectOptions = computed(() => voiceProfiles.value.map(v => ({ label: `${v.label} · ${v.traits}`, value: v.id })))
 const videoConfigSelectOptions = computed(() => videoConfigs.value.map(c => {
@@ -3250,14 +3260,18 @@ function mapVoiceProfile(v) {
   }
 }
 
+function fallbackVoicesForProvider(provider) {
+  return String(provider || '').toLowerCase() === 'gemini' ? geminiVoiceProfiles : fallbackVoiceProfiles
+}
+
 async function loadVoices() {
   try {
     const provider = lockedAudioProvider.value || 'minimax'
     const rows = await voicesAPI.list(provider)
-    voiceProfiles.value = rows?.length ? rows.map(mapVoiceProfile) : fallbackVoiceProfiles
+    voiceProfiles.value = rows?.length ? rows.map(mapVoiceProfile) : fallbackVoicesForProvider(provider)
   } catch (e) {
     console.error('Failed to load voices', e)
-    voiceProfiles.value = fallbackVoiceProfiles
+    voiceProfiles.value = fallbackVoicesForProvider(lockedAudioProvider.value)
   }
 }
 

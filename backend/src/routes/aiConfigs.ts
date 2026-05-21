@@ -12,7 +12,7 @@ const HUOBAO_PRESET_SERVICES = [
   { serviceType: 'text', label: '텍스트', provider: 'chatfire', baseUrl: 'https://api.chatfire.site', model: 'gemini-3-pro-preview', priority: 100 },
   { serviceType: 'image', label: '이미지', provider: 'gemini', baseUrl: 'https://api.chatfire.site', model: 'gemini-3-pro-image-preview', priority: 99 },
   { serviceType: 'video', label: '영상', provider: 'volcengine', baseUrl: 'https://api.chatfire.site/volcengine', model: 'doubao-seedance-1-5-pro-251215', priority: 98 },
-  { serviceType: 'audio', label: '오디오', provider: 'minimax', baseUrl: 'https://api.chatfire.site/minimax', model: 'speech-2.8-hd', priority: 97 },
+  { serviceType: 'audio', label: '오디오', provider: 'gemini', baseUrl: 'https://generativelanguage.googleapis.com', model: 'gemini-3.1-flash-tts-preview', priority: 97 },
 ] as const
 
 const HUOBAO_AGENT_DEFAULTS = [
@@ -24,6 +24,15 @@ const HUOBAO_AGENT_DEFAULTS = [
 ] as const
 
 const HUOBAO_AGENT_MODEL = 'gemini-3-pro-preview'
+
+function exposeConfig(row: typeof schema.aiServiceConfigs.$inferSelect) {
+  return {
+    ...toSnakeCase(row),
+    api_key: row.apiKey ? '********' : '',
+    has_api_key: !!row.apiKey,
+    model: row.model ? JSON.parse(row.model) : [],
+  }
+}
 
 function bearerHeaders(apiKey?: string, withJson = false) {
   const headers: Record<string, string> = {}
@@ -128,10 +137,7 @@ app.get('/', async (c) => {
   let rows = db.select().from(schema.aiServiceConfigs).all()
   if (serviceType) rows = rows.filter(r => r.serviceType === serviceType)
 
-  const parsed = rows.map(r => ({
-    ...toSnakeCase(r),
-    model: r.model ? JSON.parse(r.model) : [],
-  }))
+  const parsed = rows.map(exposeConfig)
   return success(c, parsed)
 })
 
@@ -161,10 +167,7 @@ app.post('/', async (c) => {
   const [row] = db.select().from(schema.aiServiceConfigs)
     .where(eq(schema.aiServiceConfigs.id, Number(res.lastInsertRowid))).all()
 
-  return created(c, {
-    ...toSnakeCase(row),
-    model: row.model ? JSON.parse(row.model) : [],
-  })
+  return created(c, exposeConfig(row))
 })
 
 // POST /ai-configs/huobao-preset
@@ -229,10 +232,7 @@ app.post('/huobao-preset', async (c) => {
     }
   }
 
-  const configs = db.select().from(schema.aiServiceConfigs).all().map(row => ({
-    ...toSnakeCase(row),
-    model: row.model ? JSON.parse(row.model) : [],
-  }))
+  const configs = db.select().from(schema.aiServiceConfigs).all().map(exposeConfig)
   const agents = db.select().from(schema.agentConfigs).all().map(row => toSnakeCase(row))
 
   logTaskSuccess('AIConfig', 'huobao-preset-applied', {
@@ -321,10 +321,7 @@ app.get('/:id', async (c) => {
   const id = Number(c.req.param('id'))
   const [row] = db.select().from(schema.aiServiceConfigs).where(eq(schema.aiServiceConfigs.id, id)).all()
   if (!row) return notFound(c)
-  return success(c, {
-    ...toSnakeCase(row),
-    model: row.model ? JSON.parse(row.model) : [],
-  })
+  return success(c, exposeConfig(row))
 })
 
 // PUT /ai-configs/:id
@@ -336,7 +333,7 @@ app.put('/:id', async (c) => {
   if ('provider' in body) updates.provider = body.provider
   if ('name' in body) updates.name = body.name
   if ('base_url' in body) updates.baseUrl = body.base_url
-  if ('api_key' in body) updates.apiKey = body.api_key
+  if ('api_key' in body && String(body.api_key || '').trim()) updates.apiKey = body.api_key
   if ('model' in body) updates.model = JSON.stringify(body.model)
   if ('priority' in body) updates.priority = body.priority
   if ('is_active' in body) updates.isActive = body.is_active

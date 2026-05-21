@@ -322,7 +322,7 @@
           <input v-model.number="cfgForm.priority" class="input" type="number" min="0" max="999" />
           <span class="field-hint">숫자가 높을수록 우선됩니다. 작업대는 같은 유형의 활성 설정 중 우선순위가 가장 높은 항목을 기본 사용합니다.</span>
         </label>
-        <label class="field"><span class="field-label">API Key</span><input v-model="cfgForm.api_key" class="input" type="password" placeholder="sk-..." /></label>
+        <label class="field"><span class="field-label">API Key <span class="dim" v-if="cfgEditId">(비워 두면 기존 키 유지)</span></span><input v-model="cfgForm.api_key" class="input" type="password" placeholder="새 키를 입력하거나 비워 두세요" /></label>
         <label class="field"><span class="field-label">Base URL</span><input v-model="cfgForm.base_url" class="input" placeholder="https://..." /></label>
         <div class="endpoint-hint">
           <span class="dim">실제 엔드포인트 접두사:</span>
@@ -473,13 +473,14 @@ const providerPresets = {
   },
   audio: {
     minimax: { label: '화보오디오', baseUrl: 'https://api.chatfire.site/minimax', models: ['speech-2.8-hd'] },
+    gemini: { label: 'Gemini TTS', baseUrl: 'https://generativelanguage.googleapis.com', models: ['gemini-3.1-flash-tts-preview'] },
   },
 }
 const huobaoPresetCards = [
   { serviceType: 'text', label: '텍스트', provider: 'chatfire', baseUrl: 'https://api.chatfire.site', model: 'gemini-3-pro-preview', priority: 100 },
   { serviceType: 'image', label: '이미지', provider: 'gemini', baseUrl: 'https://api.chatfire.site', model: 'gemini-3-pro-image-preview', priority: 99 },
   { serviceType: 'video', label: '영상', provider: 'volcengine', baseUrl: 'https://api.chatfire.site/volcengine', model: 'doubao-seedance-1-5-pro-251215', priority: 98 },
-  { serviceType: 'audio', label: '오디오', provider: 'minimax', baseUrl: 'https://api.chatfire.site/minimax', model: 'speech-2.8-hd', priority: 97 },
+  { serviceType: 'audio', label: '오디오', provider: 'gemini', baseUrl: 'https://generativelanguage.googleapis.com', model: 'gemini-3.1-flash-tts-preview', priority: 97 },
 ]
 const endpointPrefixes = {
   chatfire: '/v1',
@@ -533,7 +534,7 @@ function startEditCfg(c) {
   Object.assign(cfgForm, {
     name: c.name || '',
     provider: c.provider,
-    api_key: c.api_key || '',
+    api_key: '',
     base_url: c.base_url || '',
     modelStr: fmtModel(c.model),
     service_type: c.service_type,
@@ -567,7 +568,7 @@ async function testExistingCfg(c) {
   await testCfgPayload({
     service_type: c.service_type,
     provider: c.provider,
-    api_key: c.api_key || '',
+    api_key: '',
     base_url: c.base_url || '',
     model: Array.isArray(c.model) ? c.model : [],
   })
@@ -576,7 +577,11 @@ async function saveCfg() {
   if (!cfgForm.provider) { toast.warning('서비스 제공자 선택'); return }
   const models = cfgForm.modelStr.split(',').map(s => s.trim()).filter(Boolean)
   try {
-    if (cfgEditId.value) await aiConfigAPI.update(cfgEditId.value, { name: cfgForm.name, provider: cfgForm.provider, api_key: cfgForm.api_key, base_url: cfgForm.base_url, model: models, priority: cfgForm.priority })
+    if (cfgEditId.value) {
+      const payload = { name: cfgForm.name, provider: cfgForm.provider, base_url: cfgForm.base_url, model: models, priority: cfgForm.priority }
+      if (cfgForm.api_key.trim()) payload.api_key = cfgForm.api_key.trim()
+      await aiConfigAPI.update(cfgEditId.value, payload)
+    }
     else await aiConfigAPI.create({ service_type: cfgForm.service_type, provider: cfgForm.provider, name: cfgForm.name || `${cfgForm.provider}-${cfgForm.service_type}`, api_key: cfgForm.api_key, base_url: cfgForm.base_url, model: models, priority: cfgForm.priority })
     cfgDialog.value = false; toast.success('저장됨'); loadCfgs()
   } catch (e) { toast.error(e.message) }
