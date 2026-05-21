@@ -1,14 +1,15 @@
 import { spawn } from 'node:child_process'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createAgentTools, getAgentInstructions } from '../agents/index.js'
 import { logTaskProgress } from '../utils/task-logger.js'
 
 type CodexAction = {
-  tool?: string
+  tool?: string | null
   args?: Record<string, unknown>
-  final?: string
+  args_json?: string | null
+  final?: string | null
 }
 
 type CodexToolCall = {
@@ -27,8 +28,19 @@ export type CodexAgentResult = {
   toolResults: CodexToolResult[]
 }
 
-const CODEX_TIMEOUT_MS = Number(process.env.CODEX_AGENT_TIMEOUT_MS || 180_000)
+const CODEX_TIMEOUT_MS = Number(process.env.CODEX_AGENT_TIMEOUT_MS || 600_000)
 const CODEX_MAX_STEPS = Number(process.env.CODEX_AGENT_MAX_STEPS || 20)
+const CODEX_AGENT_MODEL = process.env.CODEX_AGENT_MODEL?.trim()
+const CODEX_ACTION_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['tool', 'args_json', 'final'],
+  properties: {
+    tool: { type: ['string', 'null'] },
+    args_json: { type: ['string', 'null'] },
+    final: { type: ['string', 'null'] },
+  },
+}
 
 const TOOL_ARG_HINTS: Record<string, string> = {
   read_episode_script: '{}',
@@ -133,8 +145,9 @@ function buildPrompt(params: {
     '',
     '출력 규칙:',
     '- 반드시 유효한 JSON 객체 하나만 출력하세요. 마크다운, 설명문, 코드블록은 쓰지 마세요.',
-    '- 도구가 필요하면 {"tool":"도구명","args":{...}} 형식으로 출력하세요.',
-    '- 작업이 완료되면 {"final":"사용자에게 보여줄 한국어 완료 메시지"} 형식으로 출력하세요.',
+    '- 도구가 필요하면 {"tool":"도구명","args_json":"{\\"필드\\":\\"값\\"}","final":null} 형식으로 출력하세요.',
+    '- 작업이 완료되면 {"tool":null,"args_json":null,"final":"사용자에게 보여줄 한국어 완료 메시지"} 형식으로 출력하세요.',
+    '- args_json은 반드시 JSON.stringify된 객체 문자열이어야 합니다.',
     '- 도구 결과에 오류가 있으면 가능한 다음 도구 호출로 복구하고, 복구할 수 없을 때만 final에 오류를 설명하세요.',
     '',
     '사용자 요청:',
@@ -151,8 +164,10 @@ function buildPrompt(params: {
 async function runCodexExec(prompt: string) {
   const tempDir = await mkdtemp(join(tmpdir(), 'huobao-codex-'))
   const outputFile = join(tempDir, 'last-message.txt')
+  const schemaFile = join(tempDir, 'action-schema.json')
 
   try {
+    await writeFile(schemaFile, JSON.stringify(CODEX_ACTION_SCHEMA), 'utf8')
     const stdout = await new Promise<string>((resolvePromise, reject) => {
       const codexArgs = [
         'exec',
@@ -161,10 +176,15 @@ async function runCodexExec(prompt: string) {
         'read-only',
         '--ephemeral',
         '--ignore-rules',
+        '--output-schema',
+        schemaFile,
         '--output-last-message',
         outputFile,
         '-',
       ]
+      if (CODEX_AGENT_MODEL) {
+        codexArgs.splice(1, 0, '--model', CODEX_AGENT_MODEL)
+      }
       const command = process.platform === 'win32' ? 'cmd.exe' : 'codex'
       const args = process.platform === 'win32' ? ['/d', '/s', '/c', 'codex.cmd', ...codexArgs] : codexArgs
       const child = spawn(command, args, {
@@ -253,7 +273,17 @@ export async function runCodexAgent(params: {
       throw new Error(`Codex CLI가 알 수 없는 도구를 요청했습니다: ${action.tool}`)
     }
 
-    const args = action.args && typeof action.args === 'object' ? action.args : {}
+    let args: Record<string, unknown> = {}
+    if (action.args && typeof action.args === 'object') {
+      args = action.args
+    } else if (typeof action.args_json === 'string' && action.args_json.trim()) {
+      try {
+        const parsedArgs = JSON.parse(action.args_json)
+        args = parsedArgs && typeof parsedArgs === 'object' && !Array.isArray(parsedArgs) ? parsedArgs : {}
+      } catch {
+        throw new Error(`Codex CLI가 올바르지 않은 args_json을 반환했습니다: ${action.args_json.slice(0, 500)}`)
+      }
+    }
     toolCalls.push({ toolName: action.tool, args })
     const result = await executeTool(tool, args)
     toolResults.push({ toolName: action.tool, result: normalizeResult(result) })
