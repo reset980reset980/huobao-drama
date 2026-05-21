@@ -12,6 +12,7 @@ import { logTaskError, logTaskPayload, logTaskProgress, logTaskStart, logTaskSuc
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const STORAGE_ROOT = process.env.STORAGE_PATH || path.resolve(__dirname, '../../../data/static')
+const MAX_TTS_RETRIES = 2
 
 interface TTSParams {
   text: string
@@ -60,19 +61,14 @@ export async function generateTTS(params: TTSParams): Promise<string> {
     body,
   })
 
-  const resp = await fetch(url, {
+  const result = await requestTTSWithRetry({
+    provider: config.provider,
+    voice: params.voice,
     method,
+    url,
     headers,
-    body: JSON.stringify(body),
+    body,
   })
-
-  if (!resp.ok) {
-    const errText = await resp.text()
-    logTaskError('AudioTask', 'tts-generate', { provider: config.provider, voice: params.voice, status: resp.status, error: errText })
-    throw new Error(`TTS API error ${resp.status}: ${errText}`)
-  }
-
-  const result = await resp.json()
   const parsed = adapter.parseResponse(result)
 
   // 将 hex 解码为二进制
@@ -102,4 +98,83 @@ export async function generateTTS(params: TTSParams): Promise<string> {
 export async function generateVoiceSample(characterName: string, voiceId: string, configId?: number | null): Promise<string> {
   const sampleText = `안녕하세요, 저는 ${characterName}입니다. 만나서 반가워요. 이것은 제 음성 미리듣기입니다.`
   return generateTTS({ text: sampleText, voice: voiceId, configId })
+}
+
+async function requestTTSWithRetry(args: {
+  provider: string
+  voice: string
+  method: string
+  url: string
+  headers: Record<string, string>
+  body: any
+}) {
+  let lastError = ''
+
+  for (let attempt = 0; attempt <= MAX_TTS_RETRIES; attempt++) {
+    const resp = await fetch(args.url, {
+      method: args.method,
+      headers: args.headers,
+      body: JSON.stringify(args.body),
+    })
+
+    if (resp.ok) return resp.json()
+
+    const errText = await resp.text()
+    lastError = errText
+    const retryMs = resp.status === 429 ? extractRetryDelayMs(errText) : 0
+    const canRetry = retryMs > 0 && attempt < MAX_TTS_RETRIES
+
+    logTaskError('AudioTask', canRetry ? 'tts-rate-limited' : 'tts-generate', {
+      provider: args.provider,
+      voice: args.voice,
+      status: resp.status,
+      retryMs,
+      attempt: attempt + 1,
+      error: errText,
+    })
+
+    if (!canRetry) {
+      throw new Error(formatTTSError(resp.status, errText))
+    }
+
+    await sleep(retryMs)
+  }
+
+  throw new Error(`TTS 생성 실패: ${lastError}`)
+}
+
+function extractRetryDelayMs(errText: string) {
+  try {
+    const payload = JSON.parse(errText)
+    const retryInfo = payload?.error?.details?.find((item: any) => String(item?.['@type'] || '').includes('RetryInfo'))
+    const retryDelay = retryInfo?.retryDelay || payload?.error?.message?.match(/retry in ([\d.]+)s/i)?.[1]
+    if (typeof retryDelay === 'string') {
+      const seconds = Number(retryDelay.replace(/s$/, ''))
+      if (Number.isFinite(seconds) && seconds > 0) return Math.ceil(seconds * 1000) + 1000
+    }
+  } catch {}
+  const match = errText.match(/retry in ([\d.]+)s/i)
+  if (match) {
+    const seconds = Number(match[1])
+    if (Number.isFinite(seconds) && seconds > 0) return Math.ceil(seconds * 1000) + 1000
+  }
+  return 0
+}
+
+function formatTTSError(status: number, errText: string) {
+  if (status !== 429) return `TTS API error ${status}: ${errText}`
+
+  try {
+    const payload = JSON.parse(errText)
+    const message = payload?.error?.message || errText
+    const retryMs = extractRetryDelayMs(errText)
+    const retryText = retryMs ? ` ${Math.ceil(retryMs / 1000)}초 뒤 다시 시도하세요.` : ''
+    return `TTS 요청 한도를 초과했습니다.${retryText} 원문: ${message}`
+  } catch {
+    return `TTS 요청 한도를 초과했습니다. 잠시 후 다시 시도하세요. 원문: ${errText}`
+  }
+}
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
 }

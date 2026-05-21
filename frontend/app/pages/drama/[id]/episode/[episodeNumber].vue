@@ -2563,7 +2563,8 @@ async function batchGenSamples() {
     toast.info(charsVoiced.value ? '모든 캐릭터의 미리듣기 파일이 생성되었습니다' : '먼저 음색을 배정하세요')
     return
   }
-  const results = await Promise.allSettled(pending.map(c => characterAPI.voiceSample(c.id, epId.value)))
+  toast.info(`미리듣기 ${pending.length} 개를 순차 생성합니다`)
+  const results = await runSequentially(pending, c => characterAPI.voiceSample(c.id, epId.value))
   const okCount = results.filter(r => r.status === 'fulfilled').length
   const failCount = results.length - okCount
   if (okCount) toast.success(`생성됨 ${okCount} 개 미리듣기 파일`)
@@ -2590,6 +2591,18 @@ function watchAsyncResult(check, attempts = 24, delay = 2500) {
       if (check()) return
     }
   })()
+}
+
+async function runSequentially(items, task) {
+  const results = []
+  for (const item of items) {
+    try {
+      results.push({ status: 'fulfilled', value: await task(item) })
+    } catch (reason) {
+      results.push({ status: 'rejected', reason })
+    }
+  }
+  return results
 }
 
 async function copyPrompt(text, label = '프롬프트') {
@@ -2898,7 +2911,8 @@ async function batchShotTTS() {
     toast.info(ttsEligibleCount.value ? '모든 샷 더빙이 생성되었습니다' : '현재 생성할 대사나 내레이션이 없습니다')
     return
   }
-  const results = await Promise.allSettled(pending.map(sb => storyboardAPI.generateTTS(sb.id)))
+  toast.info(`샷 더빙 ${pending.length} 개를 순차 생성합니다`)
+  const results = await runSequentially(pending, sb => storyboardAPI.generateTTS(sb.id))
   const okCount = results.filter(r => r.status === 'fulfilled').length
   const failCount = results.length - okCount
   if (okCount) toast.success(`생성됨 ${okCount} 개 샷 더빙`)
