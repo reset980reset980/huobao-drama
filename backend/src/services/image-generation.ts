@@ -20,6 +20,25 @@ interface GenerateImageParams {
   configId?: number
 }
 
+const IMAGE_TASK_DELAY_MS = Number(process.env.IMAGE_TASK_DELAY_MS || 12_000)
+let imageTaskQueue = Promise.resolve()
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+function enqueueImageTask(id: number, config: AIConfig) {
+  const task = imageTaskQueue.then(async () => {
+    await processImageGeneration(id, config)
+    if (IMAGE_TASK_DELAY_MS > 0) await sleep(IMAGE_TASK_DELAY_MS)
+  })
+  imageTaskQueue = task.catch(() => {})
+  task.catch(err => {
+    logTaskError('ImageTask', 'process', { id, error: err.message })
+    console.error(`Image generation ${id} failed:`, err)
+  })
+}
+
 export async function generateImage(params: GenerateImageParams): Promise<number> {
   const ts = now()
   const config = params.configId
@@ -62,10 +81,7 @@ export async function generateImage(params: GenerateImageParams): Promise<number
     },
     params,
   })
-  processImageGeneration(lastId, config).catch(err => {
-    logTaskError('ImageTask', 'process', { id: lastId, error: err.message })
-    console.error(`Image generation ${lastId} failed:`, err)
-  })
+  enqueueImageTask(lastId, config)
   return lastId
 }
 
@@ -151,7 +167,7 @@ async function processImageGeneration(id: number, config: AIConfig) {
       .where(eq(schema.imageGenerations.id, id))
       .run()
     logTaskProgress('ImageTask', 'poll-start', { id, taskId, provider: config.provider })
-    pollImageTask(id, config, taskId!)
+    await pollImageTask(id, config, taskId!)
   } catch (err: any) {
     logTaskError('ImageTask', 'process', { id, provider: config.provider, error: err.message })
     db.update(schema.imageGenerations)

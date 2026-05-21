@@ -2563,8 +2563,8 @@ async function batchGenSamples() {
     toast.info(charsVoiced.value ? '모든 캐릭터의 미리듣기 파일이 생성되었습니다' : '먼저 음색을 배정하세요')
     return
   }
-  toast.info(`미리듣기 ${pending.length} 개를 순차 생성합니다`)
-  const results = await runSequentially(pending, c => characterAPI.voiceSample(c.id, epId.value))
+  toast.info(`미리듣기 ${pending.length} 개를 안전 모드로 순차 생성합니다`)
+  const results = await runSequentially(pending, c => characterAPI.voiceSample(c.id, epId.value), SAFE_BATCH_DELAY_MS.tts)
   const okCount = results.filter(r => r.status === 'fulfilled').length
   const failCount = results.length - okCount
   if (okCount) toast.success(`생성됨 ${okCount} 개 미리듣기 파일`)
@@ -2583,6 +2583,13 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
+const SAFE_BATCH_DELAY_MS = {
+  tts: 25000,
+  image: 12000,
+  video: 20000,
+  compose: 3000,
+}
+
 function watchAsyncResult(check, attempts = 24, delay = 2500) {
   void (async () => {
     for (let i = 0; i < attempts; i++) {
@@ -2593,14 +2600,15 @@ function watchAsyncResult(check, attempts = 24, delay = 2500) {
   })()
 }
 
-async function runSequentially(items, task) {
+async function runSequentially(items, task, delayMs = 0) {
   const results = []
-  for (const item of items) {
+  for (const [index, item] of items.entries()) {
     try {
       results.push({ status: 'fulfilled', value: await task(item) })
     } catch (reason) {
       results.push({ status: 'rejected', reason })
     }
+    if (delayMs > 0 && index < items.length - 1) await sleep(delayMs)
   }
   return results
 }
@@ -2821,8 +2829,12 @@ function batchCharImages() {
   const ids = visualChars.value.filter(c => !(c.image_url || c.imageUrl)).map(c => c.id)
   if (!ids.length) { toast.info('모든 캐릭터 이미지가 생성되었습니다'); return }
   pendingCharImageIds.value = [...new Set([...pendingCharImageIds.value, ...ids])]
-  characterAPI.batchImages(ids, epId.value).then(async () => {
-    toast.success('캐릭터 이미지 일괄 생성 중')
+  ;(async () => {
+    toast.info(`캐릭터 이미지 ${ids.length} 개를 안전 모드로 순차 생성합니다`)
+    const results = await runSequentially(ids, id => characterAPI.generateImage(id, epId.value), SAFE_BATCH_DELAY_MS.image)
+    const failCount = results.filter(r => r.status === 'rejected').length
+    if (failCount) toast.error(`${failCount} 개 캐릭터 이미지 요청 실패`)
+    else toast.success('캐릭터 이미지 일괄 생성 중')
     await refresh()
     watchAsyncResult(() => ids.every(id => {
       const char = chars.value.find(c => c.id === id)
@@ -2830,7 +2842,7 @@ function batchCharImages() {
       if (done) pendingCharImageIds.value = pendingCharImageIds.value.filter(item => item !== id)
       return done
     }), 36)
-  }).catch(e => {
+  })().catch(e => {
     pendingCharImageIds.value = pendingCharImageIds.value.filter(item => !ids.includes(item))
     toast.error(e.message)
   })
@@ -2856,8 +2868,14 @@ function batchSceneImages() {
   const ids = scenes.value.filter(s => !(s.image_url || s.imageUrl)).map(s => s.id)
   if (!ids.length) { toast.info('모든 장면 이미지가 생성되었습니다'); return }
   pendingSceneImageIds.value = [...new Set([...pendingSceneImageIds.value, ...ids])]
-  ids.forEach(id => { sceneAPI.generateImage(id, epId.value).then(() => refresh()).catch(e => toast.error(e.message)) })
-  toast.success('장면 이미지 일괄 생성 중')
+  ;(async () => {
+    toast.info(`장면 이미지 ${ids.length} 개를 안전 모드로 순차 생성합니다`)
+    const results = await runSequentially(ids, id => sceneAPI.generateImage(id, epId.value), SAFE_BATCH_DELAY_MS.image)
+    const failCount = results.filter(r => r.status === 'rejected').length
+    if (failCount) toast.error(`${failCount} 개 장면 이미지 요청 실패`)
+    else toast.success('장면 이미지 일괄 생성 중')
+    await refresh()
+  })().catch(e => toast.error(e.message))
   watchAsyncResult(() => ids.every(id => {
     const scene = scenes.value.find(s => s.id === id)
     const done = !!(scene?.image_url || scene?.imageUrl)
@@ -2911,8 +2929,8 @@ async function batchShotTTS() {
     toast.info(ttsEligibleCount.value ? '모든 샷 더빙이 생성되었습니다' : '현재 생성할 대사나 내레이션이 없습니다')
     return
   }
-  toast.info(`샷 더빙 ${pending.length} 개를 순차 생성합니다`)
-  const results = await runSequentially(pending, sb => storyboardAPI.generateTTS(sb.id))
+  toast.info(`샷 더빙 ${pending.length} 개를 안전 모드로 순차 생성합니다`)
+  const results = await runSequentially(pending, sb => storyboardAPI.generateTTS(sb.id), SAFE_BATCH_DELAY_MS.tts)
   const okCount = results.filter(r => r.status === 'fulfilled').length
   const failCount = results.length - okCount
   if (okCount) toast.success(`생성됨 ${okCount} 개 샷 더빙`)
@@ -3082,7 +3100,7 @@ async function genVid(sb) {
     const generation = await videoAPI.generate(params)
     toast.success('영상 생성 중')
     await refresh()
-    pollVideoGeneration(generation?.id, sb.id)
+    await pollVideoGeneration(generation?.id, sb.id)
   } catch (e) {
     pendingVideoIds.value = pendingVideoIds.value.filter(item => item !== sb.id)
     toast.error(e.message)
@@ -3161,25 +3179,23 @@ async function doCompose(sb) {
     toast.error(e.message)
   }
 }
-function batchVideos() {
-  const pendingIds = sbs.value.filter(s => !hasVid(s)).map(s => s.id)
-  pendingIds.forEach(id => {
-    const sb = sbs.value.find(item => item.id === id)
-    if (sb) genVid(sb)
-  })
-  if (pendingIds.length) {
-    pendingVideoIds.value = [...new Set([...pendingVideoIds.value, ...pendingIds])]
-    watchAsyncResult(() => pendingIds.every(id => {
-      const target = sbs.value.find(s => s.id === id)
-      const done = !!(target?.video_url || target?.videoUrl)
-      if (done) pendingVideoIds.value = pendingVideoIds.value.filter(item => item !== id)
-      return done
-    }), 80, 4000)
+async function batchVideos() {
+  const pending = sbs.value.filter(s => !hasVid(s))
+  if (!pending.length) {
+    toast.info('모든 샷 영상이 생성되었습니다')
+    return
   }
+  const pendingIds = pending.map(s => s.id)
+  pendingVideoIds.value = [...new Set([...pendingVideoIds.value, ...pendingIds])]
+  toast.info(`영상 ${pending.length} 개를 안전 모드로 순차 생성합니다`)
+  const results = await runSequentially(pending, sb => genVid(sb), SAFE_BATCH_DELAY_MS.video)
+  const failCount = results.filter(r => r.status === 'rejected').length
+  if (failCount) toast.error(`${failCount} 개 영상 생성 요청 실패`)
+  await refresh()
 }
 async function handleBatchVideos() {
   if (!isManualGeneration.value) {
-    batchVideos()
+    void batchVideos()
     return
   }
   const pending = sbs.value.filter(s => !hasVid(s))

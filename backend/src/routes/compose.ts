@@ -7,6 +7,11 @@ import { logTaskError, logTaskStart, logTaskSuccess } from '../utils/task-logger
 import { toSnakeCase } from '../utils/transform.js'
 
 const app = new Hono()
+const COMPOSE_TASK_DELAY_MS = Number(process.env.COMPOSE_TASK_DELAY_MS || 3_000)
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
 
 // POST /storyboards/:id/compose — 합성单个샷
 app.post('/storyboards/:id/compose', async (c) => {
@@ -48,6 +53,7 @@ app.post('/episodes/:id/compose-all', async (c) => {
       } catch (err: any) {
         logTaskError('ComposeAPI', 'batch-item', { storyboardId: sb.id, episodeId, error: err.message })
       }
+      if (COMPOSE_TASK_DELAY_MS > 0) await sleep(COMPOSE_TASK_DELAY_MS)
     }
     logTaskSuccess('ComposeAPI', 'batch-compose', { episodeId, total: withVideo.length })
   })()

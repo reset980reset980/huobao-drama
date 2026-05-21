@@ -22,6 +22,25 @@ interface GenerateVideoParams {
   configId?: number
 }
 
+const VIDEO_TASK_DELAY_MS = Number(process.env.VIDEO_TASK_DELAY_MS || 20_000)
+let videoTaskQueue = Promise.resolve()
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+function enqueueVideoTask(id: number, config: AIConfig) {
+  const task = videoTaskQueue.then(async () => {
+    await processVideoGeneration(id, config)
+    if (VIDEO_TASK_DELAY_MS > 0) await sleep(VIDEO_TASK_DELAY_MS)
+  })
+  videoTaskQueue = task.catch(() => {})
+  task.catch(err => {
+    logTaskError('VideoTask', 'process', { id, error: err.message })
+    console.error(`Video generation ${id} failed:`, err)
+  })
+}
+
 export async function generateVideo(params: GenerateVideoParams): Promise<number> {
   const ts = now()
   const config = params.configId
@@ -65,10 +84,7 @@ export async function generateVideo(params: GenerateVideoParams): Promise<number
     },
     params,
   })
-  processVideoGeneration(lastId, config).catch(err => {
-    logTaskError('VideoTask', 'process', { id: lastId, error: err.message })
-    console.error(`Video generation ${lastId} failed:`, err)
-  })
+  enqueueVideoTask(lastId, config)
   return lastId
 }
 
@@ -151,7 +167,7 @@ async function processVideoGeneration(id: number, config: AIConfig) {
       return
     }
 
-    pollVideoTask(id, config, taskId!, record.storyboardId)
+    await pollVideoTask(id, config, taskId!, record.storyboardId)
   } catch (err: any) {
     logTaskError('VideoTask', 'process', { id, provider: config.provider, error: err.message })
     db.update(schema.videoGenerations)
