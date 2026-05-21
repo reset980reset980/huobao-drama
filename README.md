@@ -88,8 +88,9 @@ AI 이미지/영상/TTS API 키는 웹 화면의 `설정` 페이지에서 등록
 
 텍스트 Agent 기능은 두 가지 방식으로 동작합니다.
 
-1. 웹 설정에 활성 텍스트 AI 서비스가 있으면 기존 OpenAI 호환 API 경로를 사용합니다.
-2. 활성 텍스트 AI 서비스가 없거나 `TEXT_AGENT_PROVIDER=codex`이면 로컬 Codex CLI를 사용합니다.
+1. `설정 > AI 서비스 > 텍스트`의 기본 추천값은 `codex`이며, 로컬 Codex CLI로 실행합니다.
+2. OpenAI 호환 API를 직접 쓰고 싶을 때만 텍스트 provider를 `chatfire`, `openai`, `openrouter` 등으로 바꾸고 해당 provider의 API 키를 저장합니다.
+3. 활성 텍스트 AI 서비스가 없거나 `TEXT_AGENT_PROVIDER=codex`이면 로컬 Codex CLI를 사용합니다.
 
 즉, 극본 수정, 캐릭터/장면 추출, 스토리보드 분해, 음색 배정, 프롬프트 생성 같은 텍스트 Agent 작업은 Codex CLI로 실행할 수 있습니다.
 
@@ -107,6 +108,10 @@ Windows PowerShell:
 $env:TEXT_AGENT_PROVIDER='codex'
 npm run dev
 ```
+
+### 스토리보드 분해에서 API 키 오류가 날 때
+
+`无效的API Key`는 “API 키가 유효하지 않습니다”라는 뜻입니다. 스토리보드 분해는 텍스트 Agent 기능이므로, API 비용을 피하려면 `설정 > AI 서비스 > 텍스트` provider를 `codex`로 두세요. `chatfire` 같은 API provider에 Gemini 키를 넣으면 provider가 맞지 않아 인증 오류가 납니다.
 
 ## 하이브리드 생성 모드
 

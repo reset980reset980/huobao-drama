@@ -9,7 +9,7 @@ import { redactUrl, logTaskError, logTaskProgress, logTaskSuccess } from '../uti
 const app = new Hono()
 
 const HUOBAO_PRESET_SERVICES = [
-  { serviceType: 'text', label: '텍스트', provider: 'chatfire', baseUrl: 'https://api.chatfire.site', model: 'gemini-3-pro-preview', priority: 100 },
+  { serviceType: 'text', label: '텍스트', provider: 'codex', baseUrl: '', model: 'codex-cli', priority: 100 },
   { serviceType: 'image', label: '이미지', provider: 'gemini', baseUrl: 'https://api.chatfire.site', model: 'gemini-3-pro-image-preview', priority: 99 },
   { serviceType: 'video', label: '영상', provider: 'volcengine', baseUrl: 'https://api.chatfire.site/volcengine', model: 'doubao-seedance-1-5-pro-251215', priority: 98 },
   { serviceType: 'audio', label: '오디오', provider: 'gemini', baseUrl: 'https://generativelanguage.googleapis.com', model: 'gemini-3.1-flash-tts-preview', priority: 97 },
@@ -123,6 +123,15 @@ function buildProbe(serviceType: string, provider: string, baseUrl: string, mode
     }
   }
 
+  if (p === 'codex' || p === 'codex-cli') {
+    return {
+      method: 'GET',
+      url: 'local-codex-cli://exec',
+      headers: {},
+      body: undefined,
+    }
+  }
+
   return {
     method: 'GET',
     url: joinProviderUrl(baseUrl, '', m ? `/${m}` : '/'),
@@ -146,7 +155,6 @@ app.post('/', async (c) => {
   const body = await c.req.json()
   const ts = now()
 
-  // 验证必填자段
   if (!body.service_type || !body.provider) {
     return badRequest(c, 'service_type and provider are required')
   }
@@ -185,9 +193,9 @@ app.post('/huobao-preset', async (c) => {
     const values = {
       serviceType: preset.serviceType,
       provider: preset.provider,
-      name: `화보기본값${preset.label}服务`,
+      name: `화보 기본 ${preset.label} 서비스`,
       baseUrl: preset.baseUrl,
-      apiKey,
+      apiKey: preset.provider === 'codex' ? '' : apiKey,
       model: JSON.stringify([preset.model]),
       priority: preset.priority,
       isActive: true,
@@ -251,12 +259,28 @@ app.post('/huobao-preset', async (c) => {
 app.post('/test', async (c) => {
   const body = await c.req.json()
   if (!body.service_type || !body.provider || !body.base_url) {
-    return badRequest(c, 'service_type, provider and base_url are required')
+    const provider = String(body.provider || '').toLowerCase()
+    if (provider !== 'codex' && provider !== 'codex-cli') {
+      return badRequest(c, 'service_type, provider and base_url are required')
+    }
   }
 
   const model = Array.isArray(body.model) ? body.model[0] : body.model
   const probe = buildProbe(body.service_type, body.provider, body.base_url, model, body.api_key)
   const probeUrl = redactUrl(probe.url)
+
+  if (probe.url === 'local-codex-cli://exec') {
+    return success(c, {
+      ok: true,
+      reachable: true,
+      status: 200,
+      status_text: '로컬 Codex CLI',
+      method: 'LOCAL',
+      url: '로컬 Codex CLI',
+      message: '텍스트 Agent는 API 키 없이 로컬 Codex CLI로 실행됩니다.',
+      response_preview: '',
+    })
+  }
 
   logTaskProgress('AIConfig', 'probe-start', {
     serviceType: body.service_type,
@@ -281,8 +305,8 @@ app.post('/test', async (c) => {
       method: probe.method,
       url: probeUrl,
       message: reachable
-        ? (resp.ok ? '端点可访问，认证与路径基本正常' : '엔드포인트가 응답했습니다，请根据상태码判断认证或路径是否正确')
-        : '端点未按预期响应，请检查 Base URL 和代理前缀',
+        ? (resp.ok ? '엔드포인트에 접근할 수 있으며 인증과 경로가 정상입니다.' : '엔드포인트가 응답했습니다. 상태 코드를 보고 인증 또는 경로 설정을 확인하세요.')
+        : '엔드포인트가 예상대로 응답하지 않았습니다. Base URL과 provider 접두사를 확인하세요.',
       response_preview: text.slice(0, 240),
     }
     if (reachable) {
@@ -310,7 +334,7 @@ app.post('/test', async (c) => {
       reachable: false,
       method: probe.method,
       url: probeUrl,
-      message: error.message || '请求失败',
+      message: error.message || '요청에 실패했습니다.',
       response_preview: '',
     })
   }

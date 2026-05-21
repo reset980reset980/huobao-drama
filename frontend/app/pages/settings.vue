@@ -361,8 +361,8 @@
         </div>
         <div class="huobao-grid">
           <label class="field">
-            <span class="field-label">Huobao API Key <span class="dim">(텍스트 / 이미지 / 영상 / 오디오 공통 사용)</span></span>
-            <input v-model="huobaoForm.apiKey" class="input" type="password" placeholder="api.chatfire.site 전체 서비스에 사용" />
+            <span class="field-label">Huobao API Key <span class="dim">(이미지 / 영상 / 오디오 자동 생성용)</span></span>
+            <input v-model="huobaoForm.apiKey" class="input" type="password" placeholder="미디어 자동 생성 provider 키 입력" />
             <span class="field-hint">아직 계정이 없나요?<a href="https://api.chatfire.site/" target="_blank" rel="noopener">지금 가입 →</a></span>
           </label>
         </div>
@@ -447,7 +447,7 @@ const cfgTestResult = ref(null)
 const cfgForm = reactive({ name: '', provider: '', api_key: '', base_url: '', modelStr: '', service_type: 'text', priority: 0 })
 const huobaoForm = reactive({ apiKey: '' })
 const serviceTypes = [{ type: 'text', label: '텍스트' }, { type: 'image', label: '이미지' }, { type: 'video', label: '영상' }, { type: 'audio', label: '오디오' }]
-const providers = ['ali', 'chatfire', 'gemini', 'minimax', 'openai', 'openrouter', 'vidu', 'volcengine']
+const providers = ['ali', 'chatfire', 'codex', 'gemini', 'minimax', 'openai', 'openrouter', 'vidu', 'volcengine']
 const providerSelectOptions = computed(() => providers.map(p => ({ label: p, value: p })))
 const serviceMeta = {
   text: { label: '텍스트', desc: '극본 수정, 캐릭터/장면 추출, 스토리보드 분해 등 Agent 텍스트 기능' },
@@ -457,6 +457,7 @@ const serviceMeta = {
 }
 const providerPresets = {
   text: {
+    codex: { label: 'Codex CLI 추천', baseUrl: '', models: ['codex-cli'] },
     chatfire: { label: 'ChatFire 추천', baseUrl: 'https://api.chatfire.site', models: ['gemini-3-pro-preview'] },
     openrouter: { label: 'OpenRouter 추천', baseUrl: 'https://openrouter.ai/api', models: ['google/gemini-3-flash-preview'] },
     openai: { label: 'OpenAI 추천', baseUrl: 'https://api.openai.com', models: ['gpt-4.1-mini'] },
@@ -477,12 +478,13 @@ const providerPresets = {
   },
 }
 const huobaoPresetCards = [
-  { serviceType: 'text', label: '텍스트', provider: 'chatfire', baseUrl: 'https://api.chatfire.site', model: 'gemini-3-pro-preview', priority: 100 },
+  { serviceType: 'text', label: '텍스트', provider: 'codex', baseUrl: '로컬 Codex CLI', model: 'codex-cli', priority: 100 },
   { serviceType: 'image', label: '이미지', provider: 'gemini', baseUrl: 'https://api.chatfire.site', model: 'gemini-3-pro-image-preview', priority: 99 },
   { serviceType: 'video', label: '영상', provider: 'volcengine', baseUrl: 'https://api.chatfire.site/volcengine', model: 'doubao-seedance-1-5-pro-251215', priority: 98 },
   { serviceType: 'audio', label: '오디오', provider: 'gemini', baseUrl: 'https://generativelanguage.googleapis.com', model: 'gemini-3.1-flash-tts-preview', priority: 97 },
 ]
 const endpointPrefixes = {
+  codex: '',
   chatfire: '/v1',
   openai: '/v1',
   openrouter: '/v1',
@@ -498,6 +500,7 @@ const endpointHint = computed(() => {
   const base = cfgForm.base_url || 'https://...'
   const prefix = endpointPrefixes[provider] || ''
   if (!provider) return '서비스 제공자를 선택하면 추천 엔드포인트 접두사가 표시됩니다'
+  if (provider === 'codex') return '로컬 Codex CLI를 사용합니다. API 키와 Base URL이 필요하지 않습니다'
   return `${base}${prefix}`
 })
 
@@ -555,6 +558,19 @@ async function testCfgPayload(payload) {
   }
 }
 async function testDraftCfg() {
+  if (cfgForm.provider === 'codex') {
+    cfgTestResult.value = {
+      ok: true,
+      reachable: true,
+      status: 200,
+      method: 'LOCAL',
+      url: '로컬 Codex CLI',
+      message: '텍스트 Agent는 API 키 없이 로컬 Codex CLI로 실행됩니다.',
+      response_preview: '',
+    }
+    toast.success('Codex CLI 설정을 사용합니다')
+    return
+  }
   await testCfgPayload({
     service_type: cfgForm.service_type,
     provider: cfgForm.provider,
@@ -565,6 +581,19 @@ async function testDraftCfg() {
 }
 async function testExistingCfg(c) {
   startEditCfg(c)
+  if (c.provider === 'codex') {
+    cfgTestResult.value = {
+      ok: true,
+      reachable: true,
+      status: 200,
+      method: 'LOCAL',
+      url: '로컬 Codex CLI',
+      message: '텍스트 Agent는 API 키 없이 로컬 Codex CLI로 실행됩니다.',
+      response_preview: '',
+    }
+    toast.success('Codex CLI 설정을 사용합니다')
+    return
+  }
   await testCfgPayload({
     service_type: c.service_type,
     provider: c.provider,

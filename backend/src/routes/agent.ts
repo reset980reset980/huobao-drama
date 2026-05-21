@@ -24,6 +24,16 @@ function normalizeToolResult(entry: any) {
   return typeof result === 'string' ? result : JSON.stringify(result)
 }
 
+function localizeAgentError(message?: string) {
+  const text = message || 'Agent execution failed'
+  if (/无效的\s*API\s*Key|invalid\s*api\s*key|invalid_api_key/i.test(text)) {
+    return '텍스트 AI API 키가 유효하지 않습니다. 스토리보드 분해가 API provider로 실행된 상태라면, 설정 > AI 서비스 > 텍스트를 Codex CLI로 바꾸거나 해당 provider에 맞는 API 키를 저장하세요.'
+  }
+  return text
+    .replace(/无效的\s*API\s*Key/gi, 'API 키가 유효하지 않습니다')
+    .replace(/Agent execution failed/g, 'Agent 실행에 실패했습니다')
+}
+
 // POST /agent/:type/chat - 비스트리밍 Agent 대화
 app.post('/:type/chat', async (c) => {
   const agentType = c.req.param('type')
@@ -99,7 +109,7 @@ app.post('/:type/chat', async (c) => {
     const elapsed = ((performance.now() - startTime) / 1000).toFixed(1)
     logTaskError('Agent', agentType, { elapsedSeconds: elapsed, error: err.message })
     console.error(err.stack || err)
-    return badRequest(c, err.message || 'Agent execution failed')
+    return badRequest(c, localizeAgentError(err.message))
   }
 })
 
