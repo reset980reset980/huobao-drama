@@ -735,6 +735,11 @@
                 <span v-if="t.badge" class="prod-tab-badge">{{ t.badge }}</span>
               </button>
             </div>
+            <div class="generation-mode-strip">
+              <span :class="['generation-mode-dot', isManualGeneration ? 'manual' : 'api']"></span>
+              <span>{{ isManualGeneration ? '수동/구독형 생성 모드' : 'API 자동 생성 모드' }}</span>
+              <span class="dim">{{ isManualGeneration ? '프롬프트를 복사한 뒤 생성 결과를 파일 또는 URL로 등록합니다' : '설정된 API 키로 자동 생성합니다' }}</span>
+            </div>
           </div>
 
           <!-- Sub: Characters -->
@@ -744,9 +749,9 @@
               <span class="tag">{{ lockedImageConfigLabel }}</span>
               <span v-if="chars.length > visualChars.length" class="tag">내레이션은 음성만 유지</span>
               <div class="ml-auto flex gap-1">
-                <button class="btn btn-sm" @click="batchCharImages">
+                <button class="btn btn-sm" @click="handleBatchCharImages">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                  일괄 생성
+                  {{ isManualGeneration ? '일괄 프롬프트 복사' : '일괄 생성' }}
                 </button>
               </div>
             </div>
@@ -771,7 +776,7 @@
                 <div class="asset-foot">
                   <span :class="['dot', (c.image_url || c.imageUrl) && 'ok', isPendingCharImage(c.id) && 'pending']" />
                   <span class="dim" style="font-size:10px">{{ (c.image_url || c.imageUrl) ? '생성됨' : (isPendingCharImage(c.id) ? '생성 중' : '생성 대기') }}</span>
-                  <button class="btn btn-sm ml-auto" :disabled="isPendingCharImage(c.id)" @click="genCharImg(c.id)">{{ isPendingCharImage(c.id) ? '생성 중' : '생성' }}</button>
+                  <button class="btn btn-sm ml-auto" :disabled="isPendingCharImage(c.id)" @click="handleCharImage(c)">{{ isPendingCharImage(c.id) ? '생성 중' : (isManualGeneration ? '프롬프트/등록' : '생성') }}</button>
                 </div>
               </div>
             </div>
@@ -783,9 +788,9 @@
               <span class="dim" style="font-size:12px">{{ scenes.length }}개 장면</span>
               <span class="tag">{{ lockedImageConfigLabel }}</span>
               <div class="ml-auto flex gap-1">
-                <button class="btn btn-sm" @click="batchSceneImages">
+                <button class="btn btn-sm" @click="handleBatchSceneImages">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                  일괄 생성
+                  {{ isManualGeneration ? '일괄 프롬프트 복사' : '일괄 생성' }}
                 </button>
               </div>
             </div>
@@ -810,7 +815,7 @@
                 <div class="asset-foot">
                   <span :class="['dot', (s.image_url || s.imageUrl) && 'ok', isPendingSceneImage(s.id) && 'pending']" />
                   <span class="dim" style="font-size:10px">{{ (s.image_url || s.imageUrl) ? '생성됨' : (isPendingSceneImage(s.id) ? '생성 중' : '생성 대기') }}</span>
-                  <button class="btn btn-sm ml-auto" :disabled="isPendingSceneImage(s.id)" @click="genSceneImg(s.id)">{{ isPendingSceneImage(s.id) ? '생성 중' : '생성' }}</button>
+                  <button class="btn btn-sm ml-auto" :disabled="isPendingSceneImage(s.id)" @click="handleSceneImage(s)">{{ isPendingSceneImage(s.id) ? '생성 중' : (isManualGeneration ? '프롬프트/등록' : '생성') }}</button>
                 </div>
               </div>
             </div>
@@ -823,9 +828,9 @@
               <span class="tag mono">{{ ttsGeneratedCount }}/{{ ttsEligibleCount }} 생성됨</span>
               <span class="tag">{{ lockedAudioConfigLabel }}</span>
               <div class="ml-auto flex gap-1">
-                <button class="btn btn-sm" @click="batchShotTTS">
+                <button class="btn btn-sm" @click="handleBatchShotTTS">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
-                  일괄 생성
+                  {{ isManualGeneration ? '일괄 프롬프트 복사' : '일괄 생성' }}
                 </button>
               </div>
             </div>
@@ -858,7 +863,7 @@
                 <div class="dub-foot">
                   <audio v-if="hasTTS(sb)" :src="'/' + getTTSUrl(sb)" controls preload="none" class="dub-audio" />
                   <div v-else class="dim" style="font-size:12px">아직 음성 파일이 생성되지 않았습니다</div>
-                  <button class="btn btn-sm ml-auto" @click="genShotTTS(sb)">더빙 생성</button>
+                  <button class="btn btn-sm ml-auto" @click="handleShotTTS(sb)">{{ isManualGeneration ? '프롬프트/등록' : '더빙 생성' }}</button>
                 </div>
               </div>
             </div>
@@ -960,7 +965,7 @@
                   <!-- Thumbnails -->
                   <div class="frame-thumbs">
                     <div class="frame-thumb-wrap">
-                      <div class="frame-thumb" @click.stop="!isPendingShotFrame(sb.id, 'first_frame') && genShotFrame(sb, 'first_frame')">
+                      <div class="frame-thumb" @click.stop="!isPendingShotFrame(sb.id, 'first_frame') && handleShotFrame(sb, 'first_frame')">
                         <img
                           v-if="getFirstFrame(sb)"
                           :src="'/' + getFirstFrame(sb)"
@@ -978,7 +983,7 @@
                       <span class="frame-thumb-label">{{ isPendingShotFrame(sb.id, 'first_frame') ? '첫 프레임생성 중' : '첫 프레임' }}</span>
                     </div>
                     <div v-if="frameMode === 'first_last'" class="frame-thumb-wrap">
-                      <div class="frame-thumb" @click.stop="!isPendingShotFrame(sb.id, 'last_frame') && genShotFrame(sb, 'last_frame')">
+                      <div class="frame-thumb" @click.stop="!isPendingShotFrame(sb.id, 'last_frame') && handleShotFrame(sb, 'last_frame')">
                         <img
                           v-if="getLastFrame(sb)"
                           :src="'/' + getLastFrame(sb)"
@@ -1088,7 +1093,7 @@
                     </button>
                     <button class="btn btn-primary" @click="startGridGen">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                      그리드 이미지 생성
+                      {{ isManualGeneration ? '프롬프트 복사/등록' : '그리드 이미지 생성' }}
                     </button>
                   </div>
                 </div>
@@ -1194,9 +1199,9 @@
               <span class="dim" style="font-size:12px">{{ sbs.length }} 개 샷</span>
               <span class="tag mono">{{ shotVidCount }}/{{ sbs.length }} 생성됨</span>
               <div class="ml-auto flex gap-1">
-                <button class="btn btn-sm" @click="batchVideos">
+                <button class="btn btn-sm" @click="handleBatchVideos">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                  영상 일괄 생성
+                  {{ isManualGeneration ? '영상 프롬프트 일괄 복사' : '영상 일괄 생성' }}
                 </button>
               </div>
             </div>
@@ -1233,9 +1238,9 @@
                   <div v-if="videoFailMessage(sb.id)" class="prod-error">{{ videoFailMessage(sb.id) }}</div>
                 </div>
                 <div class="prod-actions">
-                  <button class="btn btn-sm" :disabled="isPendingVideo(sb.id)" @click="genVid(sb)">
+                  <button class="btn btn-sm" :disabled="isPendingVideo(sb.id)" @click="handleVideo(sb)">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                    {{ isPendingVideo(sb.id) ? '생성 중' : '영상 생성' }}
+                    {{ isPendingVideo(sb.id) ? '생성 중' : (isManualGeneration ? '프롬프트/등록' : '영상 생성') }}
                   </button>
                 </div>
               </div>
@@ -1415,6 +1420,52 @@
             <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
           </svg>
         </button>
+      </div>
+
+      <div v-if="manualDialog.open" class="overlay manual-asset-overlay" @click.self="closeManualDialog">
+        <div class="card manual-asset-dialog">
+          <div class="manual-asset-head">
+            <div>
+              <div class="manual-asset-title">{{ manualDialog.title }}</div>
+              <div class="manual-asset-subtitle">프롬프트를 외부 구독형 서비스나 Codex $imagegen에 사용한 뒤 결과를 등록하세요</div>
+            </div>
+            <button class="btn btn-ghost btn-icon" @click="closeManualDialog">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="manual-asset-body">
+            <div class="manual-prompt-panel">
+              <div class="manual-prompt-head">
+                <span>생성 프롬프트</span>
+                <button class="btn btn-sm" @click="copyPrompt(manualDialog.prompt, '생성 프롬프트')">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  복사
+                </button>
+              </div>
+              <textarea class="manual-prompt-text" :value="manualDialog.prompt" readonly rows="10"></textarea>
+            </div>
+            <div class="manual-register-panel">
+              <label class="field">
+                <span class="field-label">결과 파일</span>
+                <input class="input" type="file" :accept="manualDialog.accept" @change="onManualFileChange" />
+              </label>
+              <label class="field">
+                <span class="field-label">URL 또는 저장 경로</span>
+                <input class="input" v-model="manualDialog.url" placeholder="https://... 또는 static/..." />
+              </label>
+              <div class="manual-register-hint">
+                파일을 선택하면 프로젝트 저장소로 업로드합니다. 이미 저장된 파일은 `static/...` 경로를 입력해 연결할 수 있습니다.
+              </div>
+            </div>
+          </div>
+          <div class="manual-asset-foot">
+            <button class="btn" @click="closeManualDialog">닫기</button>
+            <button class="btn btn-primary ml-auto" @click="submitManualAsset">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              결과 연결
+            </button>
+          </div>
+        </div>
       </div>
 
       <div v-if="imageViewer.open && imageViewer.src" class="overlay image-viewer-overlay" @click.self="closeImageViewer">
@@ -1977,6 +2028,29 @@ async function startGridGen() {
   gridActiveShotIds.value = ids.filter(Boolean)
   gridActualLayout.value = { rows, cols }
   if (!gridAssignmentsState.value.length) resetGridAssignments()
+  if (isManualGeneration.value) {
+    const prompt = gridPromptText.value || ''
+    await copyPrompt(prompt, '그리드 이미지 프롬프트')
+    openManualDialog({
+      title: '그리드 이미지 수동 등록',
+      kind: 'images',
+      accept: 'image/*',
+      prompt,
+      onSave: async (path) => {
+        const modePart = gridMode.value || 'manual'
+        await registerManualImage({
+          path,
+          prompt,
+          frameType: `grid_${modePart}_${rows}x${cols}`,
+        })
+        gridImagePath.value = path
+        gridActualLayout.value = { rows, cols }
+        persistGridImagePath(path)
+        gridStep.value = 3
+      },
+    })
+    return
+  }
   gridStep.value = 2
   gridStatusText.value = '생성 요청 제출 중...'
   try {
@@ -2596,10 +2670,10 @@ async function submitManualAsset() {
     let path = ''
     if (manualDialog.file) {
       const uploaded = await uploadAPI.file(manualDialog.file, manualDialog.kind)
-      path = uploaded.path
+      path = uploaded.path || uploaded.url || ''
     } else if (manualDialog.url.trim()) {
       const uploaded = await uploadAPI.fromUrl(manualDialog.url.trim(), manualDialog.kind)
-      path = uploaded.path
+      path = uploaded.path || uploaded.url || manualDialog.url.trim()
     }
     if (!path) {
       toast.warning('파일을 선택하거나 URL/저장 경로를 입력하세요')
@@ -2612,6 +2686,95 @@ async function submitManualAsset() {
   } catch (e) {
     toast.error(e.message || '수동 결과 연결 실패')
   }
+}
+
+function joinManualPrompts(items, buildLine) {
+  return items.map((item, idx) => {
+    const title = buildLine(item, idx)
+    return [`[${title}]`, item.prompt].filter(Boolean).join('\n')
+  }).join('\n\n---\n\n')
+}
+
+async function registerManualImage({ path, prompt, storyboardId, sceneId, characterId, frameType }) {
+  return imageAPI.manual({
+    local_path: path,
+    prompt,
+    drama_id: dramaId,
+    storyboard_id: storyboardId,
+    scene_id: sceneId,
+    character_id: characterId,
+    frame_type: frameType,
+  })
+}
+
+function handleCharImage(char) {
+  if (!isManualGeneration.value) {
+    genCharImg(char.id)
+    return
+  }
+  const prompt = buildCharacterImagePrompt(char)
+  openManualDialog({
+    title: `${char.name} 캐릭터 이미지 수동 등록`,
+    kind: 'images',
+    accept: 'image/*',
+    prompt,
+    onSave: async (path) => {
+      await registerManualImage({ path, prompt, characterId: char.id, frameType: 'character_reference' })
+      await characterAPI.update(char.id, { image_url: path, local_path: path })
+    },
+  })
+}
+
+async function handleBatchCharImages() {
+  if (!isManualGeneration.value) {
+    batchCharImages()
+    return
+  }
+  const pending = visualChars.value.filter(c => !(c.image_url || c.imageUrl))
+  if (!pending.length) {
+    toast.info('모든 캐릭터 이미지가 등록되었습니다')
+    return
+  }
+  const text = joinManualPrompts(
+    pending.map(char => ({ char, prompt: buildCharacterImagePrompt(char) })),
+    ({ char }, idx) => `캐릭터 ${idx + 1}: ${char.name}`,
+  )
+  await copyPrompt(text, '캐릭터 이미지 일괄 프롬프트')
+}
+
+function handleSceneImage(scene) {
+  if (!isManualGeneration.value) {
+    genSceneImg(scene.id)
+    return
+  }
+  const prompt = buildSceneImagePrompt(scene)
+  openManualDialog({
+    title: `${scene.location} 장면 이미지 수동 등록`,
+    kind: 'images',
+    accept: 'image/*',
+    prompt,
+    onSave: async (path) => {
+      await registerManualImage({ path, prompt, sceneId: scene.id, frameType: 'scene_reference' })
+      await sceneAPI.update(scene.id, { image_url: path, local_path: path, status: 'completed' })
+    },
+  })
+}
+
+async function handleBatchSceneImages() {
+  if (!isManualGeneration.value) {
+    batchSceneImages()
+    return
+  }
+  const pending = scenes.value.filter(s => !(s.image_url || s.imageUrl))
+  if (!pending.length) {
+    toast.info('모든 장면 이미지가 등록되었습니다')
+    return
+  }
+  const text = joinManualPrompts(
+    pending.map(scene => ({ scene, prompt: buildSceneImagePrompt(scene) })),
+    ({ scene }, idx) => `장면 ${idx + 1}: ${scene.location}`,
+  )
+  await copyPrompt(text, '장면 이미지 일괄 프롬프트')
 }
 
 async function genCharImg(id) {
@@ -2733,6 +2896,40 @@ async function batchShotTTS() {
   await refresh()
 }
 
+function handleShotTTS(sb) {
+  if (!isManualGeneration.value) {
+    genShotTTS(sb)
+    return
+  }
+  const prompt = buildTtsPrompt(sb)
+  openManualDialog({
+    title: `샷 #${sb.storyboard_number || sb.storyboardNumber || sb.id} 더빙 수동 등록`,
+    kind: 'audio',
+    accept: 'audio/*',
+    prompt,
+    onSave: async (path) => {
+      await storyboardAPI.update(sb.id, { tts_audio_url: path })
+    },
+  })
+}
+
+async function handleBatchShotTTS() {
+  if (!isManualGeneration.value) {
+    batchShotTTS()
+    return
+  }
+  const pending = sbs.value.filter(sb => hasDialogue(sb) && !hasTTS(sb))
+  if (!pending.length) {
+    toast.info(ttsEligibleCount.value ? '모든 샷 더빙이 등록되었습니다' : '현재 생성할 대사나 내레이션이 없습니다')
+    return
+  }
+  const text = joinManualPrompts(
+    pending.map(sb => ({ sb, prompt: buildTtsPrompt(sb) })),
+    ({ sb }, idx) => `더빙 ${idx + 1}: 샷 #${sb.storyboard_number || sb.storyboardNumber || sb.id}`,
+  )
+  await copyPrompt(text, '더빙 일괄 프롬프트')
+}
+
 function getFirstFrame(s) { return s?.first_frame_image || s?.firstFrameImage || null }
 function getLastFrame(s) { return s?.last_frame_image || s?.lastFrameImage || null }
 function getStoryboardCover(s) { return s?.composed_image || s?.composedImage || getFirstFrame(s) || getLastFrame(s) || null }
@@ -2823,6 +3020,25 @@ async function genShotFrame(sb, frameType) {
   }
 }
 
+function handleShotFrame(sb, frameType) {
+  if (!isManualGeneration.value) {
+    genShotFrame(sb, frameType)
+    return
+  }
+  const prompt = buildShotImagePrompt(sb, frameType)
+  const frameLabel = frameType === 'first_frame' ? '첫 프레임' : '끝 프레임'
+  openManualDialog({
+    title: `샷 #${sb.storyboard_number || sb.storyboardNumber || sb.id} ${frameLabel} 수동 등록`,
+    kind: 'images',
+    accept: 'image/*',
+    prompt,
+    onSave: async (path) => {
+      await registerManualImage({ path, prompt, storyboardId: sb.id, frameType })
+      await storyboardAPI.update(sb.id, { [frameType === 'first_frame' ? 'first_frame_image' : 'last_frame_image']: path })
+    },
+  })
+}
+
 async function genVid(sb) {
   const params = {
     storyboard_id: sb.id,
@@ -2847,6 +3063,23 @@ async function genVid(sb) {
     pendingVideoIds.value = pendingVideoIds.value.filter(item => item !== sb.id)
     toast.error(e.message)
   }
+}
+
+function handleVideo(sb) {
+  if (!isManualGeneration.value) {
+    genVid(sb)
+    return
+  }
+  const prompt = buildVideoManualPrompt(sb)
+  openManualDialog({
+    title: `샷 #${sb.storyboard_number || sb.storyboardNumber || sb.id} 영상 수동 등록`,
+    kind: 'videos',
+    accept: 'video/*',
+    prompt,
+    onSave: async (path) => {
+      await storyboardAPI.update(sb.id, { video_url: path })
+    },
+  })
 }
 async function pollVideoGeneration(generationId, storyboardId) {
   if (!generationId) {
@@ -2919,6 +3152,22 @@ function batchVideos() {
       return done
     }), 80, 4000)
   }
+}
+async function handleBatchVideos() {
+  if (!isManualGeneration.value) {
+    batchVideos()
+    return
+  }
+  const pending = sbs.value.filter(s => !hasVid(s))
+  if (!pending.length) {
+    toast.info('모든 샷 영상이 등록되었습니다')
+    return
+  }
+  const text = joinManualPrompts(
+    pending.map(sb => ({ sb, prompt: buildVideoManualPrompt(sb) })),
+    ({ sb }, idx) => `영상 ${idx + 1}: 샷 #${sb.storyboard_number || sb.storyboardNumber || sb.id}`,
+  )
+  await copyPrompt(text, '영상 일괄 프롬프트')
 }
 async function batchCompose() {
   await composeAPI.all(epId.value)
@@ -3732,6 +3981,28 @@ onMounted(() => { refresh(); loadConfigs(); loadVoices() })
 .prod-tab.active { background: var(--bg-0); color: var(--text-0); font-weight: 600; box-shadow: var(--shadow-xs); }
 .prod-tab-badge { font-size: 10px; font-family: var(--font-mono); padding: 0 4px; background: var(--bg-3); border-radius: 99px; }
 .prod-tab.active .prod-tab-badge { background: var(--accent-bg); color: var(--accent-text); }
+.generation-mode-strip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  padding: 6px 9px;
+  margin-top: 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(27, 41, 64, 0.08);
+  background: rgba(255, 255, 255, 0.64);
+  font-size: 12px;
+  color: var(--text-1);
+}
+.generation-mode-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: var(--success);
+}
+.generation-mode-dot.manual { background: var(--warning); }
+.generation-mode-dot.api { background: var(--success); }
 
 /* Production content */
 .prod-content { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 12px; }
@@ -3922,6 +4193,90 @@ onMounted(() => { refresh(); loadConfigs(); loadVoices() })
   border-radius: 18px;
   box-shadow: 0 18px 48px rgba(8, 14, 24, 0.22);
   background: rgba(255,255,255,0.9);
+}
+
+/* Manual asset registration */
+.manual-asset-overlay {
+  z-index: 130;
+  padding: 24px;
+  background: rgba(18, 24, 34, 0.52);
+  backdrop-filter: blur(10px);
+}
+.manual-asset-dialog {
+  width: min(920px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 20px;
+}
+.manual-asset-head,
+.manual-asset-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(27, 41, 64, 0.08);
+  flex-shrink: 0;
+}
+.manual-asset-foot {
+  border-bottom: 0;
+  border-top: 1px solid rgba(27, 41, 64, 0.08);
+}
+.manual-asset-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-0);
+}
+.manual-asset-subtitle {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.manual-asset-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
+  gap: 14px;
+  padding: 16px;
+  overflow: auto;
+}
+.manual-prompt-panel,
+.manual-register-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.manual-prompt-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-1);
+}
+.manual-prompt-text {
+  width: 100%;
+  min-height: 260px;
+  resize: vertical;
+  border: 1px solid rgba(27, 41, 64, 0.12);
+  border-radius: 8px;
+  padding: 10px;
+  background: rgba(249, 250, 252, 0.92);
+  color: var(--text-1);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.55;
+}
+.manual-register-hint {
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(27, 41, 64, 0.04);
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 /* Grid tool dialog */
