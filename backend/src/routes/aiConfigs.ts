@@ -25,6 +25,12 @@ const HUOBAO_AGENT_DEFAULTS = [
 
 const HUOBAO_AGENT_MODEL = 'gemini-3-pro-preview'
 
+function localizeProbeText(text: string) {
+  return text
+    .replace(/无效的\s*API\s*Key/gi, 'API 키가 유효하지 않습니다')
+    .replace(/invalid\s*api\s*key/gi, 'API 키가 유효하지 않습니다')
+}
+
 function exposeConfig(row: typeof schema.aiServiceConfigs.$inferSelect) {
   return {
     ...toSnakeCase(row),
@@ -294,7 +300,7 @@ app.post('/test', async (c) => {
       headers: probe.headers,
       body: probe.body ? JSON.stringify(probe.body) : undefined,
     })
-    const text = await resp.text()
+    const text = localizeProbeText(await resp.text())
     const reachable = [200, 204, 400, 401, 403].includes(resp.status)
     const payload = {
       ok: resp.ok,

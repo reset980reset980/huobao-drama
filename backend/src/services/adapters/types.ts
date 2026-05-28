@@ -7,7 +7,7 @@ export interface ImageProviderAdapter {
 
   /**
    * 构建이미지生成请求
-   * @param config AI 配置 { baseUrl, apiKey, model }
+   * @param config AI 설정 { baseUrl, apiKey, model }
    * @param record 이미지生成记录
    */
   buildGenerateRequest(config: AIConfig, record: ImageGenerationRecord): ProviderRequest

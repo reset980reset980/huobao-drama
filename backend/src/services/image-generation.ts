@@ -161,7 +161,7 @@ async function processImageGeneration(id: number, config: AIConfig) {
       throw new Error('No image URL or base64 data in response')
     }
 
-    // 异步模式：更新 taskId，开始轮询
+    // 비동기 모드: taskId를 저장하고 폴링을 시작합니다.
     db.update(schema.imageGenerations)
       .set({ taskId, status: 'processing', updatedAt: now() })
       .where(eq(schema.imageGenerations.id, id))

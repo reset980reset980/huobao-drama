@@ -6,12 +6,22 @@ import { toSnakeCaseArray, toSnakeCase } from '../utils/transform.js'
 
 const app = new Hono()
 
+function normalizeGenerationMode(value: unknown) {
+  return value === 'manual' ? 'manual' : 'api'
+}
+
 // POST /episodes — Create a new episode
 app.post('/', async (c) => {
   const body = await c.req.json()
   if (!body.drama_id) return badRequest(c, 'drama_id required')
-  if (!body.image_config_id || !body.video_config_id || !body.audio_config_id) {
-    return badRequest(c, 'image_config_id, video_config_id and audio_config_id are required')
+  const imageGenerationMode = normalizeGenerationMode(body.image_generation_mode)
+  const videoGenerationMode = normalizeGenerationMode(body.video_generation_mode)
+  const audioGenerationMode = normalizeGenerationMode(body.audio_generation_mode)
+  if (imageGenerationMode === 'api' && !body.image_config_id) return badRequest(c, 'API 이미지 생성에는 image_config_id가 필요합니다')
+  if (videoGenerationMode === 'api' && !body.video_config_id) return badRequest(c, 'API 영상 생성에는 video_config_id가 필요합니다')
+  if (audioGenerationMode === 'api' && !body.audio_config_id) return badRequest(c, 'API 오디오 생성에는 audio_config_id가 필요합니다')
+  if (!['api', 'manual'].includes(imageGenerationMode) || !['api', 'manual'].includes(videoGenerationMode) || !['api', 'manual'].includes(audioGenerationMode)) {
+    return badRequest(c, 'generation mode must be api or manual')
   }
   const ts = now()
 
@@ -28,6 +38,9 @@ app.post('/', async (c) => {
     imageConfigId: body.image_config_id,
     videoConfigId: body.video_config_id,
     audioConfigId: body.audio_config_id,
+    imageGenerationMode,
+    videoGenerationMode,
+    audioGenerationMode,
     createdAt: ts,
     updatedAt: ts,
   }).run()
@@ -41,6 +54,9 @@ app.post('/', async (c) => {
     image_config_id: ep.imageConfigId,
     video_config_id: ep.videoConfigId,
     audio_config_id: ep.audioConfigId,
+    image_generation_mode: ep.imageGenerationMode,
+    video_generation_mode: ep.videoGenerationMode,
+    audio_generation_mode: ep.audioGenerationMode,
   })
 })
 
@@ -49,7 +65,11 @@ app.put('/:id', async (c) => {
   const id = Number(c.req.param('id'))
   const body = await c.req.json()
 
-  const allowed = ['content', 'script_content', 'title', 'description', 'status']
+  const allowed = [
+    'content', 'script_content', 'title', 'description', 'status',
+    'image_config_id', 'video_config_id', 'audio_config_id',
+    'image_generation_mode', 'video_generation_mode', 'audio_generation_mode',
+  ]
   const updates: Record<string, any> = {}
   for (const key of allowed) {
     if (key in body) updates[key] = body[key]
@@ -63,6 +83,12 @@ app.put('/:id', async (c) => {
   if ('title' in updates) drizzleUpdates.title = updates.title
   if ('description' in updates) drizzleUpdates.description = updates.description
   if ('status' in updates) drizzleUpdates.status = updates.status
+  if ('image_config_id' in updates) drizzleUpdates.imageConfigId = updates.image_config_id
+  if ('video_config_id' in updates) drizzleUpdates.videoConfigId = updates.video_config_id
+  if ('audio_config_id' in updates) drizzleUpdates.audioConfigId = updates.audio_config_id
+  if ('image_generation_mode' in updates) drizzleUpdates.imageGenerationMode = normalizeGenerationMode(updates.image_generation_mode)
+  if ('video_generation_mode' in updates) drizzleUpdates.videoGenerationMode = normalizeGenerationMode(updates.video_generation_mode)
+  if ('audio_generation_mode' in updates) drizzleUpdates.audioGenerationMode = normalizeGenerationMode(updates.audio_generation_mode)
 
   await db.update(schema.episodes).set(drizzleUpdates).where(eq(schema.episodes.id, id))
   return success(c)

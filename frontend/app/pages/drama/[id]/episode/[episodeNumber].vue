@@ -735,10 +735,16 @@
                 <span v-if="t.badge" class="prod-tab-badge">{{ t.badge }}</span>
               </button>
             </div>
-            <div class="generation-mode-strip">
-              <span :class="['generation-mode-dot', isManualGeneration ? 'manual' : 'api']"></span>
-              <span>{{ isManualGeneration ? '수동/구독형 생성 모드' : 'API 자동 생성 모드' }}</span>
-              <span class="dim">{{ isManualGeneration ? '프롬프트를 복사한 뒤 생성 결과를 파일 또는 URL로 등록합니다' : '설정된 API 키로 자동 생성합니다' }}</span>
+            <div class="generation-mode-strip service-mode-strip">
+              <div v-for="item in serviceModeItems" :key="item.key" class="service-mode-item">
+                <span :class="['generation-mode-dot', item.mode === 'manual' ? 'manual' : 'api']"></span>
+                <span class="service-mode-label">{{ item.label }}</span>
+                <div class="service-mode-actions">
+                  <button :class="['service-mode-btn', item.mode === 'api' && 'active']" @click="setEpisodeGenerationMode(item.key, 'api')">API</button>
+                  <button :class="['service-mode-btn', item.mode === 'manual' && 'active']" @click="setEpisodeGenerationMode(item.key, 'manual')">프롬프트</button>
+                </div>
+              </div>
+              <span class="dim">회차별로 이미지, 더빙, 영상을 API 자동 생성 또는 수동/구독형 등록으로 나눠 사용할 수 있습니다.</span>
             </div>
           </div>
 
@@ -751,7 +757,7 @@
               <div class="ml-auto flex gap-1">
                 <button class="btn btn-sm" @click="handleBatchCharImages">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                  {{ isManualGeneration ? '일괄 프롬프트 복사' : '일괄 생성' }}
+                  {{ isManualImageGeneration ? '일괄 프롬프트 복사' : '일괄 생성' }}
                 </button>
               </div>
             </div>
@@ -776,7 +782,7 @@
                 <div class="asset-foot">
                   <span :class="['dot', (c.image_url || c.imageUrl) && 'ok', isPendingCharImage(c.id) && 'pending']" />
                   <span class="dim" style="font-size:10px">{{ (c.image_url || c.imageUrl) ? '생성됨' : (isPendingCharImage(c.id) ? '생성 중' : '생성 대기') }}</span>
-                  <button class="btn btn-sm ml-auto" :disabled="isPendingCharImage(c.id)" @click="handleCharImage(c)">{{ isPendingCharImage(c.id) ? '생성 중' : (isManualGeneration ? '프롬프트/등록' : '생성') }}</button>
+                  <button class="btn btn-sm ml-auto" :disabled="isPendingCharImage(c.id)" @click="handleCharImage(c)">{{ isPendingCharImage(c.id) ? '생성 중' : (isManualImageGeneration ? '프롬프트/등록' : '생성') }}</button>
                 </div>
               </div>
             </div>
@@ -790,7 +796,7 @@
               <div class="ml-auto flex gap-1">
                 <button class="btn btn-sm" @click="handleBatchSceneImages">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                  {{ isManualGeneration ? '일괄 프롬프트 복사' : '일괄 생성' }}
+                  {{ isManualImageGeneration ? '일괄 프롬프트 복사' : '일괄 생성' }}
                 </button>
               </div>
             </div>
@@ -815,7 +821,7 @@
                 <div class="asset-foot">
                   <span :class="['dot', (s.image_url || s.imageUrl) && 'ok', isPendingSceneImage(s.id) && 'pending']" />
                   <span class="dim" style="font-size:10px">{{ (s.image_url || s.imageUrl) ? '생성됨' : (isPendingSceneImage(s.id) ? '생성 중' : '생성 대기') }}</span>
-                  <button class="btn btn-sm ml-auto" :disabled="isPendingSceneImage(s.id)" @click="handleSceneImage(s)">{{ isPendingSceneImage(s.id) ? '생성 중' : (isManualGeneration ? '프롬프트/등록' : '생성') }}</button>
+                  <button class="btn btn-sm ml-auto" :disabled="isPendingSceneImage(s.id)" @click="handleSceneImage(s)">{{ isPendingSceneImage(s.id) ? '생성 중' : (isManualImageGeneration ? '프롬프트/등록' : '생성') }}</button>
                 </div>
               </div>
             </div>
@@ -830,7 +836,7 @@
               <div class="ml-auto flex gap-1">
                 <button class="btn btn-sm" @click="handleBatchShotTTS">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
-                  {{ isManualGeneration ? '일괄 프롬프트 복사' : '일괄 생성' }}
+                  {{ isManualAudioGeneration ? '일괄 프롬프트 복사' : '일괄 생성' }}
                 </button>
               </div>
             </div>
@@ -863,7 +869,7 @@
                 <div class="dub-foot">
                   <audio v-if="hasTTS(sb)" :src="'/' + getTTSUrl(sb)" controls preload="none" class="dub-audio" />
                   <div v-else class="dim" style="font-size:12px">아직 음성 파일이 생성되지 않았습니다</div>
-                  <button class="btn btn-sm ml-auto" @click="handleShotTTS(sb)">{{ isManualGeneration ? '프롬프트/등록' : '더빙 생성' }}</button>
+                  <button class="btn btn-sm ml-auto" @click="handleShotTTS(sb)">{{ isManualAudioGeneration ? '프롬프트/등록' : '더빙 생성' }}</button>
                 </div>
               </div>
             </div>
@@ -1093,7 +1099,7 @@
                     </button>
                     <button class="btn btn-primary" @click="startGridGen">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                      {{ isManualGeneration ? '프롬프트 복사/등록' : '그리드 이미지 생성' }}
+                      {{ isManualImageGeneration ? '프롬프트 복사/등록' : '그리드 이미지 생성' }}
                     </button>
                   </div>
                 </div>
@@ -1201,7 +1207,7 @@
               <div class="ml-auto flex gap-1">
                 <button class="btn btn-sm" @click="handleBatchVideos">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                  {{ isManualGeneration ? '영상 프롬프트 일괄 복사' : '영상 일괄 생성' }}
+                  {{ isManualVideoGeneration ? '영상 프롬프트 일괄 복사' : '영상 일괄 생성' }}
                 </button>
               </div>
             </div>
@@ -1240,7 +1246,7 @@
                 <div class="prod-actions">
                   <button class="btn btn-sm" :disabled="isPendingVideo(sb.id)" @click="handleVideo(sb)">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                    {{ isPendingVideo(sb.id) ? '생성 중' : (isManualGeneration ? '프롬프트/등록' : '영상 생성') }}
+                    {{ isPendingVideo(sb.id) ? '생성 중' : (isManualVideoGeneration ? '프롬프트/등록' : '영상 생성') }}
                   </button>
                 </div>
               </div>
@@ -1567,9 +1573,6 @@ const pendingComposeIds = ref([])
 const failedVideoMessages = ref({})
 const failedComposeMessages = ref({})
 const imageViewer = ref({ open: false, src: '', title: '' })
-const GENERATION_MODE_KEY = 'huobao:generation-mode'
-const generationMode = ref('api')
-const isManualGeneration = computed(() => generationMode.value === 'manual')
 const manualDialog = reactive({
   open: false,
   title: '',
@@ -1580,6 +1583,10 @@ const manualDialog = reactive({
   file: null,
   onSave: null,
 })
+
+function normalizeGenerationMode(mode) {
+  return mode === 'manual' ? 'manual' : 'api'
+}
 
 function configLabel(config) {
   if (!config) return '설정 없음'
@@ -1606,19 +1613,12 @@ function handleImageViewerKeydown(event) {
 }
 
 onMounted(() => {
-  generationMode.value = localStorage.getItem(GENERATION_MODE_KEY) || 'api'
   window.addEventListener('keydown', handleImageViewerKeydown)
-  window.addEventListener('storage', handleGenerationModeStorage)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleImageViewerKeydown)
-  window.removeEventListener('storage', handleGenerationModeStorage)
 })
-
-function handleGenerationModeStorage(event) {
-  if (event.key === GENERATION_MODE_KEY) generationMode.value = event.newValue || 'api'
-}
 
 function isPendingSceneImage(id) {
   return pendingSceneImageIds.value.includes(id)
@@ -1658,10 +1658,41 @@ const visualChars = computed(() => chars.value.filter(c => !isNarratorCharacter(
 const lockedImageConfigId = computed(() => episode.value?.image_config_id || episode.value?.imageConfigId || null)
 const lockedVideoConfigId = computed(() => episode.value?.video_config_id || episode.value?.videoConfigId || null)
 const lockedAudioConfigId = computed(() => episode.value?.audio_config_id || episode.value?.audioConfigId || null)
+const imageGenerationMode = computed(() => normalizeGenerationMode(episode.value?.image_generation_mode || episode.value?.imageGenerationMode))
+const videoGenerationMode = computed(() => normalizeGenerationMode(episode.value?.video_generation_mode || episode.value?.videoGenerationMode))
+const audioGenerationMode = computed(() => normalizeGenerationMode(episode.value?.audio_generation_mode || episode.value?.audioGenerationMode))
+const isManualImageGeneration = computed(() => imageGenerationMode.value === 'manual')
+const isManualVideoGeneration = computed(() => videoGenerationMode.value === 'manual')
+const isManualAudioGeneration = computed(() => audioGenerationMode.value === 'manual')
+const serviceModeItems = computed(() => [
+  { key: 'image', label: '이미지', mode: imageGenerationMode.value },
+  { key: 'audio', label: '더빙', mode: audioGenerationMode.value },
+  { key: 'video', label: '영상', mode: videoGenerationMode.value },
+])
 const lockedAudioProvider = computed(() => audioConfigs.value.find(c => c.id === lockedAudioConfigId.value)?.provider || '')
 const lockedImageConfigLabel = computed(() => configLabel(imageConfigs.value.find(c => c.id === lockedImageConfigId.value)))
 const lockedVideoConfigLabel = computed(() => configLabel(videoConfigs.value.find(c => c.id === lockedVideoConfigId.value)))
 const lockedAudioConfigLabel = computed(() => configLabel(audioConfigs.value.find(c => c.id === lockedAudioConfigId.value)))
+
+async function setEpisodeGenerationMode(service, mode) {
+  if (!episode.value?.id) return
+  const normalized = normalizeGenerationMode(mode)
+  const keyMap = {
+    image: 'image_generation_mode',
+    audio: 'audio_generation_mode',
+    video: 'video_generation_mode',
+  }
+  const key = keyMap[service]
+  if (!key) return
+  try {
+    await episodeAPI.update(episode.value.id, { [key]: normalized })
+    episode.value = { ...episode.value, [key]: normalized }
+    toast.success(`${service === 'image' ? '이미지' : service === 'audio' ? '더빙' : '영상'} 생성 방식을 ${normalized === 'api' ? 'API' : '프롬프트/등록'}로 저장했습니다`)
+    await refresh()
+  } catch (e) {
+    toast.error(e.message || '생성 방식 저장 실패')
+  }
+}
 
 // Grid tool state
 const gridDialog = ref(false)
@@ -2038,7 +2069,7 @@ async function startGridGen() {
   gridActiveShotIds.value = ids.filter(Boolean)
   gridActualLayout.value = { rows, cols }
   if (!gridAssignmentsState.value.length) resetGridAssignments()
-  if (isManualGeneration.value) {
+  if (isManualImageGeneration.value) {
     const prompt = gridPromptText.value || ''
     await copyPrompt(prompt, '그리드 이미지 프롬프트')
     openManualDialog({
@@ -2739,7 +2770,7 @@ async function registerManualImage({ path, prompt, storyboardId, sceneId, charac
 }
 
 function handleCharImage(char) {
-  if (!isManualGeneration.value) {
+  if (!isManualImageGeneration.value) {
     genCharImg(char.id)
     return
   }
@@ -2757,7 +2788,7 @@ function handleCharImage(char) {
 }
 
 async function handleBatchCharImages() {
-  if (!isManualGeneration.value) {
+  if (!isManualImageGeneration.value) {
     batchCharImages()
     return
   }
@@ -2774,7 +2805,7 @@ async function handleBatchCharImages() {
 }
 
 function handleSceneImage(scene) {
-  if (!isManualGeneration.value) {
+  if (!isManualImageGeneration.value) {
     genSceneImg(scene.id)
     return
   }
@@ -2792,7 +2823,7 @@ function handleSceneImage(scene) {
 }
 
 async function handleBatchSceneImages() {
-  if (!isManualGeneration.value) {
+  if (!isManualImageGeneration.value) {
     batchSceneImages()
     return
   }
@@ -2939,7 +2970,7 @@ async function batchShotTTS() {
 }
 
 function handleShotTTS(sb) {
-  if (!isManualGeneration.value) {
+  if (!isManualAudioGeneration.value) {
     genShotTTS(sb)
     return
   }
@@ -2956,7 +2987,7 @@ function handleShotTTS(sb) {
 }
 
 async function handleBatchShotTTS() {
-  if (!isManualGeneration.value) {
+  if (!isManualAudioGeneration.value) {
     batchShotTTS()
     return
   }
@@ -3063,7 +3094,7 @@ async function genShotFrame(sb, frameType) {
 }
 
 function handleShotFrame(sb, frameType) {
-  if (!isManualGeneration.value) {
+  if (!isManualImageGeneration.value) {
     genShotFrame(sb, frameType)
     return
   }
@@ -3108,7 +3139,7 @@ async function genVid(sb) {
 }
 
 function handleVideo(sb) {
-  if (!isManualGeneration.value) {
+  if (!isManualVideoGeneration.value) {
     genVid(sb)
     return
   }
@@ -3194,7 +3225,7 @@ async function batchVideos() {
   await refresh()
 }
 async function handleBatchVideos() {
-  if (!isManualGeneration.value) {
+  if (!isManualVideoGeneration.value) {
     void batchVideos()
     return
   }
@@ -4047,6 +4078,42 @@ onMounted(() => { refresh(); loadConfigs(); loadVoices() })
 }
 .generation-mode-dot.manual { background: var(--warning); }
 .generation-mode-dot.api { background: var(--success); }
+.service-mode-strip {
+  flex-wrap: wrap;
+  gap: 8px 10px;
+}
+.service-mode-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 5px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.72);
+}
+.service-mode-label {
+  min-width: 32px;
+  font-weight: 700;
+}
+.service-mode-actions {
+  display: flex;
+  gap: 3px;
+}
+.service-mode-btn {
+  min-height: 22px;
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-0);
+  color: var(--text-2);
+  font-size: 11px;
+  cursor: pointer;
+}
+.service-mode-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  color: var(--accent-text);
+  font-weight: 700;
+}
 
 /* Production content */
 .prod-content { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 12px; }

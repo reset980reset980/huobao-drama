@@ -120,21 +120,36 @@
               <span class="dialog-section-copy">생성 후에는 변경할 수 없으므로 여기서 한 번에 올바르게 선택하세요</span>
             </div>
             <div class="config-grid">
-              <label class="config-card">
+              <div class="config-card">
                 <span class="config-card-kicker">IMAGE</span>
-                <span class="field-label">이미지 설정</span>
-                <BaseSelect v-model="newEpisodeImageConfigId" :options="imageConfigOptions" placeholder="이미지 서비스 선택" searchable />
-              </label>
-              <label class="config-card">
+                <span class="field-label">이미지 생성 방식</span>
+                <div class="mode-toggle">
+                  <button :class="['mode-option', newEpisodeImageMode === 'api' && 'active']" @click="newEpisodeImageMode = 'api'">API</button>
+                  <button :class="['mode-option', newEpisodeImageMode === 'manual' && 'active']" @click="newEpisodeImageMode = 'manual'">프롬프트/등록</button>
+                </div>
+                <BaseSelect v-if="newEpisodeImageMode === 'api'" v-model="newEpisodeImageConfigId" :options="imageConfigOptions" placeholder="이미지 서비스 선택" searchable />
+                <span v-else class="field-hint">프롬프트만 제공하고 사용자가 만든 이미지 파일 또는 URL을 등록합니다.</span>
+              </div>
+              <div class="config-card">
                 <span class="config-card-kicker">VIDEO</span>
-                <span class="field-label">영상 설정</span>
-                <BaseSelect v-model="newEpisodeVideoConfigId" :options="videoConfigOptions" placeholder="영상 서비스 선택" searchable />
-              </label>
-              <label class="config-card">
+                <span class="field-label">영상 생성 방식</span>
+                <div class="mode-toggle">
+                  <button :class="['mode-option', newEpisodeVideoMode === 'api' && 'active']" @click="newEpisodeVideoMode = 'api'">API</button>
+                  <button :class="['mode-option', newEpisodeVideoMode === 'manual' && 'active']" @click="newEpisodeVideoMode = 'manual'">프롬프트/등록</button>
+                </div>
+                <BaseSelect v-if="newEpisodeVideoMode === 'api'" v-model="newEpisodeVideoConfigId" :options="videoConfigOptions" placeholder="영상 서비스 선택" searchable />
+                <span v-else class="field-hint">프롬프트만 제공하고 구독형 서비스에서 만든 영상 파일 또는 URL을 등록합니다.</span>
+              </div>
+              <div class="config-card">
                 <span class="config-card-kicker">AUDIO</span>
-                <span class="field-label">오디오 설정</span>
-                <BaseSelect v-model="newEpisodeAudioConfigId" :options="audioConfigOptions" placeholder="오디오 서비스 선택" searchable />
-              </label>
+                <span class="field-label">오디오 생성 방식</span>
+                <div class="mode-toggle">
+                  <button :class="['mode-option', newEpisodeAudioMode === 'api' && 'active']" @click="newEpisodeAudioMode = 'api'">API</button>
+                  <button :class="['mode-option', newEpisodeAudioMode === 'manual' && 'active']" @click="newEpisodeAudioMode = 'manual'">프롬프트/등록</button>
+                </div>
+                <BaseSelect v-if="newEpisodeAudioMode === 'api'" v-model="newEpisodeAudioConfigId" :options="audioConfigOptions" placeholder="오디오 서비스 선택" searchable />
+                <span v-else class="field-hint">더빙 프롬프트만 제공하고 사용자가 만든 음성 파일 또는 URL을 등록합니다.</span>
+              </div>
             </div>
           </div>
         </div>
@@ -165,6 +180,9 @@ const audioConfigs = ref([])
 const newEpisodeImageConfigId = ref(null)
 const newEpisodeVideoConfigId = ref(null)
 const newEpisodeAudioConfigId = ref(null)
+const newEpisodeImageMode = ref('api')
+const newEpisodeVideoMode = ref('manual')
+const newEpisodeAudioMode = ref('api')
 
 function hasScript(ep) { return !!(ep.script_content || ep.scriptContent) }
 
@@ -178,7 +196,12 @@ function configLabel(config) {
 const imageConfigOptions = computed(() => imageConfigs.value.map(c => ({ label: configLabel(c), value: c.id })))
 const videoConfigOptions = computed(() => videoConfigs.value.map(c => ({ label: configLabel(c), value: c.id })))
 const audioConfigOptions = computed(() => audioConfigs.value.map(c => ({ label: configLabel(c), value: c.id })))
-const canCreateEpisode = computed(() => !!(newEpisodeImageConfigId.value && newEpisodeVideoConfigId.value && newEpisodeAudioConfigId.value))
+const canCreateEpisode = computed(() => {
+  if (newEpisodeImageMode.value === 'api' && !newEpisodeImageConfigId.value) return false
+  if (newEpisodeVideoMode.value === 'api' && !newEpisodeVideoConfigId.value) return false
+  if (newEpisodeAudioMode.value === 'api' && !newEpisodeAudioConfigId.value) return false
+  return true
+})
 
 async function load() {
   try {
@@ -208,6 +231,11 @@ async function loadConfigs() {
 
 function openAddEpisode() {
   newEpisodeTitle.value = ''
+  if (import.meta.client) {
+    newEpisodeImageMode.value = localStorage.getItem('huobao:image-generation-mode') || 'api'
+    newEpisodeVideoMode.value = localStorage.getItem('huobao:video-generation-mode') || 'manual'
+    newEpisodeAudioMode.value = localStorage.getItem('huobao:audio-generation-mode') || 'api'
+  }
   addDialog.value = true
 }
 
@@ -220,6 +248,9 @@ async function addEpisode() {
       image_config_id: newEpisodeImageConfigId.value,
       video_config_id: newEpisodeVideoConfigId.value,
       audio_config_id: newEpisodeAudioConfigId.value,
+      image_generation_mode: newEpisodeImageMode.value,
+      video_generation_mode: newEpisodeVideoMode.value,
+      audio_generation_mode: newEpisodeAudioMode.value,
     })
     toast.success('새 회차가 추가되었습니다')
     addDialog.value = false
@@ -439,6 +470,28 @@ onMounted(() => { load(); loadConfigs() })
 }
 .dialog-section-title { font-size: 14px; font-weight: 700; color: var(--text-0); }
 .dialog-section-copy { font-size: 12px; color: var(--text-3); }
+
+.mode-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 6px;
+  margin: 6px 0 8px;
+}
+.mode-option {
+  min-height: 30px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-0);
+  color: var(--text-2);
+  font-size: 12px;
+  cursor: pointer;
+}
+.mode-option.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+}
 .config-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

@@ -69,18 +69,20 @@
           <div class="setup-panel-head compact">
             <div>
               <div class="setup-title">생성 방식</div>
-              <div class="setup-desc">API 자동 생성은 저장된 키로 완전 자동 처리합니다. 수동/구독형 모드는 프롬프트를 복사해 외부 서비스에서 생성한 결과를 직접 등록합니다.</div>
+              <div class="setup-desc">새 회차를 만들 때 사용할 기본값입니다. 회차 안에서도 이미지, 더빙, 영상별로 다시 바꿀 수 있습니다.</div>
             </div>
           </div>
           <div class="generation-mode-box">
-            <button :class="['generation-mode-option', generationMode === 'api' && 'active']" @click="setGenerationMode('api')">
-              <span class="generation-mode-title">API 자동 생성</span>
-              <span class="generation-mode-desc">이미지, 영상, 오디오 provider API 키 사용</span>
-            </button>
-            <button :class="['generation-mode-option', generationMode === 'manual' && 'active']" @click="setGenerationMode('manual')">
-              <span class="generation-mode-title">수동/구독형 생성</span>
-              <span class="generation-mode-desc">프롬프트 복사 후 파일/URL 직접 등록</span>
-            </button>
+            <div v-for="item in generationModeItems" :key="item.key" class="generation-mode-row">
+              <div>
+                <span class="generation-mode-title">{{ item.label }}</span>
+                <span class="generation-mode-desc">{{ item.desc }}</span>
+              </div>
+              <div class="generation-mode-actions">
+                <button :class="['generation-mode-option', item.mode === 'api' && 'active']" @click="setGenerationMode(item.key, 'api')">API</button>
+                <button :class="['generation-mode-option', item.mode === 'manual' && 'active']" @click="setGenerationMode(item.key, 'manual')">프롬프트/등록</button>
+              </div>
+            </div>
           </div>
         </section>
         <section class="setup-panel card">
@@ -418,8 +420,17 @@ import brandLogo from '~/assets/huobao-logo.png'
 const showBrandImage = ref(true)
 const tab = ref('ai')
 const showAdvanced = ref(false)
-const GENERATION_MODE_KEY = 'huobao:generation-mode'
-const generationMode = ref('api')
+const GENERATION_MODE_KEYS = {
+  image: 'huobao:image-generation-mode',
+  video: 'huobao:video-generation-mode',
+  audio: 'huobao:audio-generation-mode',
+}
+const generationModes = reactive({ image: 'api', video: 'manual', audio: 'api' })
+const generationModeItems = computed(() => [
+  { key: 'image', label: '이미지', desc: '캐릭터, 장면, 샷 이미지를 생성합니다', mode: generationModes.image },
+  { key: 'audio', label: '더빙', desc: '미리듣기와 샷 대사 음성을 생성합니다', mode: generationModes.audio },
+  { key: 'video', label: '영상', desc: '샷 영상을 생성하거나 외부 제작 결과를 연결합니다', mode: generationModes.video },
+])
 const baseTabs = [
   { id: 'ai', label: 'AI 서비스', icon: Cpu },
 ]
@@ -431,10 +442,11 @@ watch(showAdvanced, (v) => {
   if (!v && tab.value !== 'ai') tab.value = 'ai'
 })
 
-function setGenerationMode(mode) {
-  generationMode.value = mode
-  if (import.meta.client) localStorage.setItem(GENERATION_MODE_KEY, mode)
-  toast.success(mode === 'api' ? 'API 자동 생성 모드로 설정했습니다' : '수동/구독형 생성 모드로 설정했습니다')
+function setGenerationMode(service, mode) {
+  generationModes[service] = mode === 'manual' ? 'manual' : 'api'
+  if (import.meta.client) localStorage.setItem(GENERATION_MODE_KEYS[service], generationModes[service])
+  const label = service === 'image' ? '이미지' : service === 'audio' ? '더빙' : '영상'
+  toast.success(`${label} 기본 생성 방식을 ${generationModes[service] === 'api' ? 'API' : '프롬프트/등록'}로 설정했습니다`)
 }
 
 // ===== AI Service Configs =====
@@ -896,7 +908,9 @@ async function saveSkill(id) {
 }
 
 onMounted(() => {
-  generationMode.value = localStorage.getItem(GENERATION_MODE_KEY) || 'api'
+  generationModes.image = localStorage.getItem(GENERATION_MODE_KEYS.image) || 'api'
+  generationModes.video = localStorage.getItem(GENERATION_MODE_KEYS.video) || 'manual'
+  generationModes.audio = localStorage.getItem(GENERATION_MODE_KEYS.audio) || 'api'
   loadCfgs(); loadAgents(); loadAllSkills()
 })
 </script>
@@ -1079,20 +1093,33 @@ onMounted(() => {
 }
 .generation-mode-box {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
+.generation-mode-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.72);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.generation-mode-actions {
+  display: grid;
+  grid-template-columns: 76px 110px;
+  gap: 6px;
 }
 .generation-mode-option {
   border: 1px solid var(--border);
   background: rgba(255,255,255,0.82);
-  border-radius: 14px;
-  padding: 12px;
-  text-align: left;
+  border-radius: 8px;
+  padding: 7px 10px;
+  text-align: center;
   cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
   transition: 0.15s;
+  font-size: 12px;
+  font-weight: 600;
 }
 .generation-mode-option.active {
   border-color: var(--accent);

@@ -25,7 +25,7 @@ export class OpenAIImageAdapter implements ImageProviderAdapter {
       prompt: record.prompt,
       size,
       n: 1,
-      response_format: 'url', // 기본값返回 URL，可选 'b64_json'
+      response_format: 'url', // 기본값은 URL이며 필요하면 'b64_json'도 사용할 수 있습니다.
     }
 
     return {

@@ -41,6 +41,13 @@ function enqueueVideoTask(id: number, config: AIConfig) {
   })
 }
 
+function localizeVideoError(message: string) {
+  if (/无效的\s*API\s*Key|invalid\s*api\s*key|invalid_api_key/i.test(message)) {
+    return '영상 생성 API 키가 유효하지 않습니다. 설정 > AI 서비스 > 영상에서 현재 provider에 맞는 키와 Base URL을 확인하거나, 회차 영상 모드를 프롬프트/등록으로 전환하세요.'
+  }
+  return message.replace(/无效的\s*API\s*Key/gi, 'API 키가 유효하지 않습니다')
+}
+
 export async function generateVideo(params: GenerateVideoParams): Promise<number> {
   const ts = now()
   const config = params.configId
@@ -107,7 +114,7 @@ async function processVideoGeneration(id: number, config: AIConfig) {
     const resolvedLastFrameUrl = await normalizeVideoReferenceUrl(record.lastFrameUrl)
     const resolvedReferenceImageUrls = await normalizeVideoReferenceUrls(record.referenceImageUrls)
 
-    // 使用 Adapter 构建请求
+    // Adapter로 provider 요청을 구성합니다.
     const { url, method, headers, body } = adapter.buildGenerateRequest(config, {
       id: record.id,
       model: record.model,
@@ -142,26 +149,26 @@ async function processVideoGeneration(id: number, config: AIConfig) {
       body: JSON.stringify(body),
     })
 
-    if (!resp.ok) throw new Error(`API error ${resp.status}: ${await resp.text()}`)
+    if (!resp.ok) throw new Error(localizeVideoError(`API error ${resp.status}: ${await resp.text()}`))
     const result = await resp.json() as any
 
     const { isAsync, taskId, videoUrl } = adapter.parseGenerateResponse(result)
 
     if (!isAsync && videoUrl) {
       logTaskProgress('VideoTask', 'sync-complete', { id, videoUrl })
-      // 同步模式
+      // 동기 모드
       await handleVideoComplete(id, videoUrl, record.duration)
       return
     }
 
-    // 异步模式：更新 taskId，开始轮询
+    // 비동기 모드: taskId를 저장하고 폴링을 시작합니다.
     db.update(schema.videoGenerations)
       .set({ taskId, status: 'processing', updatedAt: now() })
       .where(eq(schema.videoGenerations.id, id))
       .run()
     logTaskProgress('VideoTask', 'poll-start', { id, taskId, provider: config.provider })
 
-    // Vidu 没有轮询端点，跳过轮询（依赖 Webhook 回调）
+    // Vidu는 폴링 엔드포인트가 없어 Webhook 콜백을 기다립니다.
     if (adapter.provider === 'vidu') {
       logTaskProgress('VideoTask', 'webhook-wait', { id, taskId, provider: adapter.provider })
       return
@@ -169,9 +176,10 @@ async function processVideoGeneration(id: number, config: AIConfig) {
 
     await pollVideoTask(id, config, taskId!, record.storyboardId)
   } catch (err: any) {
-    logTaskError('VideoTask', 'process', { id, provider: config.provider, error: err.message })
+    const message = localizeVideoError(err.message)
+    logTaskError('VideoTask', 'process', { id, provider: config.provider, error: message })
     db.update(schema.videoGenerations)
-      .set({ status: 'failed', errorMsg: err.message, updatedAt: now() })
+      .set({ status: 'failed', errorMsg: message, updatedAt: now() })
       .where(eq(schema.videoGenerations.id, id))
       .run()
   }
