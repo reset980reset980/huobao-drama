@@ -23,6 +23,7 @@ import skills from './routes/skills.js'
 import webhooks from './routes/webhooks.js'
 import aiVoices from './routes/aiVoices.js'
 import { requestLogger, errorHandler } from './middleware/logger.js'
+import { startVoiceboxRuntime, stopVoiceboxRuntime } from './services/voicebox-runtime.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const projectRoot = path.resolve(__dirname, '../..')
@@ -75,4 +76,17 @@ app.get('*', serveStatic({ root: distPath, path: 'index.html' }))
 
 const port = Number(process.env.PORT || 5679)
 console.log(`🚀 Huobao Drama TS server on http://localhost:${port}`)
+startVoiceboxRuntime({ projectRoot }).catch((err) => {
+  console.error('[Voicebox] 자동 실행 중 오류가 발생했습니다:', err)
+})
+
+process.once('SIGINT', () => {
+  stopVoiceboxRuntime()
+  process.exit(0)
+})
+process.once('SIGTERM', () => {
+  stopVoiceboxRuntime()
+  process.exit(0)
+})
+
 serve({ fetch: app.fetch, port })

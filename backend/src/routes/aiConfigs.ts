@@ -12,7 +12,7 @@ const HUOBAO_PRESET_SERVICES = [
   { serviceType: 'text', label: '텍스트', provider: 'codex', baseUrl: '', model: 'codex-cli', priority: 100 },
   { serviceType: 'image', label: '이미지', provider: 'gemini', baseUrl: 'https://generativelanguage.googleapis.com', model: 'gemini-3-pro-image-preview', priority: 99 },
   { serviceType: 'video', label: '영상', provider: 'volcengine', baseUrl: 'https://api.chatfire.site/volcengine', model: 'doubao-seedance-1-5-pro-251215', priority: 98 },
-  { serviceType: 'audio', label: '오디오', provider: 'gemini', baseUrl: 'https://generativelanguage.googleapis.com', model: 'gemini-3.1-flash-tts-preview', priority: 97 },
+  { serviceType: 'audio', label: '오디오', provider: 'voicebox', baseUrl: 'http://localhost:17493', model: 'qwen:1.7B', priority: 97 },
 ] as const
 
 const HUOBAO_AGENT_DEFAULTS = [

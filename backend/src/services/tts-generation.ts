@@ -99,12 +99,13 @@ export async function generateTTS(params: TTSParams): Promise<string> {
 
 async function generateVoiceboxTTS(config: any, params: TTSParams): Promise<string> {
   const options = parseVoiceboxModel(config.model)
+  const baseUrl = (config.baseUrl || 'http://localhost:17493').replace(/\/+$/, '')
   const profileId = resolveVoiceboxProfileId(params.voice, options.profileId)
+    || await fetchDefaultVoiceboxProfileId(baseUrl)
   if (!profileId) {
-    throw new Error('Voicebox profile_id가 필요합니다. 캐릭터 음색 값에 Voicebox 프로필 ID를 넣거나 VOICEBOX_PROFILE_ID 환경 변수를 설정하세요.')
+    throw new Error('Voicebox 음성 프로필이 없습니다. 먼저 Voicebox에서 음성 프로필을 만들고, 캐릭터 음색 값에 해당 profile_id를 넣어 주세요.')
   }
 
-  const baseUrl = (config.baseUrl || 'http://localhost:17493').replace(/\/+$/, '')
   const url = `${baseUrl}/generate/stream`
   const body = {
     profile_id: profileId,
@@ -198,6 +199,17 @@ function resolveVoiceboxProfileId(voice?: string, fallback?: string) {
   const value = String(voice || '').trim()
   if (value && !GEMINI_VOICE_NAMES.has(value)) return value
   return String(fallback || '').trim()
+}
+
+async function fetchDefaultVoiceboxProfileId(baseUrl: string) {
+  try {
+    const resp = await fetch(`${baseUrl}/profiles`)
+    if (!resp.ok) return ''
+    const profiles = await resp.json() as Array<{ id?: string }>
+    return String(profiles?.[0]?.id || '').trim()
+  } catch {
+    return ''
+  }
 }
 
 function localizeVoiceboxError(status: number, text: string) {
