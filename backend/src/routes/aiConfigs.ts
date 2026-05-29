@@ -29,6 +29,14 @@ function localizeProbeText(text: string) {
   return text
     .replace(/无效的\s*API\s*Key/gi, 'API 키가 유효하지 않습니다')
     .replace(/invalid\s*api\s*key/gi, 'API 키가 유효하지 않습니다')
+    .replace(/fetch failed/gi, '요청에 실패했습니다')
+}
+
+function localizeProbeError(provider: string, message: string) {
+  if (provider.toLowerCase() === 'voicebox' && /fetch failed|ECONNREFUSED|Connection refused/i.test(message)) {
+    return 'Voicebox 로컬 서버에 연결하지 못했습니다. D:\\Project\\voicebox에서 서버를 실행한 뒤 다시 테스트하세요.'
+  }
+  return localizeProbeText(message || '요청에 실패했습니다.')
 }
 
 function exposeConfig(row: typeof schema.aiServiceConfigs.$inferSelect) {
@@ -125,6 +133,15 @@ function buildProbe(serviceType: string, provider: string, baseUrl: string, mode
       url: joinProviderUrl(baseUrl, '', '/ent/v2/img2video'),
       headers: viduHeaders(apiKey, true),
       body: {},
+    }
+  }
+
+  if (p === 'voicebox') {
+    return {
+      method: 'GET',
+      url: joinProviderUrl(baseUrl || 'http://localhost:17493', '', '/profiles'),
+      headers: {},
+      body: undefined,
     }
   }
 
@@ -265,7 +282,7 @@ app.post('/test', async (c) => {
   const body = await c.req.json()
   if (!body.service_type || !body.provider || !body.base_url) {
     const provider = String(body.provider || '').toLowerCase()
-    if (provider !== 'codex' && provider !== 'codex-cli') {
+    if (provider !== 'codex' && provider !== 'codex-cli' && provider !== 'voicebox') {
       return badRequest(c, 'service_type, provider and base_url are required')
     }
   }
@@ -339,7 +356,7 @@ app.post('/test', async (c) => {
       reachable: false,
       method: probe.method,
       url: probeUrl,
-      message: error.message || '요청에 실패했습니다.',
+      message: localizeProbeError(body.provider || '', error.message || '요청에 실패했습니다.'),
       response_preview: '',
     })
   }

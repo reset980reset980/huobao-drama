@@ -13,6 +13,7 @@ import { logTaskError, logTaskPayload, logTaskProgress, logTaskStart, logTaskSuc
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const STORAGE_ROOT = process.env.STORAGE_PATH || path.resolve(__dirname, '../../../data/static')
 const MAX_TTS_RETRIES = 2
+const VOICEBOX_DEFAULT_PROFILE_ID = process.env.VOICEBOX_PROFILE_ID || ''
 
 interface TTSParams {
   text: string
@@ -28,6 +29,10 @@ interface TTSParams {
  */
 export async function generateTTS(params: TTSParams): Promise<string> {
   const config = getAudioConfigById(params.configId)
+  if (config.provider.toLowerCase() === 'voicebox') {
+    return generateVoiceboxTTS(config, params)
+  }
+
   const adapter = getTTSAdapter(config.provider)
 
   logTaskStart('AudioTask', 'tts-generate', {
@@ -90,6 +95,124 @@ export async function generateTTS(params: TTSParams): Promise<string> {
     audioMs: parsed.audioLength,
   })
   return relativePath
+}
+
+async function generateVoiceboxTTS(config: any, params: TTSParams): Promise<string> {
+  const options = parseVoiceboxModel(config.model)
+  const profileId = resolveVoiceboxProfileId(params.voice, options.profileId)
+  if (!profileId) {
+    throw new Error('Voicebox profile_id가 필요합니다. 캐릭터 음색 값에 Voicebox 프로필 ID를 넣거나 VOICEBOX_PROFILE_ID 환경 변수를 설정하세요.')
+  }
+
+  const baseUrl = (config.baseUrl || 'http://localhost:17493').replace(/\/+$/, '')
+  const url = `${baseUrl}/generate/stream`
+  const body = {
+    profile_id: profileId,
+    text: params.text,
+    language: options.language,
+    engine: options.engine,
+    model_size: options.modelSize,
+    instruct: params.emotion || options.instruct,
+    normalize: true,
+    max_chunk_chars: 800,
+    crossfade_ms: 50,
+  }
+
+  logTaskStart('AudioTask', 'voicebox-generate', {
+    provider: config.provider,
+    engine: body.engine,
+    modelSize: body.model_size,
+    language: body.language,
+    profileId: redactProfileId(profileId),
+    textPreview: params.text.slice(0, 50),
+    textLength: params.text.length,
+  })
+  logTaskPayload('AudioTask', 'voicebox request payload', {
+    method: 'POST',
+    url: redactUrl(url),
+    body: { ...body, profile_id: redactProfileId(profileId) },
+  })
+
+  let resp: Response
+  try {
+    resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  } catch (err: any) {
+    const message = localizeVoiceboxError(0, err.message || 'fetch failed')
+    logTaskError('AudioTask', 'voicebox-generate', {
+      provider: config.provider,
+      error: message,
+    })
+    throw new Error(message)
+  }
+
+  if (!resp.ok) {
+    const errorText = await resp.text()
+    const message = localizeVoiceboxError(resp.status, errorText)
+    logTaskError('AudioTask', 'voicebox-generate', {
+      provider: config.provider,
+      status: resp.status,
+      error: message,
+    })
+    throw new Error(message)
+  }
+
+  const arrayBuffer = await resp.arrayBuffer()
+  const buffer = Buffer.from(arrayBuffer)
+  if (!buffer.length) throw new Error('Voicebox가 빈 오디오 응답을 반환했습니다')
+
+  const audioDir = path.join(STORAGE_ROOT, 'audio')
+  fs.mkdirSync(audioDir, { recursive: true })
+  const filename = `${uuid()}.wav`
+  const filePath = path.join(audioDir, filename)
+  fs.writeFileSync(filePath, buffer)
+
+  const relativePath = `static/audio/${filename}`
+  logTaskSuccess('AudioTask', 'voicebox-saved', {
+    provider: config.provider,
+    path: relativePath,
+    bytes: buffer.length,
+    profileId: redactProfileId(profileId),
+  })
+  return relativePath
+}
+
+function parseVoiceboxModel(model?: string) {
+  const raw = String(model || '').trim()
+  const [engineRaw, modelSizeRaw, profileIdRaw, languageRaw, ...instructParts] = raw.split(':')
+  const engine = engineRaw || 'qwen'
+  const modelSize = modelSizeRaw || (engine === 'qwen' ? '1.7B' : undefined)
+  return {
+    engine,
+    modelSize,
+    profileId: profileIdRaw || VOICEBOX_DEFAULT_PROFILE_ID,
+    language: languageRaw || 'ko',
+    instruct: instructParts.join(':') || '차분하고 감정적인 한국어 드라마 톤',
+  }
+}
+
+function resolveVoiceboxProfileId(voice?: string, fallback?: string) {
+  const value = String(voice || '').trim()
+  if (value && !GEMINI_VOICE_NAMES.has(value)) return value
+  return String(fallback || '').trim()
+}
+
+function localizeVoiceboxError(status: number, text: string) {
+  if (/Profile not found/i.test(text)) {
+    return 'Voicebox 음성 프로필을 찾지 못했습니다. 캐릭터 음색 값 또는 오디오 설정 모델의 profile_id를 확인하세요.'
+  }
+  if (/Connection refused|ECONNREFUSED|fetch failed/i.test(text)) {
+    return 'Voicebox 로컬 서버에 연결하지 못했습니다. D:\\Project\\voicebox에서 npm run dev:server로 서버를 실행하세요.'
+  }
+  return `Voicebox TTS API 오류 ${status}: ${text}`
+}
+
+function redactProfileId(profileId: string) {
+  if (profileId.length <= 8) return profileId ? '***' : ''
+  return `${profileId.slice(0, 4)}...${profileId.slice(-4)}`
 }
 
 /**
@@ -178,3 +301,11 @@ function formatTTSError(status: number, errText: string) {
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
+
+const GEMINI_VOICE_NAMES = new Set([
+  'Zephyr', 'Puck', 'Charon', 'Kore', 'Fenrir', 'Leda',
+  'Orus', 'Aoede', 'Callirrhoe', 'Autonoe', 'Enceladus', 'Iapetus',
+  'Umbriel', 'Algieba', 'Despina', 'Erinome', 'Algenib', 'Rasalgethi',
+  'Laomedeia', 'Achernar', 'Alnilam', 'Schedar', 'Gacrux', 'Pulcherrima',
+  'Achird', 'Zubenelgenubi', 'Vindemiatrix', 'Sadachbia', 'Sadaltager', 'Sulafat',
+])

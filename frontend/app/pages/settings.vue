@@ -459,7 +459,7 @@ const cfgTestResult = ref(null)
 const cfgForm = reactive({ name: '', provider: '', api_key: '', base_url: '', modelStr: '', service_type: 'text', priority: 0 })
 const huobaoForm = reactive({ apiKey: '' })
 const serviceTypes = [{ type: 'text', label: '텍스트' }, { type: 'image', label: '이미지' }, { type: 'video', label: '영상' }, { type: 'audio', label: '오디오' }]
-const providers = ['ali', 'chatfire', 'codex', 'gemini', 'minimax', 'openai', 'openrouter', 'vidu', 'volcengine']
+const providers = ['ali', 'chatfire', 'codex', 'gemini', 'minimax', 'openai', 'openrouter', 'vidu', 'voicebox', 'volcengine']
 const providerSelectOptions = computed(() => providers.map(p => ({ label: p, value: p })))
 const serviceMeta = {
   text: { label: '텍스트', desc: '극본 수정, 캐릭터/장면 추출, 스토리보드 분해 등 Agent 텍스트 기능' },
@@ -485,6 +485,7 @@ const providerPresets = {
     ali: { label: '알리 추천', baseUrl: 'https://dashscope.aliyuncs.com', models: ['wan2.6-i2v-flash'] },
   },
   audio: {
+    voicebox: { label: 'Voicebox 로컬', baseUrl: 'http://localhost:17493', models: ['qwen:1.7B'] },
     minimax: { label: '화보오디오', baseUrl: 'https://api.chatfire.site/minimax', models: ['speech-2.8-hd'] },
     gemini: { label: 'Gemini TTS', baseUrl: 'https://generativelanguage.googleapis.com', models: ['gemini-3.1-flash-tts-preview'] },
   },
@@ -502,6 +503,7 @@ const endpointPrefixes = {
   openrouter: '/v1',
   minimax: '/v1',
   gemini: '/v1beta',
+  voicebox: '/generate/stream',
   volcengine: '/api/v3',
   ali: '/api/v1',
   vidu: '/ent/v2',
@@ -513,6 +515,7 @@ const endpointHint = computed(() => {
   const prefix = endpointPrefixes[provider] || ''
   if (!provider) return '서비스 제공자를 선택하면 추천 엔드포인트 접두사가 표시됩니다'
   if (provider === 'codex') return '로컬 Codex CLI를 사용합니다. API 키와 Base URL이 필요하지 않습니다'
+  if (provider === 'voicebox') return '로컬 Voicebox 서버를 사용합니다. API 키는 필요 없고, 모델은 engine:modelSize 형식입니다. 예: qwen:1.7B'
   return `${base}${prefix}`
 })
 
@@ -583,6 +586,16 @@ async function testDraftCfg() {
     toast.success('Codex CLI 설정을 사용합니다')
     return
   }
+  if (cfgForm.provider === 'voicebox') {
+    await testCfgPayload({
+      service_type: cfgForm.service_type,
+      provider: cfgForm.provider,
+      api_key: '',
+      base_url: cfgForm.base_url || 'http://localhost:17493',
+      model: cfgForm.modelStr.split(',').map(s => s.trim()).filter(Boolean),
+    })
+    return
+  }
   await testCfgPayload({
     service_type: cfgForm.service_type,
     provider: cfgForm.provider,
@@ -604,6 +617,16 @@ async function testExistingCfg(c) {
       response_preview: '',
     }
     toast.success('Codex CLI 설정을 사용합니다')
+    return
+  }
+  if (c.provider === 'voicebox') {
+    await testCfgPayload({
+      service_type: c.service_type,
+      provider: c.provider,
+      api_key: '',
+      base_url: c.base_url || 'http://localhost:17493',
+      model: Array.isArray(c.model) ? c.model : [],
+    })
     return
   }
   await testCfgPayload({
