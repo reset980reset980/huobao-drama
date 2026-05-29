@@ -485,7 +485,7 @@ const providerPresets = {
     ali: { label: '알리 추천', baseUrl: 'https://dashscope.aliyuncs.com', models: ['wan2.6-i2v-flash'] },
   },
   audio: {
-    voicebox: { label: 'Voicebox 로컬', baseUrl: 'http://localhost:17493', models: ['qwen:1.7B'] },
+    voicebox: { label: 'Voicebox 로컬', baseUrl: 'http://localhost:17493', models: ['qwen_custom_voice:1.7B'] },
     minimax: { label: '화보오디오', baseUrl: 'https://api.chatfire.site/minimax', models: ['speech-2.8-hd'] },
     gemini: { label: 'Gemini TTS', baseUrl: 'https://generativelanguage.googleapis.com', models: ['gemini-3.1-flash-tts-preview'] },
   },
@@ -515,7 +515,7 @@ const endpointHint = computed(() => {
   const prefix = endpointPrefixes[provider] || ''
   if (!provider) return '서비스 제공자를 선택하면 추천 엔드포인트 접두사가 표시됩니다'
   if (provider === 'codex') return '로컬 Codex CLI를 사용합니다. API 키와 Base URL이 필요하지 않습니다'
-  if (provider === 'voicebox') return '로컬 Voicebox 서버를 사용합니다. API 키는 필요 없고, 모델은 engine:modelSize 형식입니다. 예: qwen:1.7B'
+  if (provider === 'voicebox') return '로컬 Voicebox 서버를 사용합니다. API 키는 필요 없고, 모델은 engine:modelSize 형식입니다. 예: qwen_custom_voice:1.7B'
   return `${base}${prefix}`
 })
 

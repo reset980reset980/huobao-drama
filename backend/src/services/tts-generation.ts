@@ -100,10 +100,13 @@ export async function generateTTS(params: TTSParams): Promise<string> {
 async function generateVoiceboxTTS(config: any, params: TTSParams): Promise<string> {
   const options = parseVoiceboxModel(config.model)
   const baseUrl = (config.baseUrl || 'http://localhost:17493').replace(/\/+$/, '')
-  const profileId = resolveVoiceboxProfileId(params.voice, options.profileId)
+  const voiceStyle = String(params.voice || '').trim()
+  const stylePrompt = isVoiceboxProfileIdLike(voiceStyle) ? '' : voiceStyle
+  const profileId = await resolveVoiceboxProfileId(baseUrl, voiceStyle, options.profileId)
+    || (stylePrompt ? await ensureVoiceboxStyleProfile(baseUrl, stylePrompt) : '')
     || await fetchDefaultVoiceboxProfileId(baseUrl)
   if (!profileId) {
-    throw new Error('Voicebox 음성 프로필이 없습니다. 먼저 Voicebox에서 음성 프로필을 만들고, 캐릭터 음색 값에 해당 profile_id를 넣어 주세요.')
+    throw new Error('Voicebox 음성 프로필을 준비하지 못했습니다. Voicebox 서버 연결과 preset 프로필 생성 권한을 확인해 주세요.')
   }
 
   const url = `${baseUrl}/generate/stream`
@@ -113,7 +116,7 @@ async function generateVoiceboxTTS(config: any, params: TTSParams): Promise<stri
     language: options.language,
     engine: options.engine,
     model_size: options.modelSize,
-    instruct: params.emotion || options.instruct,
+    instruct: params.emotion || stylePrompt || options.instruct,
     normalize: true,
     max_chunk_chars: 800,
     crossfade_ms: 50,
@@ -184,7 +187,7 @@ async function generateVoiceboxTTS(config: any, params: TTSParams): Promise<stri
 function parseVoiceboxModel(model?: string) {
   const raw = String(model || '').trim()
   const [engineRaw, modelSizeRaw, profileIdRaw, languageRaw, ...instructParts] = raw.split(':')
-  const engine = engineRaw || 'qwen'
+  const engine = engineRaw || 'qwen_custom_voice'
   const modelSize = modelSizeRaw || (engine === 'qwen' ? '1.7B' : undefined)
   return {
     engine,
@@ -195,10 +198,18 @@ function parseVoiceboxModel(model?: string) {
   }
 }
 
-function resolveVoiceboxProfileId(voice?: string, fallback?: string) {
+async function resolveVoiceboxProfileId(baseUrl: string, voice?: string, fallback?: string) {
   const value = String(voice || '').trim()
-  if (value && !GEMINI_VOICE_NAMES.has(value)) return value
-  return String(fallback || '').trim()
+  if (value && !GEMINI_VOICE_NAMES.has(value) && !isVoiceboxStylePrompt(value)) {
+    const profileId = await findVoiceboxProfileId(baseUrl, value)
+    if (profileId) return profileId
+  }
+  const fallbackValue = String(fallback || '').trim()
+  if (fallbackValue) {
+    const profileId = await findVoiceboxProfileId(baseUrl, fallbackValue)
+    return profileId || fallbackValue
+  }
+  return ''
 }
 
 async function fetchDefaultVoiceboxProfileId(baseUrl: string) {
@@ -210,6 +221,77 @@ async function fetchDefaultVoiceboxProfileId(baseUrl: string) {
   } catch {
     return ''
   }
+}
+
+async function findVoiceboxProfileId(baseUrl: string, value: string) {
+  try {
+    const resp = await fetch(`${baseUrl}/profiles`)
+    if (!resp.ok) return ''
+    const profiles = await resp.json() as Array<{ id?: string, name?: string, description?: string }>
+    const found = profiles.find(profile => profile.id === value || profile.name === value)
+    return String(found?.id || '').trim()
+  } catch {
+    return ''
+  }
+}
+
+async function ensureVoiceboxStyleProfile(baseUrl: string, stylePrompt: string) {
+  const presetVoiceId = chooseQwenCustomPreset(stylePrompt)
+  const profileName = `Huobao ${presetVoiceId} ${hashStylePrompt(stylePrompt)}`
+  const existing = await findVoiceboxProfileId(baseUrl, profileName)
+  if (existing) return existing
+
+  const body = {
+    name: profileName,
+    description: `Huobao 자동 생성 음색: ${stylePrompt}`,
+    language: 'ko',
+    voice_type: 'preset',
+    preset_engine: 'qwen_custom_voice',
+    preset_voice_id: presetVoiceId,
+    default_engine: 'qwen_custom_voice',
+    personality: stylePrompt,
+  }
+
+  const resp = await fetch(`${baseUrl}/profiles`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!resp.ok) {
+    const text = await resp.text()
+    throw new Error(`Voicebox 음색 프로필 자동 생성 실패: ${text}`)
+  }
+  const profile = await resp.json() as { id?: string }
+  return String(profile.id || '').trim()
+}
+
+function isVoiceboxStylePrompt(value: string) {
+  if (!value) return false
+  if (isVoiceboxProfileIdLike(value)) return false
+  if (/^[A-Za-z_][A-Za-z0-9_ -]{1,40}$/.test(value) && !/[가-힣,，.]/.test(value)) return false
+  return value.length > 12 || /[가-힣]/.test(value)
+}
+
+function isVoiceboxProfileIdLike(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
+}
+
+function chooseQwenCustomPreset(stylePrompt: string) {
+  const text = stylePrompt.toLowerCase()
+  if (/윤서|여|여성|여자|소녀|sohee|nova/.test(text)) return 'Sohee'
+  if (/하준|fable|따뜻|밝|맑|청년|젊|서사감/.test(text)) return 'Aiden'
+  if (/echo|onyx|낮|중후|무거|노련|차분|진중|서사|아버지|삼촌/.test(text)) return 'Uncle_Fu'
+  if (/부드|감정|서정|침착|안정/.test(text)) return 'Sohee'
+  if (/거칠|허스키|강한|긴장|분노/.test(text)) return 'Eric'
+  return 'Sohee'
+}
+
+function hashStylePrompt(value: string) {
+  let hash = 0
+  for (let i = 0; i < value.length; i++) {
+    hash = ((hash << 5) - hash + value.charCodeAt(i)) | 0
+  }
+  return Math.abs(hash).toString(36)
 }
 
 function localizeVoiceboxError(status: number, text: string) {
