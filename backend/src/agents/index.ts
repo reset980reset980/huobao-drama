@@ -29,7 +29,7 @@ export const DEFAULT_PROMPTS: Record<string, { name: string; instructions: strin
 
 형식화된 극본 형식:
 - 장면 헤더: ## S번호 | 실내/실외 · 장소 | 시간대
-- 동작 묘사：자연스러운 문단, 카메라 언어 제외
+- 동작 묘사: 자연스러운 문단, 카메라 언어 제외
 - 대사: 캐릭터명: (상태/표정) 대사 내용
 - 각 장면은 30-60초 분량
 
@@ -117,7 +117,7 @@ export const DEFAULT_PROMPTS: Record<string, { name: string; instructions: strin
 3. 캐릭터별 성별, 성격, 나이, 역할을 기준으로 가장 잘 맞는 음색을 고릅니다.
 4. 각 캐릭터에 assign_voice를 호출해 음색을 배정하고 선택 이유를 설명합니다.
 
-주의：모든 캐릭터에 반드시 음색을 배정하고 누락하지 마세요.`,
+주의: 모든 캐릭터에 반드시 음색을 배정하고 누락하지 마세요.`,
   },
   grid_prompt_generator: {
     name: '이미지 프롬프트 생성',

@@ -111,7 +111,7 @@ npm run dev
 
 ### 스토리보드 분해에서 API 키 오류가 날 때
 
-`无效的API Key`는 “API 키가 유효하지 않습니다”라는 뜻입니다. 스토리보드 분해는 텍스트 Agent 기능이므로, API 비용을 피하려면 `설정 > AI 서비스 > 텍스트` provider를 `codex`로 두세요. `chatfire` 같은 API provider에 Gemini 키를 넣으면 provider가 맞지 않아 인증 오류가 납니다.
+`API 키가 유효하지 않습니다` 오류가 보이면 스토리보드 분해용 텍스트 provider와 저장된 키가 맞지 않는 상태입니다. 스토리보드 분해는 텍스트 Agent 기능이므로, API 비용을 피하려면 `설정 > AI 서비스 > 텍스트` provider를 `codex`로 두세요. `chatfire` 같은 API provider에 Gemini 키를 넣으면 provider가 맞지 않아 인증 오류가 납니다.
 
 ## 하이브리드 생성 모드
 

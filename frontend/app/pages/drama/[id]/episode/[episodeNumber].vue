@@ -834,9 +834,12 @@
               <span class="tag mono">{{ ttsGeneratedCount }}/{{ ttsEligibleCount }} 생성됨</span>
               <span class="tag">{{ lockedAudioConfigLabel }}</span>
               <div class="ml-auto flex gap-1">
-                <button class="btn btn-sm" @click="handleBatchShotTTS">
+                <button class="btn btn-sm" :disabled="isBatchTTSRunning" @click="handleBatchShotTTS">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
-                  {{ isManualAudioGeneration ? '일괄 프롬프트 복사' : '일괄 생성' }}
+                  {{ isBatchTTSRunning ? '생성 중' : (isManualAudioGeneration ? '일괄 프롬프트 복사' : '미생성 일괄 생성') }}
+                </button>
+                <button v-if="!isManualAudioGeneration && ttsGeneratedCount" class="btn btn-sm" :disabled="isBatchTTSRunning" @click="regenerateAllShotTTS">
+                  전체 다시 생성
                 </button>
               </div>
             </div>
@@ -859,7 +862,7 @@
                     </div>
                     <div class="dub-desc">{{ getDialogueText(sb) || '텍스트 미입력' }}</div>
                     </div>
-                    <span class="tag" :class="hasTTS(sb) ? 'tag-success' : ''">{{ hasTTS(sb) ? '생성됨' : '생성 대기' }}</span>
+                    <span class="tag" :class="hasTTS(sb) ? 'tag-success' : ''">{{ isPendingTTS(sb.id) ? '생성 중' : (hasTTS(sb) ? '생성됨' : '생성 대기') }}</span>
                   </div>
                 <div class="dub-meta">
                   <span class="dim">{{ sb.shot_type || sb.shotType || '샷 크기 미설정' }}</span>
@@ -868,8 +871,10 @@
                 </div>
                 <div class="dub-foot">
                   <audio v-if="hasTTS(sb)" :src="'/' + getTTSUrl(sb)" controls preload="none" class="dub-audio" />
-                  <div v-else class="dim" style="font-size:12px">아직 음성 파일이 생성되지 않았습니다</div>
-                  <button class="btn btn-sm ml-auto" @click="handleShotTTS(sb)">{{ isManualAudioGeneration ? '프롬프트/등록' : '더빙 생성' }}</button>
+                  <div v-else class="dim" style="font-size:12px">{{ isPendingTTS(sb.id) ? 'Voicebox로 더빙을 생성하는 중입니다. CPU에서는 1분 이상 걸릴 수 있습니다.' : '아직 음성 파일이 생성되지 않았습니다' }}</div>
+                  <button class="btn btn-sm ml-auto" :disabled="isPendingTTS(sb.id)" @click="handleShotTTS(sb)">
+                    {{ ttsButtonLabel(sb) }}
+                  </button>
                 </div>
               </div>
             </div>
@@ -1077,7 +1082,7 @@
                       그리드 이미지 프롬프트
                       <span v-if="gridPromptSource" class="tag ml-8">{{ gridPromptSource === 'agent' ? 'AI 생성' : '템플릿 대체' }}</span>
                     </div>
-                    <div class="grid-prompt-text">{{ gridPromptText || '（생성 대기）' }}</div>
+                    <div class="grid-prompt-text">{{ gridPromptText || '(생성 대기)' }}</div>
                   </div>
 
                   <div class="grid-blank-preview" :style="gridBlankStyle">
@@ -1530,22 +1535,22 @@ const prodTabIdx = computed({
 })
 const frameMode = ref('first')
 const fallbackVoiceProfiles = [
-  { id: 'alloy', label: 'Alloy', gender: '중성', traits: '균형감, 자연스러움, 절제됨', suitable: '범용 내레이션、내레이션、안정적인 출력이 필요한 캐릭터' },
-  { id: 'echo', label: 'Echo', gender: '남성 음성', traits: '낮고 안정적이며 침착함', suitable: '성숙한 남성、아버지 세대、내레이션、압박감 있는 캐릭터' },
-  { id: 'fable', label: 'Fable', gender: '남성 음성', traits: '따뜻함, 서사감, 강한 표현력', suitable: '남자 주인공、성장형 캐릭터、서사 담당' },
-  { id: 'onyx', label: 'Onyx', gender: '남성 음성', traits: '깊고 힘 있으며 권위적', suitable: '악역、강한 캐릭터、주도형 인물' },
-  { id: 'nova', label: 'Nova', gender: '여성 음성', traits: '부드러움, 달콤함, 친근함', suitable: '여자 주인공、어머니、부드러운 조연' },
-  { id: 'shimmer', label: 'Shimmer', gender: '여성 음성', traits: '밝음, 활발함, 젊음', suitable: '소녀、경쾌한 캐릭터、톡톡 튀는 조연' },
+  { id: 'alloy', label: 'Alloy', gender: '중성', traits: '균형감, 자연스러움, 절제됨', suitable: '범용 내레이션, 내레이션, 안정적인 출력이 필요한 캐릭터' },
+  { id: 'echo', label: 'Echo', gender: '남성 음성', traits: '낮고 안정적이며 침착함', suitable: '성숙한 남성, 아버지 세대, 내레이션, 압박감 있는 캐릭터' },
+  { id: 'fable', label: 'Fable', gender: '남성 음성', traits: '따뜻함, 서사감, 강한 표현력', suitable: '남자 주인공, 성장형 캐릭터, 서사 담당' },
+  { id: 'onyx', label: 'Onyx', gender: '남성 음성', traits: '깊고 힘 있으며 권위적', suitable: '악역, 강한 캐릭터, 주도형 인물' },
+  { id: 'nova', label: 'Nova', gender: '여성 음성', traits: '부드러움, 달콤함, 친근함', suitable: '여자 주인공, 어머니, 부드러운 조연' },
+  { id: 'shimmer', label: 'Shimmer', gender: '여성 음성', traits: '밝음, 활발함, 젊음', suitable: '소녀, 경쾌한 캐릭터, 톡톡 튀는 조연' },
 ]
 const geminiVoiceProfiles = [
-  { id: 'Kore', label: 'Kore', gender: '중성', traits: '단단함, 명료함, 안정감', suitable: '내레이션、주도적인 인물、진지한 장면' },
-  { id: 'Puck', label: 'Puck', gender: '남성 음성', traits: '밝음, 경쾌함, 에너지', suitable: '젊은 남성、활발한 캐릭터、코믹한 장면' },
-  { id: 'Charon', label: 'Charon', gender: '남성 음성', traits: '정보 전달형, 침착함', suitable: '설명、차분한 남성、안정적인 대사' },
-  { id: 'Fenrir', label: 'Fenrir', gender: '남성 음성', traits: '흥분감, 강한 표현', suitable: '갈등 장면、강한 남성、긴장감 있는 대사' },
-  { id: 'Aoede', label: 'Aoede', gender: '여성 음성', traits: '산뜻함, 부드러움', suitable: '여자 주인공、밝은 조연、따뜻한 장면' },
-  { id: 'Leda', label: 'Leda', gender: '여성 음성', traits: '젊음, 맑음', suitable: '소녀、젊은 여성、감정선이 가벼운 장면' },
-  { id: 'Sulafat', label: 'Sulafat', gender: '중성', traits: '따뜻함, 안정감', suitable: '감성 내레이션、차분한 인물、위로하는 대사' },
-  { id: 'Vindemiatrix', label: 'Vindemiatrix', gender: '여성 음성', traits: '부드러움, 섬세함', suitable: '성숙한 여성、감정 연기、속삭이는 장면' },
+  { id: 'Kore', label: 'Kore', gender: '중성', traits: '단단함, 명료함, 안정감', suitable: '내레이션, 주도적인 인물, 진지한 장면' },
+  { id: 'Puck', label: 'Puck', gender: '남성 음성', traits: '밝음, 경쾌함, 에너지', suitable: '젊은 남성, 활발한 캐릭터, 코믹한 장면' },
+  { id: 'Charon', label: 'Charon', gender: '남성 음성', traits: '정보 전달형, 침착함', suitable: '설명, 차분한 남성, 안정적인 대사' },
+  { id: 'Fenrir', label: 'Fenrir', gender: '남성 음성', traits: '흥분감, 강한 표현', suitable: '갈등 장면, 강한 남성, 긴장감 있는 대사' },
+  { id: 'Aoede', label: 'Aoede', gender: '여성 음성', traits: '산뜻함, 부드러움', suitable: '여자 주인공, 밝은 조연, 따뜻한 장면' },
+  { id: 'Leda', label: 'Leda', gender: '여성 음성', traits: '젊음, 맑음', suitable: '소녀, 젊은 여성, 감정선이 가벼운 장면' },
+  { id: 'Sulafat', label: 'Sulafat', gender: '중성', traits: '따뜻함, 안정감', suitable: '감성 내레이션, 차분한 인물, 위로하는 대사' },
+  { id: 'Vindemiatrix', label: 'Vindemiatrix', gender: '여성 음성', traits: '부드러움, 섬세함', suitable: '성숙한 여성, 감정 연기, 속삭이는 장면' },
 ]
 const voiceProfiles = ref(fallbackVoiceProfiles)
 const voiceSelectOptions = computed(() => voiceProfiles.value.map(v => ({ label: `${v.label} · ${v.traits}`, value: v.id })))
@@ -1570,6 +1575,8 @@ const pendingSceneImageIds = ref([])
 const pendingShotFrameKeys = ref([])
 const pendingVideoIds = ref([])
 const pendingComposeIds = ref([])
+const pendingTTSIds = ref([])
+const isBatchTTSRunning = ref(false)
 const failedVideoMessages = ref({})
 const failedComposeMessages = ref({})
 const imageViewer = ref({ open: false, src: '', title: '' })
@@ -2920,13 +2927,13 @@ const IGNORE_TTS_TEXT = /^(없음|없음대사|대사 없음|없음내레이션|
 
 function getDialogueSpeakerRaw(sb) {
   const dialogue = sb?.dialogue?.trim() || ''
-  const match = dialogue.match(/^(.+?)[:：]/)
-  return match ? match[1].replace(/[（(].+?[)）]/g, '').trim() : ''
+  const match = dialogue.match(/^(.+?):/)
+  return match ? match[1].replace(/\(.+?\)/g, '').trim() : ''
 }
 
 function getDialogueText(sb) {
   const dialogue = sb?.dialogue?.trim() || ''
-  return dialogue ? dialogue.replace(/^.+?[:：]\s*/, '').trim() : ''
+  return dialogue ? dialogue.replace(/^.+?:\s*/, '').trim() : ''
 }
 
 function isTTSIgnorable(sb) {
@@ -2942,31 +2949,64 @@ function isTTSIgnorable(sb) {
 function hasDialogue(sb) { return !isTTSIgnorable(sb) }
 function hasTTS(sb) { return !!(sb?.tts_audio_url || sb?.ttsAudioUrl) }
 function getTTSUrl(sb) { return sb?.tts_audio_url || sb?.ttsAudioUrl || '' }
+function isPendingTTS(id) { return pendingTTSIds.value.includes(id) }
+function ttsButtonLabel(sb) {
+  if (isPendingTTS(sb.id)) return '생성 중'
+  if (isManualAudioGeneration.value) return '프롬프트/등록'
+  return hasTTS(sb) ? '다시 생성' : '더빙 생성'
+}
 function getDialogueSpeaker(sb) {
   const speaker = getDialogueSpeakerRaw(sb)
   if (!speaker) return '내레이션'
   return speaker
 }
 async function genShotTTS(sb) {
+  if (isPendingTTS(sb.id)) return
+  const label = `샷 #${sb.storyboard_number || sb.storyboardNumber || sb.id}`
+  pendingTTSIds.value = [...new Set([...pendingTTSIds.value, sb.id])]
   try {
+    toast.info(`${label} 더빙을 생성하는 중입니다`)
     await storyboardAPI.generateTTS(sb.id)
-    toast.success(`샷 #${sb.storyboard_number || sb.storyboardNumber || sb.id} 더빙 생성됨`)
+    toast.success(`${label} 더빙 생성됨`)
     await refresh()
-  } catch (e) { toast.error(e.message) }
+  } catch (e) {
+    toast.error(e.message)
+  } finally {
+    pendingTTSIds.value = pendingTTSIds.value.filter(id => id !== sb.id)
+  }
 }
-async function batchShotTTS() {
-  const pending = sbs.value.filter(sb => hasDialogue(sb) && !hasTTS(sb))
-  if (!pending.length) {
+async function batchShotTTS(items = null, label = '샷 더빙') {
+  if (isBatchTTSRunning.value) return
+  const targets = items || sbs.value.filter(sb => hasDialogue(sb) && !hasTTS(sb))
+  if (!targets.length) {
     toast.info(ttsEligibleCount.value ? '모든 샷 더빙이 생성되었습니다' : '현재 생성할 대사나 내레이션이 없습니다')
     return
   }
-  toast.info(`샷 더빙 ${pending.length} 개를 안전 모드로 순차 생성합니다`)
-  const results = await runSequentially(pending, sb => storyboardAPI.generateTTS(sb.id), SAFE_BATCH_DELAY_MS.tts)
-  const okCount = results.filter(r => r.status === 'fulfilled').length
-  const failCount = results.length - okCount
-  if (okCount) toast.success(`생성됨 ${okCount} 개 샷 더빙`)
-  if (failCount) toast.error(`${failCount} 개샷 더빙 생성 실패`)
+  const ids = targets.map(sb => sb.id)
+  isBatchTTSRunning.value = true
+  pendingTTSIds.value = [...new Set([...pendingTTSIds.value, ...ids])]
+  try {
+    toast.info(`${label} ${targets.length} 개를 안전 모드로 순차 생성합니다`)
+    const results = await runSequentially(targets, sb => storyboardAPI.generateTTS(sb.id), SAFE_BATCH_DELAY_MS.tts)
+    const okCount = results.filter(r => r.status === 'fulfilled').length
+    const failCount = results.length - okCount
+    if (okCount) toast.success(`생성됨 ${okCount} 개 샷 더빙`)
+    if (failCount) toast.error(`${failCount} 개 샷 더빙 생성 실패`)
+  } finally {
+    pendingTTSIds.value = pendingTTSIds.value.filter(id => !ids.includes(id))
+    isBatchTTSRunning.value = false
+  }
   await refresh()
+}
+
+async function regenerateAllShotTTS() {
+  if (isManualAudioGeneration.value || isBatchTTSRunning.value) return
+  const targets = sbs.value.filter(sb => hasDialogue(sb))
+  if (!targets.length) {
+    toast.info('현재 다시 생성할 대사나 내레이션이 없습니다')
+    return
+  }
+  await batchShotTTS(targets, '샷 더빙 재생성')
 }
 
 function handleShotTTS(sb) {
@@ -3043,7 +3083,7 @@ function buildShotImagePrompt(sb, frameType) {
   const movement = sb.movement || ''
   const location = sb.location || getSceneName(sb)
   const time = sb.time || ''
-  const charactersText = getStoryboardCharacterNames(sb).join('、')
+  const charactersText = getStoryboardCharacterNames(sb).join(', ')
   const action = sb.action || ''
   const atmosphere = sb.atmosphere || ''
   const frameHint = frameType === 'first_frame'
@@ -3051,18 +3091,18 @@ function buildShotImagePrompt(sb, frameType) {
     : '이 샷의 종료 키프레임을 생성하되 동작 종료, 감정의 도착점 또는 결과 상태를 강조하세요'
 
   return [
-    title ? `샷 제목：${title}` : '',
-    description ? `화면 설명：${description}` : '',
-    shotType ? `샷 크기：${shotType}` : '',
-    angle ? `카메라 위치：${angle}` : '',
-    movement ? `카메라 움직임：${movement}` : '',
-    charactersText ? `캐릭터：${charactersText}` : '',
-    location ? `장소：${location}` : '',
-    time ? `시간：${time}` : '',
-    action ? `동작：${action}` : '',
-    atmosphere ? `분위기：${atmosphere}` : '',
+    title ? `샷 제목: ${title}` : '',
+    description ? `화면 설명: ${description}` : '',
+    shotType ? `샷 크기: ${shotType}` : '',
+    angle ? `카메라 위치: ${angle}` : '',
+    movement ? `카메라 움직임: ${movement}` : '',
+    charactersText ? `캐릭터: ${charactersText}` : '',
+    location ? `장소: ${location}` : '',
+    time ? `시간: ${time}` : '',
+    action ? `동작: ${action}` : '',
+    atmosphere ? `분위기: ${atmosphere}` : '',
     frameHint,
-  ].filter(Boolean).join('；')
+  ].filter(Boolean).join('; ')
 }
 
 async function genShotFrame(sb, frameType) {
@@ -3316,8 +3356,8 @@ function mapVoiceProfile(v) {
     id: v.voice_id,
     label: v.voice_name || v.voice_id,
     gender: inferVoiceGender(v.voice_name || v.voice_id, desc),
-    traits: desc.length ? desc.slice(0, 2).join('、') : `${v.language || '다국어'}음색`,
-    suitable: desc.length > 2 ? desc.slice(2).join('、') : `${v.language || '범용'}캐릭터`,
+    traits: desc.length ? desc.slice(0, 2).join(', ') : `${v.language || '다국어'}음색`,
+    suitable: desc.length > 2 ? desc.slice(2).join(', ') : `${v.language || '범용'}캐릭터`,
   }
 }
 

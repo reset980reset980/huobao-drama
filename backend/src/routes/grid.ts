@@ -23,7 +23,7 @@ function posLabel(i: number, rows: number, cols: number) {
 }
 
 function cellLabel(i: number, rows: number, cols: number) {
-  return `칸${i + 1}（${posLabel(i, rows, cols)}）`
+  return `칸${i + 1}(${posLabel(i, rows, cols)})`
 }
 
 function safeParseJsonArray(value: any): string[] {
@@ -91,7 +91,7 @@ function collectGridReferenceAssets(storyboards: any[]) {
     }
   }
   for (const scene of scenes) {
-    pushAsset(scene.imageUrl, `${scene.location}${scene.time ? `（${scene.time}）` : ''}장면`, 'scene', { sceneId: scene.id })
+    pushAsset(scene.imageUrl, `${scene.location}${scene.time ? `(${scene.time})` : ''}장면`, 'scene', { sceneId: scene.id })
   }
   for (const char of characters) {
     pushAsset(char.imageUrl, `${char.name}캐릭터`, 'character', { characterId: char.id })
@@ -106,7 +106,7 @@ function collectGridReferenceAssets(storyboards: any[]) {
 
 function buildReferenceLegend(referenceAssets: Array<{ imageLabel: string; label: string }>) {
   if (!referenceAssets.length) return ''
-  return referenceAssets.map((asset) => `${asset.imageLabel}=${asset.label}`).join('；')
+  return referenceAssets.map((asset) => `${asset.imageLabel}=${asset.label}`).join('; ')
 }
 
 function buildStoryboardReferenceHints(
@@ -119,15 +119,15 @@ function buildStoryboardReferenceHints(
 
   for (const asset of referenceAssets) {
     if (asset.kind === 'scene' && sb.sceneId && asset.sceneId === sb.sceneId) {
-      hints.push(`${asset.imageLabel}（${asset.label}）`)
+      hints.push(`${asset.imageLabel}(${asset.label})`)
     }
     if (asset.kind === 'character') {
       if (asset.characterId && charIds.includes(asset.characterId)) {
-        hints.push(`${asset.imageLabel}（${asset.label}）`)
+        hints.push(`${asset.imageLabel}(${asset.label})`)
       }
     }
     if (asset.kind === 'storyboard' && asset.storyboardId === sb.id) {
-      hints.push(`${asset.imageLabel}（${asset.label}）`)
+      hints.push(`${asset.imageLabel}(${asset.label})`)
     }
   }
 
