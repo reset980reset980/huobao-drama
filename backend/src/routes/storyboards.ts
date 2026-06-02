@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm'
 import { db, schema } from '../db/index.js'
 import { success, created, now, badRequest } from '../utils/response.js'
 import { toSnakeCase } from '../utils/transform.js'
-import { generateTTS } from '../services/tts-generation.js'
+import { concatenateWavFiles, generateTTS } from '../services/tts-generation.js'
 import { logTaskError, logTaskPayload, logTaskProgress, logTaskStart, logTaskSuccess } from '../utils/task-logger.js'
 
 const app = new Hono()
@@ -19,6 +19,46 @@ function parseDialogueForTTS(dialogue?: string | null) {
   const pureText = raw.replace(/^.+?[:：]\s*/, '').replace(/[（(].+?[)）]/g, '').trim()
   const ignorable = (!!speaker && IGNORE_TTS_SPEAKERS.test(speaker)) || !pureText || IGNORE_TTS_TEXT.test(pureText)
   return { speaker, pureText, ignorable }
+}
+
+function parseDialogueSegments(dialogue?: string | null) {
+  const raw = dialogue?.trim() || ''
+  if (!raw) return []
+
+  const segments: Array<{ speaker: string, text: string }> = []
+  for (const line of raw.split(/\r?\n/)) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+
+    const speakerMatch = trimmed.match(/^(.+?)[:：]\s*(.*)$/)
+    const speaker = speakerMatch ? cleanSpeaker(speakerMatch[1]) : ''
+    const text = cleanDialogueText(speakerMatch ? speakerMatch[2] : trimmed)
+    if (!text) continue
+    if (speaker && IGNORE_TTS_SPEAKERS.test(speaker)) continue
+    if (IGNORE_TTS_TEXT.test(text)) continue
+    segments.push({ speaker, text })
+  }
+
+  if (segments.length) return segments
+  const parsed = parseDialogueForTTS(raw)
+  return parsed.ignorable ? [] : [{ speaker: parsed.speaker, text: parsed.pureText }]
+}
+
+function cleanSpeaker(value: string) {
+  return value.replace(/[（(].+?[)）]/g, '').trim()
+}
+
+function cleanDialogueText(value: string) {
+  return value
+    .replace(/[（(].+?[)）]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function resolveVoiceForSpeaker(speaker: string, characters: Array<{ name: string, voiceStyle: string | null }>) {
+  if (!speaker || /^(내레이션|画外音|narrator)$/i.test(speaker)) return 'alloy'
+  const found = characters.find((char) => char.name === speaker)
+  return found?.voiceStyle || 'alloy'
 }
 
 function syncStoryboardCharacters(storyboardId: number, characterIds: number[]) {
@@ -160,8 +200,8 @@ app.post('/:id/generate-tts', async (c) => {
   const id = Number(c.req.param('id'))
   const [sb] = db.select().from(schema.storyboards).where(eq(schema.storyboards.id, id)).all()
   if (!sb) return badRequest(c, '샷을 찾을 수 없습니다')
-  const parsedDialogue = parseDialogueForTTS(sb.dialogue)
-  if (parsedDialogue.ignorable) return badRequest(c, '이 샷에는 생성할 대사나 내레이션이 없습니다')
+  const segments = parseDialogueSegments(sb.dialogue)
+  if (!segments.length) return badRequest(c, '이 샷에는 생성할 대사나 내레이션이 없습니다')
   logTaskStart('StoryboardAPI', 'generate-tts', {
     storyboardId: id,
     episodeId: sb.episodeId,
@@ -173,40 +213,39 @@ app.post('/:id/generate-tts', async (c) => {
     dialogue: sb.dialogue,
   })
 
-  let voiceId = 'alloy'
-  const speaker = parsedDialogue.speaker
-
-  if (speaker) {
-    if (!/^(내레이션|画外音|narrator)$/i.test(speaker)) {
-      const [ep] = db.select().from(schema.episodes).where(eq(schema.episodes.id, sb.episodeId)).all()
-      if (ep) {
-        const chars = db.select().from(schema.characters).where(eq(schema.characters.dramaId, ep.dramaId)).all()
-        const found = chars.find((char) => char.name === speaker)
-        if (found?.voiceStyle) voiceId = found.voiceStyle
-      }
-    }
-  }
-
-  const pureDialogue = parsedDialogue.pureText
-  if (!pureDialogue) return badRequest(c, '합성 가능한 텍스트를 찾지 못했습니다')
-
   const [ep] = db.select().from(schema.episodes).where(eq(schema.episodes.id, sb.episodeId)).all()
+  const characters = ep
+    ? db.select().from(schema.characters).where(eq(schema.characters.dramaId, ep.dramaId)).all()
+    : []
+  const segmentVoices = segments.map(segment => ({
+    ...segment,
+    voiceId: resolveVoiceForSpeaker(segment.speaker, characters),
+  }))
+
   try {
-    const audioPath = await generateTTS({ text: pureDialogue, voice: voiceId, configId: ep?.audioConfigId || null })
-  db.update(schema.storyboards)
-    .set({ ttsAudioUrl: audioPath, updatedAt: now() })
-    .where(eq(schema.storyboards.id, id))
-    .run()
+    const audioPaths = []
+    for (const segment of segmentVoices) {
+      audioPaths.push(await generateTTS({ text: segment.text, voice: segment.voiceId, configId: ep?.audioConfigId || null }))
+    }
+    const audioPath = concatenateWavFiles(audioPaths)
+    db.update(schema.storyboards)
+      .set({ ttsAudioUrl: audioPath, updatedAt: now() })
+      .where(eq(schema.storyboards.id, id))
+      .run()
 
     logTaskSuccess('StoryboardAPI', 'generate-tts', {
       storyboardId: id,
-      voiceId,
+      voiceId: segmentVoices.map(segment => `${segment.speaker || '내레이션'}=${segment.voiceId}`).join(', '),
       path: audioPath,
-      textLength: pureDialogue.length,
+      textLength: segmentVoices.reduce((sum, segment) => sum + segment.text.length, 0),
     })
-    return success(c, { tts_audio_url: audioPath, voice_id: voiceId, text: pureDialogue })
+    return success(c, { tts_audio_url: audioPath, segments: segmentVoices.map(segment => ({ speaker: segment.speaker, voice_id: segment.voiceId, text: segment.text })) })
   } catch (err: any) {
-    logTaskError('StoryboardAPI', 'generate-tts', { storyboardId: id, voiceId, error: err.message })
+    logTaskError('StoryboardAPI', 'generate-tts', {
+      storyboardId: id,
+      voiceId: segmentVoices.map(segment => `${segment.speaker || '내레이션'}=${segment.voiceId}`).join(', '),
+      error: err.message,
+    })
     return badRequest(c, err.message)
   }
 })

@@ -97,6 +97,38 @@ export async function generateTTS(params: TTSParams): Promise<string> {
   return relativePath
 }
 
+export function concatenateWavFiles(relativePaths: string[]): string {
+  const paths = relativePaths.filter(Boolean)
+  if (!paths.length) throw new Error('합칠 음성 파일이 없습니다')
+  if (paths.length === 1) return paths[0]
+
+  const chunks = paths.map((relativePath) => readPcmWav(relativePath))
+  const first = chunks[0]
+  const mismatch = chunks.find(chunk =>
+    chunk.audioFormat !== first.audioFormat
+    || chunk.channels !== first.channels
+    || chunk.sampleRate !== first.sampleRate
+    || chunk.bitsPerSample !== first.bitsPerSample
+  )
+  if (mismatch) {
+    throw new Error('음성 파일 형식이 서로 달라 하나로 합칠 수 없습니다')
+  }
+
+  const data = Buffer.concat(chunks.map(chunk => chunk.data))
+  const header = createPcmWavHeader({
+    audioFormat: first.audioFormat,
+    channels: first.channels,
+    sampleRate: first.sampleRate,
+    bitsPerSample: first.bitsPerSample,
+    dataSize: data.length,
+  })
+  const audioDir = path.join(STORAGE_ROOT, 'audio')
+  fs.mkdirSync(audioDir, { recursive: true })
+  const filename = `${uuid()}.wav`
+  fs.writeFileSync(path.join(audioDir, filename), Buffer.concat([header, data]))
+  return `static/audio/${filename}`
+}
+
 async function generateVoiceboxTTS(config: any, params: TTSParams): Promise<string> {
   const options = parseVoiceboxModel(config.model)
   const baseUrl = (config.baseUrl || 'http://localhost:17493').replace(/\/+$/, '')
@@ -196,6 +228,68 @@ function parseVoiceboxModel(model?: string) {
     language: languageRaw || 'ko',
     instruct: instructParts.join(':') || '차분하고 감정적인 한국어 드라마 톤',
   }
+}
+
+function readPcmWav(relativePath: string) {
+  const filePath = path.join(STORAGE_ROOT, relativePath.replace(/^static[\\/]/, ''))
+  const buffer = fs.readFileSync(filePath)
+  if (buffer.toString('ascii', 0, 4) !== 'RIFF' || buffer.toString('ascii', 8, 12) !== 'WAVE') {
+    throw new Error(`WAV 파일이 아닙니다: ${relativePath}`)
+  }
+
+  let fmtOffset = -1
+  let dataOffset = -1
+  let dataSize = 0
+  let cursor = 12
+  while (cursor + 8 <= buffer.length) {
+    const id = buffer.toString('ascii', cursor, cursor + 4)
+    const size = buffer.readUInt32LE(cursor + 4)
+    if (id === 'fmt ') fmtOffset = cursor + 8
+    if (id === 'data') {
+      dataOffset = cursor + 8
+      dataSize = size
+      break
+    }
+    cursor += 8 + size + (size % 2)
+  }
+
+  if (fmtOffset < 0 || dataOffset < 0 || !dataSize) {
+    throw new Error(`WAV 데이터 청크를 찾지 못했습니다: ${relativePath}`)
+  }
+
+  return {
+    audioFormat: buffer.readUInt16LE(fmtOffset),
+    channels: buffer.readUInt16LE(fmtOffset + 2),
+    sampleRate: buffer.readUInt32LE(fmtOffset + 4),
+    bitsPerSample: buffer.readUInt16LE(fmtOffset + 14),
+    data: buffer.subarray(dataOffset, dataOffset + dataSize),
+  }
+}
+
+function createPcmWavHeader(args: {
+  audioFormat: number
+  channels: number
+  sampleRate: number
+  bitsPerSample: number
+  dataSize: number
+}) {
+  const byteRate = args.sampleRate * args.channels * args.bitsPerSample / 8
+  const blockAlign = args.channels * args.bitsPerSample / 8
+  const header = Buffer.alloc(44)
+  header.write('RIFF', 0, 'ascii')
+  header.writeUInt32LE(36 + args.dataSize, 4)
+  header.write('WAVE', 8, 'ascii')
+  header.write('fmt ', 12, 'ascii')
+  header.writeUInt32LE(16, 16)
+  header.writeUInt16LE(args.audioFormat, 20)
+  header.writeUInt16LE(args.channels, 22)
+  header.writeUInt32LE(args.sampleRate, 24)
+  header.writeUInt32LE(byteRate, 28)
+  header.writeUInt16LE(blockAlign, 32)
+  header.writeUInt16LE(args.bitsPerSample, 34)
+  header.write('data', 36, 'ascii')
+  header.writeUInt32LE(args.dataSize, 40)
+  return header
 }
 
 async function resolveVoiceboxProfileId(baseUrl: string, voice?: string, fallback?: string) {
