@@ -9,7 +9,10 @@ import { v4 as uuid } from 'uuid'
 import { db, schema } from '../db/index.js'
 import { eq } from 'drizzle-orm'
 import { now } from '../utils/response.js'
+import { configureFfmpegBinaries } from './ffmpeg-binaries.js'
 import { logTaskError, logTaskStart, logTaskSuccess } from '../utils/task-logger.js'
+
+configureFfmpegBinaries()
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const STORAGE_ROOT = process.env.STORAGE_PATH || path.resolve(__dirname, '../../../data/static')

@@ -11,7 +11,10 @@ import { db, schema } from '../db/index.js'
 import { eq } from 'drizzle-orm'
 import { now } from '../utils/response.js'
 import { generateTTS } from './tts-generation.js'
+import { configureFfmpegBinaries, getFfmpegPath } from './ffmpeg-binaries.js'
 import { logTaskError, logTaskProgress, logTaskStart, logTaskSuccess } from '../utils/task-logger.js'
+
+configureFfmpegBinaries()
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const STORAGE_ROOT = process.env.STORAGE_PATH || path.resolve(__dirname, '../../../data/static')
@@ -29,7 +32,7 @@ function toAbsPath(relativePath: string): string {
 function supportsSubtitleFilter(): boolean {
   if (subtitleFilterSupport != null) return subtitleFilterSupport
   try {
-    const output = execFileSync('ffmpeg', ['-hide_banner', '-filters'], { encoding: 'utf8' })
+    const output = execFileSync(getFfmpegPath(), ['-hide_banner', '-filters'], { encoding: 'utf8' })
     subtitleFilterSupport = /\bsubtitles\b/.test(output)
   } catch {
     subtitleFilterSupport = false
