@@ -1,5 +1,5 @@
 /**
- * FFmpeg 单샷합성 — 영상 + TTS오디오 + 烧录자幕
+ * FFmpeg 단일 샷 합성
  */
 import ffmpeg from 'fluent-ffmpeg'
 import fs from 'fs'
@@ -22,6 +22,10 @@ const DATA_ROOT = path.resolve(__dirname, '../../../data')
 let subtitleFilterSupport: boolean | null = null
 const IGNORE_TTS_SPEAKERS = /^(环境音|环境声|音效|效果音|sfx|sound ?effect|bgm|背景音|背景音乐|ambient)$/i
 const IGNORE_TTS_TEXT = /^(无|无대사|无台词|无내레이션|无需더빙|无需대사|none|null|n\/a|na|环境音|环境声|音效|效果音|纯音效|纯环境音|只有环境音|仅环境音|背景音|背景音乐|bgm|sfx|ambient)$/i
+
+export interface ComposeOptions {
+  audioMode?: 'tts' | 'source'
+}
 
 function toAbsPath(relativePath: string): string {
   if (path.isAbsolute(relativePath)) return relativePath
@@ -51,9 +55,12 @@ function parseDialogueForTTS(dialogue?: string | null) {
 }
 
 /**
- * 합성单个샷：영상 + TTS대사오디오 + 烧录자幕
+ * 단일 샷을 합성한다.
+ * - tts: TTS 더빙 오디오를 입히고 자막을 굽는다.
+ * - source: 원본 영상의 음성을 유지하고 더빙/자막 생성을 건너뛴다.
  */
-export async function composeStoryboard(storyboardId: number): Promise<string> {
+export async function composeStoryboard(storyboardId: number, options: ComposeOptions = {}): Promise<string> {
+  const audioMode = options.audioMode === 'source' ? 'source' : 'tts'
   const [sb] = db.select().from(schema.storyboards).where(eq(schema.storyboards.id, storyboardId)).all()
   if (!sb) throw new Error(`Storyboard ${storyboardId} not found`)
   if (!sb.videoUrl) throw new Error(`Storyboard ${storyboardId} has no video`)
@@ -66,16 +73,19 @@ export async function composeStoryboard(storyboardId: number): Promise<string> {
     storyboardId,
     storyboardNumber: sb.storyboardNumber,
     episodeId: sb.episodeId,
+    audioMode,
   })
 
   const videoPath = toAbsPath(sb.videoUrl)
   let audioPath: string | null = null
   let subtitlePath: string | null = null
+  let subtitleRelative: string | null = sb.subtitleUrl || null
   const parsedDialogue = parseDialogueForTTS(sb.dialogue)
+  const useTtsAudio = audioMode === 'tts'
 
-  // 1. 生成 TTS 오디오（如果有대사）
+  // 1. 더빙 합성 모드에서는 대사가 있을 때 TTS 오디오를 준비한다.
   try {
-    if (!parsedDialogue.ignorable) {
+    if (useTtsAudio && !parsedDialogue.ignorable) {
       if (sb.ttsAudioUrl) {
         const existingAudioPath = toAbsPath(sb.ttsAudioUrl)
         if (fs.existsSync(existingAudioPath)) {
@@ -107,8 +117,8 @@ export async function composeStoryboard(storyboardId: number): Promise<string> {
       }
     }
 
-    // 2. 生成자幕文件（SRT）
-    if (!parsedDialogue.ignorable) {
+    // 2. 더빙 합성 모드에서는 자막 파일을 생성한다.
+    if (useTtsAudio && !parsedDialogue.ignorable) {
       const srtDir = path.join(STORAGE_ROOT, 'subtitles')
       fs.mkdirSync(srtDir, { recursive: true })
       const srtFilename = `${uuid()}.srt`
@@ -120,6 +130,7 @@ export async function composeStoryboard(storyboardId: number): Promise<string> {
       fs.writeFileSync(subtitlePath, srtContent, 'utf-8')
 
       const srtRelative = `static/subtitles/${srtFilename}`
+      subtitleRelative = srtRelative
       db.update(schema.storyboards).set({ subtitleUrl: srtRelative, updatedAt: now() })
         .where(eq(schema.storyboards.id, storyboardId)).run()
     }
@@ -161,6 +172,8 @@ export async function composeStoryboard(storyboardId: number): Promise<string> {
 
       if (audioPath) {
         outputOptions.push('-map', '0:v', '-map', '1:a', '-c:a', 'aac', '-shortest')
+      } else if (audioMode === 'source') {
+        outputOptions.push('-map', '0:v', '-map', '0:a?', '-c:a', 'aac', '-shortest')
       } else {
         outputOptions.push('-an')
       }
@@ -173,13 +186,19 @@ export async function composeStoryboard(storyboardId: number): Promise<string> {
     })
 
     const composedRelative = `static/composed/${outputFilename}`
-    db.update(schema.storyboards).set({ composedVideoUrl: composedRelative, status: 'compose_completed', updatedAt: now() })
+    db.update(schema.storyboards).set({
+      composedVideoUrl: composedRelative,
+      subtitleUrl: audioMode === 'source' ? null : subtitleRelative,
+      status: 'compose_completed',
+      updatedAt: now(),
+    })
       .where(eq(schema.storyboards.id, storyboardId)).run()
 
     logTaskSuccess('ComposeTask', 'storyboard-compose', {
       storyboardId,
       storyboardNumber: sb.storyboardNumber,
       output: composedRelative,
+      audioMode,
     })
     return composedRelative
   } catch (err) {

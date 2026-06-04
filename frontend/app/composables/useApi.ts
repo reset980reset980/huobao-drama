@@ -92,8 +92,8 @@ export const videoAPI = {
   get: (id: number) => api.get(`/videos/${id}`),
 }
 export const composeAPI = {
-  shot: (id: number) => api.post(`/compose/storyboards/${id}/compose`),
-  all: (epId: number) => api.post(`/compose/episodes/${epId}/compose-all`),
+  shot: (id: number, options?: { audio_mode?: 'tts' | 'source'; audioMode?: 'tts' | 'source' }) => api.post(`/compose/storyboards/${id}/compose`, options),
+  all: (epId: number, options?: { audio_mode?: 'tts' | 'source'; audioMode?: 'tts' | 'source' }) => api.post(`/compose/episodes/${epId}/compose-all`, options),
   status: (epId: number) => api.get(`/compose/episodes/${epId}/compose-status`),
 }
 export const mergeAPI = {

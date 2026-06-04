@@ -1263,6 +1263,22 @@
             <div class="prod-section-bar">
               <span class="dim" style="font-size:12px">{{ sbs.length }} 개 샷</span>
               <span class="tag mono">{{ composedCount }}/{{ sbs.length }} 합성됨</span>
+              <div class="compose-audio-toggle">
+                <button
+                  :class="['btn', 'btn-sm', composeAudioMode === 'tts' && 'btn-primary']"
+                  type="button"
+                  @click="setComposeAudioMode('tts')"
+                >
+                  더빙 합성
+                </button>
+                <button
+                  :class="['btn', 'btn-sm', composeAudioMode === 'source' && 'btn-primary']"
+                  type="button"
+                  @click="setComposeAudioMode('source')"
+                >
+                  원본 음성 유지
+                </button>
+              </div>
               <div class="ml-auto flex gap-1">
                 <button class="btn btn-sm" @click="batchCompose">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
@@ -1306,7 +1322,7 @@
                   <div class="prod-meta-line">{{ sb.shot_type || sb.shotType || '샷 크기 미설정' }} · {{ sb.duration || 10 }}s</div>
                   <div class="prod-dots">
                     <span :class="['dot', hasVid(sb) && 'ok']" /><span style="font-size:10px">영상</span>
-                    <span :class="['dot', hasTTS(sb) && 'ok']" /><span style="font-size:10px">더빙</span>
+                    <span :class="['dot', (composeAudioMode === 'source' ? hasVid(sb) : hasTTS(sb)) && 'ok']" /><span style="font-size:10px">{{ composeAudioLabel }}</span>
                     <span :class="['dot', hasComposed(sb) && 'ok', isPendingCompose(sb.id) && 'pending']" /><span style="font-size:10px">{{ isPendingCompose(sb.id) ? '합성 중' : '합성' }}</span>
                   </div>
                   <div v-if="composeFailMessage(sb.id)" class="prod-error">{{ composeFailMessage(sb.id) }}</div>
@@ -1534,6 +1550,9 @@ const prodTabIdx = computed({
   set: (v) => { prodTab.value = prodTabDefs.value[v]?.id || 'chars' },
 })
 const frameMode = ref('first')
+const composeAudioMode = ref('tts')
+const composeAudioLabel = computed(() => composeAudioMode.value === 'source' ? '원본 음성' : '더빙')
+const composeAudioPayload = computed(() => ({ audio_mode: composeAudioMode.value === 'source' ? 'source' : 'tts' }))
 const fallbackVoiceProfiles = [
   { id: 'alloy', label: 'Alloy', gender: '중성', traits: '균형감, 자연스러움, 절제됨', suitable: '범용 내레이션, 내레이션, 안정적인 출력이 필요한 캐릭터' },
   { id: 'echo', label: 'Echo', gender: '남성 음성', traits: '낮고 안정적이며 침착함', suitable: '성숙한 남성, 아버지 세대, 내레이션, 압박감 있는 캐릭터' },
@@ -1619,8 +1638,19 @@ function handleImageViewerKeydown(event) {
   if (event.key === 'Escape' && imageViewer.value.open) closeImageViewer()
 }
 
+function setComposeAudioMode(mode) {
+  composeAudioMode.value = mode === 'source' ? 'source' : 'tts'
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem('huobao:compose-audio-mode', composeAudioMode.value)
+  }
+}
+
 onMounted(() => {
   window.addEventListener('keydown', handleImageViewerKeydown)
+  const savedComposeAudioMode = window.localStorage.getItem('huobao:compose-audio-mode')
+  if (savedComposeAudioMode === 'source' || savedComposeAudioMode === 'tts') {
+    composeAudioMode.value = savedComposeAudioMode
+  }
 })
 
 onBeforeUnmount(() => {
@@ -3237,8 +3267,8 @@ async function doCompose(sb) {
   try {
     delete failedComposeMessages.value[sb.id]
     if (!isPendingCompose(sb.id)) pendingComposeIds.value.push(sb.id)
-    await composeAPI.shot(sb.id)
-    toast.success('합성 완료')
+    await composeAPI.shot(sb.id, composeAudioPayload.value)
+    toast.success(composeAudioMode.value === 'source' ? '원본 음성으로 합성 완료' : '더빙 합성 완료')
     pendingComposeIds.value = pendingComposeIds.value.filter(item => item !== sb.id)
     refresh()
   } catch (e) {
@@ -3281,9 +3311,9 @@ async function handleBatchVideos() {
   await copyPrompt(text, '영상 일괄 프롬프트')
 }
 async function batchCompose() {
-  await composeAPI.all(epId.value)
+  await composeAPI.all(epId.value, composeAudioPayload.value)
   pendingComposeIds.value = [...new Set(sbs.value.filter(sb => !!sb.video_url || !!sb.videoUrl).map(sb => sb.id))]
-  toast.success('일괄 합성을 시작했습니다')
+  toast.success(composeAudioMode.value === 'source' ? '원본 음성으로 일괄 합성을 시작했습니다' : '더빙 일괄 합성을 시작했습니다')
   pollComposeStatus()
 }
 async function doMerge() {
@@ -4158,6 +4188,7 @@ onMounted(() => { refresh(); loadConfigs(); loadVoices() })
 /* Production content */
 .prod-content { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 12px; }
 .prod-section-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.compose-audio-toggle { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 
 .dub-grid { display: flex; flex-direction: column; gap: 10px; }
 .dub-card { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; border-radius: 20px; background: linear-gradient(180deg, rgba(255,255,255,0.74), rgba(248,251,255,0.58)); }
