@@ -1352,7 +1352,7 @@
           <button class="btn btn-primary" @click="panel = 'script'">극본으로 이동</button>
         </div>
         <div v-else class="export-split">
-          <div class="export-main">
+          <div :class="['export-main', mergeUrl && 'has-video']">
             <template v-if="mergeUrl">
               <video :src="'/' + mergeUrl" controls class="export-video" />
               <div class="export-bar">
@@ -4800,10 +4800,18 @@ onMounted(() => { refresh(); loadConfigs(); loadVoices() })
 }
 
 /* Export */
-.export-split { flex: 1; display: flex; min-height: 0; }
-.export-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px; }
-.export-video { max-width: 720px; width: 100%; border-radius: var(--radius-lg); background: #000; }
-.export-bar { display: flex; align-items: center; gap: 12px; margin-top: 16px; width: 100%; max-width: 720px; }
+.export-split { flex: 1; display: flex; min-height: 0; overflow: hidden; }
+.export-main { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px; }
+.export-main.has-video { justify-content: flex-start; overflow-y: auto; }
+.export-video {
+  max-width: 720px;
+  width: 100%;
+  max-height: min(68vh, calc(100vh - 220px));
+  object-fit: contain;
+  border-radius: var(--radius-lg);
+  background: #000;
+}
+.export-bar { display: flex; align-items: center; gap: 12px; margin-top: 16px; width: 100%; max-width: 720px; flex-shrink: 0; }
 .export-list { width: 240px; flex-shrink: 0; border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
 .export-list-head { padding: 11px 14px; font-size: 11px; font-weight: 700; color: var(--text-3); border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.06em; }
 .export-list-body { flex: 1; overflow-y: auto; padding: 6px; }
