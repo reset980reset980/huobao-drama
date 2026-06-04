@@ -119,14 +119,16 @@ p { line-height: 1.75; }
 /* === Buttons === */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
+  min-width: 0;
   padding: 7px 14px; font-size: 13px; font-weight: 500;
   border: 1px solid var(--border); border-radius: var(--radius);
   background: var(--bg-0); color: var(--text-1);
   cursor: pointer; transition: all 0.18s var(--ease-out);
-  box-shadow: var(--shadow-xs); white-space: nowrap;
+  box-shadow: var(--shadow-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   font-family: var(--font-body);
   letter-spacing: 0.01em;
 }
+.btn svg { flex: 0 0 auto; }
 .btn:hover {
   background: var(--bg-hover); border-color: var(--border-strong);
   color: var(--text-0); box-shadow: var(--shadow-sm);

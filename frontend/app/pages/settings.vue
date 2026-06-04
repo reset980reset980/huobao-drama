@@ -44,28 +44,6 @@
           <p class="settings-desc">추천 템플릿으로 빠르게 설정한 뒤 서비스 유형별로 조정하세요. 작업대에서 회차를 만들 때 선택한 이미지, 영상, 오디오 기능이 고정됩니다.</p>
         </div>
         <section class="setup-panel card">
-          <div class="setup-panel-head">
-            <div>
-              <div class="setup-kicker">Quick Setup</div>
-              <div class="setup-title">화보추천 설정</div>
-              <div class="setup-desc">텍스트, 이미지, 영상, 오디오 네 가지 추천 설정을 한 번에 입력합니다. 기본 시작값으로 적합합니다.</div>
-            </div>
-            <button class="btn btn-primary" @click="presetDialog = true">
-              <Sparkles :size="14" /> 화보한 번에 설정
-            </button>
-          </div>
-          <div class="preset-grid">
-            <article v-for="preset in huobaoPresetCards" :key="preset.serviceType" class="preset-card">
-              <div class="preset-card-top">
-                <span class="preset-service">{{ preset.label }}</span>
-                <span class="tag tag-accent">{{ preset.provider }}</span>
-              </div>
-              <div class="preset-model mono">{{ preset.model }}</div>
-              <div class="preset-base mono">{{ preset.baseUrl }}</div>
-            </article>
-          </div>
-        </section>
-        <section class="setup-panel card">
           <div class="setup-panel-head compact">
             <div>
               <div class="setup-title">생성 방식</div>
@@ -350,41 +328,6 @@
       </form>
     </div>
 
-    <!-- Huobao Preset Dialog -->
-    <div v-if="presetDialog" class="overlay" @click.self="presetDialog = false">
-      <form class="modal card config-modal" @submit.prevent="applyHuobaoPreset">
-        <div class="config-modal-head">
-          <div>
-            <div class="setup-kicker">Huobao Preset</div>
-            <h2 class="modal-title">화보한 번에 설정</h2>
-            <div class="modal-note">화보 추천 경로에 따라 서비스 설정 4개를 자동 생성 또는 업데이트하고 5개 Agent의 기본 모델도 함께 초기화합니다.</div>
-          </div>
-          <span class="tag tag-success">추천</span>
-        </div>
-        <div class="huobao-grid">
-          <label class="field">
-            <span class="field-label">Huobao API Key <span class="dim">(이미지 / 영상 / 오디오 자동 생성용)</span></span>
-            <input v-model="huobaoForm.apiKey" class="input" type="password" placeholder="미디어 자동 생성 provider 키 입력" />
-            <span class="field-hint">아직 계정이 없나요?<a href="https://api.chatfire.site/" target="_blank" rel="noopener">지금 가입 →</a></span>
-          </label>
-        </div>
-        <div class="preset-grid compact">
-          <article v-for="preset in huobaoPresetCards" :key="`${preset.serviceType}-${preset.provider}`" class="preset-card">
-            <div class="preset-card-top">
-              <span class="preset-service">{{ preset.label }}</span>
-              <span class="tag tag-accent">{{ preset.provider }}</span>
-            </div>
-            <div class="preset-model mono">{{ preset.model }}</div>
-            <div class="preset-base mono">{{ preset.baseUrl }}</div>
-          </article>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn" @click="presetDialog = false">취소</button>
-          <button type="submit" class="btn btn-primary">생성하고 활성화</button>
-        </div>
-      </form>
-    </div>
-
     <!-- Add Skill Dialog -->
     <div v-if="addSkillDialog" class="overlay" @click.self="addSkillDialog = false">
       <form class="modal card" @submit.prevent="confirmAddSkill">
@@ -411,7 +354,7 @@
 </template>
 
 <script setup>
-import { Plus, Pencil, Trash2, FileText, ChevronDown, Check, Loader2, Bot, Cpu, Sparkles } from 'lucide-vue-next'
+import { Plus, Pencil, Trash2, FileText, ChevronDown, Check, Loader2, Bot, Cpu } from 'lucide-vue-next'
 import BaseSelect from '~/components/BaseSelect.vue'
 import { toast } from 'vue-sonner'
 import { aiConfigAPI, agentConfigAPI, skillsAPI } from '~/composables/useApi'
@@ -453,11 +396,9 @@ function setGenerationMode(service, mode) {
 const cfgs = ref([])
 const cfgDialog = ref(false)
 const cfgEditId = ref(null)
-const presetDialog = ref(false)
 const cfgTesting = ref(false)
 const cfgTestResult = ref(null)
 const cfgForm = reactive({ name: '', provider: '', api_key: '', base_url: '', modelStr: '', service_type: 'text', priority: 0 })
-const huobaoForm = reactive({ apiKey: '' })
 const serviceTypes = [{ type: 'text', label: '텍스트' }, { type: 'image', label: '이미지' }, { type: 'video', label: '영상' }, { type: 'audio', label: '오디오' }]
 const providers = ['ali', 'chatfire', 'codex', 'gemini', 'minimax', 'openai', 'openrouter', 'vidu', 'voicebox', 'volcengine']
 const providerSelectOptions = computed(() => providers.map(p => ({ label: p, value: p })))
@@ -470,32 +411,22 @@ const serviceMeta = {
 const providerPresets = {
   text: {
     codex: { label: 'Codex CLI 추천', baseUrl: '', models: ['codex-cli'] },
-    chatfire: { label: 'ChatFire 추천', baseUrl: 'https://api.chatfire.site', models: ['gemini-3-pro-preview'] },
     openrouter: { label: 'OpenRouter 추천', baseUrl: 'https://openrouter.ai/api', models: ['google/gemini-3-flash-preview'] },
     openai: { label: 'OpenAI 추천', baseUrl: 'https://api.openai.com', models: ['gpt-4.1-mini'] },
   },
   image: {
-    chatfire: { label: 'ChatFire 추천', baseUrl: 'https://api.chatfire.site', models: ['doubao-seedream-4-5-251128'] },
     gemini: { label: 'Gemini 추천', baseUrl: 'https://generativelanguage.googleapis.com', models: ['gemini-3-pro-image-preview'] },
     volcengine: { label: '화산엔진 추천', baseUrl: 'https://ark.cn-beijing.volces.com', models: ['doubao-seedream-4-0-250828'] },
   },
   video: {
-    volcengine: { label: '화보영상', baseUrl: 'https://api.chatfire.site/volcengine', models: ['doubao-seedance-1-5-pro-251215'] },
     vidu: { label: 'Vidu 추천', baseUrl: 'https://api.vidu.com', models: ['viduq3-turbo'] },
     ali: { label: '알리 추천', baseUrl: 'https://dashscope.aliyuncs.com', models: ['wan2.6-i2v-flash'] },
   },
   audio: {
     voicebox: { label: 'Voicebox 로컬', baseUrl: 'http://localhost:17493', models: ['qwen_custom_voice:1.7B'] },
-    minimax: { label: '화보오디오', baseUrl: 'https://api.chatfire.site/minimax', models: ['speech-2.8-hd'] },
     gemini: { label: 'Gemini TTS', baseUrl: 'https://generativelanguage.googleapis.com', models: ['gemini-3.1-flash-tts-preview'] },
   },
 }
-const huobaoPresetCards = [
-  { serviceType: 'text', label: '텍스트', provider: 'codex', baseUrl: '로컬 Codex CLI', model: 'codex-cli', priority: 100 },
-  { serviceType: 'image', label: '이미지', provider: 'gemini', baseUrl: 'https://generativelanguage.googleapis.com', model: 'gemini-3-pro-image-preview', priority: 99 },
-  { serviceType: 'video', label: '영상', provider: 'volcengine', baseUrl: 'https://api.chatfire.site/volcengine', model: 'doubao-seedance-1-5-pro-251215', priority: 98 },
-  { serviceType: 'audio', label: '오디오', provider: 'gemini', baseUrl: 'https://generativelanguage.googleapis.com', model: 'gemini-3.1-flash-tts-preview', priority: 97 },
-]
 const endpointPrefixes = {
   codex: '',
   chatfire: '/v1',
@@ -650,22 +581,6 @@ async function saveCfg() {
     cfgDialog.value = false; toast.success('저장됨'); loadCfgs()
   } catch (e) { toast.error(e.message) }
 }
-async function applyHuobaoPreset() {
-  if (!huobaoForm.apiKey) {
-    toast.warning('Huobao API Key를 입력하세요')
-    return
-  }
-  try {
-    await aiConfigAPI.huobaoPreset(huobaoForm.apiKey)
-    await loadCfgs()
-    await loadAgents()
-    presetDialog.value = false
-    toast.success('화보추천 설정과 기본 Agent LLM이 저장되었습니다')
-  } catch (e) {
-    toast.error(e.message)
-  }
-}
-
 // ===== Agent Configs =====
 const agentCfgs = ref([])
 const editingAgent = ref(null)
@@ -1300,20 +1215,6 @@ onMounted(() => {
   color: var(--text-3);
   word-break: break-all;
 }
-.huobao-grid {
-  display: grid;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-  gap: 10px;
-}
-.huobao-grid .field-hint a {
-  color: var(--accent);
-  text-decoration: none;
-  font-weight: 500;
-}
-.huobao-grid .field-hint a:hover {
-  text-decoration: underline;
-}
-
 @media (max-width: 900px) {
   .preset-grid,
   .preset-grid.compact {

@@ -8,23 +8,6 @@ import { redactUrl, logTaskError, logTaskProgress, logTaskSuccess } from '../uti
 
 const app = new Hono()
 
-const HUOBAO_PRESET_SERVICES = [
-  { serviceType: 'text', label: '텍스트', provider: 'codex', baseUrl: '', model: 'codex-cli', priority: 100 },
-  { serviceType: 'image', label: '이미지', provider: 'gemini', baseUrl: 'https://generativelanguage.googleapis.com', model: 'gemini-3-pro-image-preview', priority: 99 },
-  { serviceType: 'video', label: '영상', provider: 'volcengine', baseUrl: 'https://api.chatfire.site/volcengine', model: 'doubao-seedance-1-5-pro-251215', priority: 98 },
-  { serviceType: 'audio', label: '오디오', provider: 'voicebox', baseUrl: 'http://localhost:17493', model: 'qwen_custom_voice:1.7B', priority: 97 },
-] as const
-
-const HUOBAO_AGENT_DEFAULTS = [
-  { agentType: 'script_rewriter', name: '극본 수정' },
-  { agentType: 'extractor', name: '캐릭터/장면 추출' },
-  { agentType: 'storyboard_breaker', name: '스토리보드 분해' },
-  { agentType: 'voice_assigner', name: '음색 배정' },
-  { agentType: 'grid_prompt_generator', name: '이미지 프롬프트 생성' },
-] as const
-
-const HUOBAO_AGENT_MODEL = 'gemini-3-pro-preview'
-
 function localizeProbeText(text: string) {
   return text
     .replace(/无效的\s*API\s*Key/gi, 'API 키가 유효하지 않습니다')
@@ -198,83 +181,6 @@ app.post('/', async (c) => {
     .where(eq(schema.aiServiceConfigs.id, Number(res.lastInsertRowid))).all()
 
   return created(c, exposeConfig(row))
-})
-
-// POST /ai-configs/huobao-preset
-app.post('/huobao-preset', async (c) => {
-  const body = await c.req.json()
-  const apiKey = String(body.api_key || '').trim()
-  if (!apiKey) return badRequest(c, 'api_key is required')
-
-  const ts = now()
-
-  for (const preset of HUOBAO_PRESET_SERVICES) {
-    const [existing] = db.select().from(schema.aiServiceConfigs).where(eq(schema.aiServiceConfigs.serviceType, preset.serviceType)).all()
-      .filter(row => row.provider === preset.provider)
-
-    const values = {
-      serviceType: preset.serviceType,
-      provider: preset.provider,
-      name: `화보 기본 ${preset.label} 서비스`,
-      baseUrl: preset.baseUrl,
-      apiKey: preset.provider === 'codex' ? '' : apiKey,
-      model: JSON.stringify([preset.model]),
-      priority: preset.priority,
-      isActive: true,
-      updatedAt: ts,
-    }
-
-    if (existing) {
-      db.update(schema.aiServiceConfigs).set(values).where(eq(schema.aiServiceConfigs.id, existing.id)).run()
-    } else {
-      db.insert(schema.aiServiceConfigs).values({
-        ...values,
-        createdAt: ts,
-      }).run()
-    }
-  }
-
-  for (const agent of HUOBAO_AGENT_DEFAULTS) {
-    const [existing] = db.select().from(schema.agentConfigs).where(eq(schema.agentConfigs.agentType, agent.agentType)).all()
-    const values = {
-      name: agent.name,
-      model: HUOBAO_AGENT_MODEL,
-      isActive: true,
-      updatedAt: ts,
-    }
-
-    if (existing) {
-      db.update(schema.agentConfigs).set(values).where(eq(schema.agentConfigs.id, existing.id)).run()
-    } else {
-      db.insert(schema.agentConfigs).values({
-        agentType: agent.agentType,
-        description: '',
-        model: HUOBAO_AGENT_MODEL,
-        name: agent.name,
-        systemPrompt: '',
-        temperature: 0.7,
-        maxTokens: 4096,
-        maxIterations: 10,
-        isActive: true,
-        createdAt: ts,
-        updatedAt: ts,
-      }).run()
-    }
-  }
-
-  const configs = db.select().from(schema.aiServiceConfigs).all().map(exposeConfig)
-  const agents = db.select().from(schema.agentConfigs).all().map(row => toSnakeCase(row))
-
-  logTaskSuccess('AIConfig', 'huobao-preset-applied', {
-    serviceCount: HUOBAO_PRESET_SERVICES.length,
-    agentCount: HUOBAO_AGENT_DEFAULTS.length,
-  })
-
-  return success(c, {
-    configs,
-    agents,
-    agent_model: HUOBAO_AGENT_MODEL,
-  })
 })
 
 // POST /ai-configs/test
