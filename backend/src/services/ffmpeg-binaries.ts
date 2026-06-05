@@ -22,6 +22,11 @@ export function getFfmpegPath() {
   return ffmpegPathCache || 'ffmpeg'
 }
 
+export function getFfprobePath() {
+  configureFfmpegBinaries()
+  return ffprobePathCache || 'ffprobe'
+}
+
 function resolveBinaryPath(name: 'ffmpeg' | 'ffprobe') {
   const envKey = name === 'ffmpeg' ? 'FFMPEG_PATH' : 'FFPROBE_PATH'
   const explicit = process.env[envKey]

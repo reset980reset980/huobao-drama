@@ -47,9 +47,11 @@ sqlite.exec(`
     image_config_id INTEGER,
     video_config_id INTEGER,
     audio_config_id INTEGER,
+    bgm_config_id INTEGER,
     image_generation_mode TEXT DEFAULT 'api',
     video_generation_mode TEXT DEFAULT 'api',
     audio_generation_mode TEXT DEFAULT 'api',
+    bgm_generation_mode TEXT DEFAULT 'manual',
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     deleted_at TEXT
@@ -119,6 +121,7 @@ sqlite.exec(`
     reference_images TEXT,
     video_url TEXT,
     tts_audio_url TEXT,
+    bgm_audio_url TEXT,
     subtitle_url TEXT,
     composed_video_url TEXT,
     status TEXT DEFAULT 'pending',
@@ -361,9 +364,12 @@ function ensureColumn(table: string, column: string, definition: string) {
 ensureColumn('episodes', 'image_config_id', 'INTEGER')
 ensureColumn('episodes', 'video_config_id', 'INTEGER')
 ensureColumn('episodes', 'audio_config_id', 'INTEGER')
+ensureColumn('episodes', 'bgm_config_id', 'INTEGER')
 ensureColumn('episodes', 'image_generation_mode', "TEXT DEFAULT 'api'")
 ensureColumn('episodes', 'video_generation_mode', "TEXT DEFAULT 'api'")
 ensureColumn('episodes', 'audio_generation_mode', "TEXT DEFAULT 'api'")
+ensureColumn('episodes', 'bgm_generation_mode', "TEXT DEFAULT 'manual'")
+ensureColumn('storyboards', 'bgm_audio_url', 'TEXT')
 
 export const db = drizzle(sqlite, { schema })
 export { schema }

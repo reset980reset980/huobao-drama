@@ -11,7 +11,7 @@ import { db, schema } from '../db/index.js'
 import { eq } from 'drizzle-orm'
 import { now } from '../utils/response.js'
 import { generateTTS } from './tts-generation.js'
-import { configureFfmpegBinaries, getFfmpegPath } from './ffmpeg-binaries.js'
+import { configureFfmpegBinaries, getFfmpegPath, getFfprobePath } from './ffmpeg-binaries.js'
 import { logTaskError, logTaskProgress, logTaskStart, logTaskSuccess } from '../utils/task-logger.js'
 
 configureFfmpegBinaries()
@@ -20,11 +20,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const STORAGE_ROOT = process.env.STORAGE_PATH || path.resolve(__dirname, '../../../data/static')
 const DATA_ROOT = path.resolve(__dirname, '../../../data')
 let subtitleFilterSupport: boolean | null = null
-const IGNORE_TTS_SPEAKERS = /^(环境音|环境声|音效|效果音|sfx|sound ?effect|bgm|背景音|背景音乐|ambient)$/i
-const IGNORE_TTS_TEXT = /^(无|无대사|无台词|无내레이션|无需더빙|无需대사|none|null|n\/a|na|环境音|环境声|音效|效果音|纯音效|纯环境音|只有环境音|仅环境音|背景音|背景音乐|bgm|sfx|ambient)$/i
+const IGNORE_TTS_SPEAKERS = /^(환경음|환경소리|효과음|sfx|sound ?effect|bgm|배경음|배경음악|ambient)$/i
+const IGNORE_TTS_TEXT = /^(없음|대사 없음|내레이션 없음|더빙 필요 없음|대사 필요 없음|none|null|n\/a|na|환경음|환경소리|효과음|순수 효과음|순수 환경음|배경음|배경음악|bgm|sfx|ambient)$/i
 
 export interface ComposeOptions {
   audioMode?: 'tts' | 'source'
+  bgmMode?: 'none' | 'mix'
+  bgmVolume?: number
 }
 
 function toAbsPath(relativePath: string): string {
@@ -54,6 +56,26 @@ function parseDialogueForTTS(dialogue?: string | null) {
   return { speaker, pureText, ignorable }
 }
 
+function hasAudioTrack(filePath: string): boolean {
+  try {
+    const output = execFileSync(getFfprobePath(), [
+      '-v', 'error',
+      '-select_streams', 'a:0',
+      '-show_entries', 'stream=index',
+      '-of', 'csv=p=0',
+      filePath,
+    ], { encoding: 'utf8' })
+    return !!output.trim()
+  } catch {
+    return false
+  }
+}
+
+function normalizeVolume(value: number | undefined): number {
+  if (!Number.isFinite(value)) return 0.18
+  return Math.min(1, Math.max(0, Number(value)))
+}
+
 /**
  * 단일 샷을 합성한다.
  * - tts: TTS 더빙 오디오를 입히고 자막을 굽는다.
@@ -61,6 +83,8 @@ function parseDialogueForTTS(dialogue?: string | null) {
  */
 export async function composeStoryboard(storyboardId: number, options: ComposeOptions = {}): Promise<string> {
   const audioMode = options.audioMode === 'source' ? 'source' : 'tts'
+  const bgmMode = options.bgmMode === 'mix' ? 'mix' : 'none'
+  const bgmVolume = normalizeVolume(options.bgmVolume)
   const [sb] = db.select().from(schema.storyboards).where(eq(schema.storyboards.id, storyboardId)).all()
   if (!sb) throw new Error(`Storyboard ${storyboardId} not found`)
   if (!sb.videoUrl) throw new Error(`Storyboard ${storyboardId} has no video`)
@@ -74,12 +98,15 @@ export async function composeStoryboard(storyboardId: number, options: ComposeOp
     storyboardNumber: sb.storyboardNumber,
     episodeId: sb.episodeId,
     audioMode,
+    bgmMode,
+    bgmVolume,
   })
 
   const videoPath = toAbsPath(sb.videoUrl)
   let audioPath: string | null = null
   let subtitlePath: string | null = null
   let subtitleRelative: string | null = sb.subtitleUrl || null
+  let bgmPath: string | null = null
   const parsedDialogue = parseDialogueForTTS(sb.dialogue)
   const useTtsAudio = audioMode === 'tts'
 
@@ -117,6 +144,15 @@ export async function composeStoryboard(storyboardId: number, options: ComposeOp
       }
     }
 
+    if (bgmMode === 'mix' && sb.bgmAudioUrl) {
+      const candidate = toAbsPath(sb.bgmAudioUrl)
+      if (fs.existsSync(candidate)) {
+        bgmPath = candidate
+      } else {
+        logTaskProgress('ComposeTask', 'bgm-file-missing', { storyboardId, bgmAudioUrl: sb.bgmAudioUrl })
+      }
+    }
+
     // 2. 더빙 합성 모드에서는 자막 파일을 생성한다.
     if (useTtsAudio && !parsedDialogue.ignorable) {
       const srtDir = path.join(STORAGE_ROOT, 'subtitles')
@@ -143,12 +179,21 @@ export async function composeStoryboard(storyboardId: number, options: ComposeOp
 
     await new Promise<void>((resolve, reject) => {
       let cmd = ffmpeg(videoPath)
+      const inputIndexes: { tts?: number; bgm?: number } = {}
+      let nextInputIndex = 1
 
       if (audioPath) {
         cmd = cmd.input(audioPath)
+        inputIndexes.tts = nextInputIndex++
+      }
+
+      if (bgmPath) {
+        cmd = cmd.input(bgmPath)
+        inputIndexes.bgm = nextInputIndex++
       }
 
       const filters: string[] = []
+      const audioFilters: string[] = []
 
       if (subtitlePath && supportsSubtitleFilter()) {
         const escapedPath = subtitlePath
@@ -169,9 +214,28 @@ export async function composeStoryboard(storyboardId: number, options: ComposeOp
       }
 
       const outputOptions = ['-c:v', 'libx264', '-preset', 'fast', '-crf', '23']
+      const videoHasAudio = audioMode === 'source' ? hasAudioTrack(videoPath) : false
 
-      if (audioPath) {
-        outputOptions.push('-map', '0:v', '-map', '1:a', '-c:a', 'aac', '-shortest')
+      if (bgmPath && audioPath && inputIndexes.tts != null && inputIndexes.bgm != null) {
+        audioFilters.push(
+          `[${inputIndexes.tts}:a]volume=1[a0]`,
+          `[${inputIndexes.bgm}:a]volume=${bgmVolume}[bgm]`,
+          '[a0][bgm]amix=inputs=2:duration=shortest:dropout_transition=2[aout]',
+        )
+        cmd = cmd.complexFilter(audioFilters)
+        outputOptions.push('-map', '0:v', '-map', '[aout]', '-c:a', 'aac', '-shortest')
+      } else if (bgmPath && audioMode === 'source' && inputIndexes.bgm != null && videoHasAudio) {
+        audioFilters.push(
+          '[0:a]volume=1[a0]',
+          `[${inputIndexes.bgm}:a]volume=${bgmVolume}[bgm]`,
+          '[a0][bgm]amix=inputs=2:duration=shortest:dropout_transition=2[aout]',
+        )
+        cmd = cmd.complexFilter(audioFilters)
+        outputOptions.push('-map', '0:v', '-map', '[aout]', '-c:a', 'aac', '-shortest')
+      } else if (bgmPath && inputIndexes.bgm != null) {
+        outputOptions.push('-map', '0:v', '-map', `${inputIndexes.bgm}:a`, '-c:a', 'aac', '-shortest')
+      } else if (audioPath && inputIndexes.tts != null) {
+        outputOptions.push('-map', '0:v', '-map', `${inputIndexes.tts}:a`, '-c:a', 'aac', '-shortest')
       } else if (audioMode === 'source') {
         outputOptions.push('-map', '0:v', '-map', '0:a?', '-c:a', 'aac', '-shortest')
       } else {
@@ -199,6 +263,8 @@ export async function composeStoryboard(storyboardId: number, options: ComposeOp
       storyboardNumber: sb.storyboardNumber,
       output: composedRelative,
       audioMode,
+      bgmMode,
+      hasBgm: !!bgmPath,
     })
     return composedRelative
   } catch (err) {

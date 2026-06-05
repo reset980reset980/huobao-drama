@@ -216,11 +216,11 @@ async function generateVoiceboxTTS(config: any, params: TTSParams): Promise<stri
   return relativePath
 }
 
-function parseVoiceboxModel(model?: string) {
-  const raw = String(model || '').trim()
+function parseVoiceboxModel(model?: unknown) {
+  const raw = normalizeVoiceboxModelValue(model)
   const [engineRaw, modelSizeRaw, profileIdRaw, languageRaw, ...instructParts] = raw.split(':')
   const engine = engineRaw || 'qwen_custom_voice'
-  const modelSize = modelSizeRaw || (engine === 'qwen' ? '1.7B' : undefined)
+  const modelSize = modelSizeRaw || (engine === 'qwen' || engine === 'qwen_custom_voice' ? '1.7B' : undefined)
   return {
     engine,
     modelSize,
@@ -228,6 +228,26 @@ function parseVoiceboxModel(model?: string) {
     language: languageRaw || 'ko',
     instruct: instructParts.join(':') || '차분하고 감정적인 한국어 드라마 톤',
   }
+}
+
+function normalizeVoiceboxModelValue(model: unknown): string {
+  if (Array.isArray(model)) return String(model[0] || '').trim()
+
+  const raw = String(model || '').trim()
+  if (!raw) return ''
+
+  if (raw.startsWith('[') || raw.startsWith('{') || raw.startsWith('"')) {
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return String(parsed[0] || '').trim()
+      if (parsed && typeof parsed === 'object' && 'value' in parsed) {
+        return String((parsed as { value?: unknown }).value || '').trim()
+      }
+      return String(parsed || '').trim()
+    } catch {}
+  }
+
+  return raw.replace(/^\[?["']?/, '').replace(/["']?\]?$/, '').trim()
 }
 
 function readPcmWav(relativePath: string) {

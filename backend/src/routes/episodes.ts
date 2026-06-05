@@ -17,10 +17,12 @@ app.post('/', async (c) => {
   const imageGenerationMode = normalizeGenerationMode(body.image_generation_mode)
   const videoGenerationMode = normalizeGenerationMode(body.video_generation_mode)
   const audioGenerationMode = normalizeGenerationMode(body.audio_generation_mode)
+  const bgmGenerationMode = normalizeGenerationMode(body.bgm_generation_mode)
   if (imageGenerationMode === 'api' && !body.image_config_id) return badRequest(c, 'API 이미지 생성에는 image_config_id가 필요합니다')
   if (videoGenerationMode === 'api' && !body.video_config_id) return badRequest(c, 'API 영상 생성에는 video_config_id가 필요합니다')
   if (audioGenerationMode === 'api' && !body.audio_config_id) return badRequest(c, 'API 오디오 생성에는 audio_config_id가 필요합니다')
-  if (!['api', 'manual'].includes(imageGenerationMode) || !['api', 'manual'].includes(videoGenerationMode) || !['api', 'manual'].includes(audioGenerationMode)) {
+  if (bgmGenerationMode === 'api' && !body.bgm_config_id) return badRequest(c, 'API BGM 생성에는 bgm_config_id가 필요합니다')
+  if (!['api', 'manual'].includes(imageGenerationMode) || !['api', 'manual'].includes(videoGenerationMode) || !['api', 'manual'].includes(audioGenerationMode) || !['api', 'manual'].includes(bgmGenerationMode)) {
     return badRequest(c, 'generation mode must be api or manual')
   }
   const ts = now()
@@ -38,9 +40,11 @@ app.post('/', async (c) => {
     imageConfigId: body.image_config_id,
     videoConfigId: body.video_config_id,
     audioConfigId: body.audio_config_id,
+    bgmConfigId: body.bgm_config_id,
     imageGenerationMode,
     videoGenerationMode,
     audioGenerationMode,
+    bgmGenerationMode,
     createdAt: ts,
     updatedAt: ts,
   }).run()
@@ -54,9 +58,11 @@ app.post('/', async (c) => {
     image_config_id: ep.imageConfigId,
     video_config_id: ep.videoConfigId,
     audio_config_id: ep.audioConfigId,
+    bgm_config_id: ep.bgmConfigId,
     image_generation_mode: ep.imageGenerationMode,
     video_generation_mode: ep.videoGenerationMode,
     audio_generation_mode: ep.audioGenerationMode,
+    bgm_generation_mode: ep.bgmGenerationMode,
   })
 })
 
@@ -68,7 +74,8 @@ app.put('/:id', async (c) => {
   const allowed = [
     'content', 'script_content', 'title', 'description', 'status',
     'image_config_id', 'video_config_id', 'audio_config_id',
-    'image_generation_mode', 'video_generation_mode', 'audio_generation_mode',
+    'bgm_config_id',
+    'image_generation_mode', 'video_generation_mode', 'audio_generation_mode', 'bgm_generation_mode',
   ]
   const updates: Record<string, any> = {}
   for (const key of allowed) {
@@ -86,9 +93,11 @@ app.put('/:id', async (c) => {
   if ('image_config_id' in updates) drizzleUpdates.imageConfigId = updates.image_config_id
   if ('video_config_id' in updates) drizzleUpdates.videoConfigId = updates.video_config_id
   if ('audio_config_id' in updates) drizzleUpdates.audioConfigId = updates.audio_config_id
+  if ('bgm_config_id' in updates) drizzleUpdates.bgmConfigId = updates.bgm_config_id
   if ('image_generation_mode' in updates) drizzleUpdates.imageGenerationMode = normalizeGenerationMode(updates.image_generation_mode)
   if ('video_generation_mode' in updates) drizzleUpdates.videoGenerationMode = normalizeGenerationMode(updates.video_generation_mode)
   if ('audio_generation_mode' in updates) drizzleUpdates.audioGenerationMode = normalizeGenerationMode(updates.audio_generation_mode)
+  if ('bgm_generation_mode' in updates) drizzleUpdates.bgmGenerationMode = normalizeGenerationMode(updates.bgm_generation_mode)
 
   await db.update(schema.episodes).set(drizzleUpdates).where(eq(schema.episodes.id, id))
   return success(c)
@@ -148,7 +157,7 @@ app.get('/:episode_id/storyboards', async (c) => {
   })))
 })
 
-// GET /episodes/:id/pipeline-status — 流水线进度
+// GET /episodes/:id/pipeline-status - 파이프라인 진행률
 app.get('/:id/pipeline-status', async (c) => {
   const episodeId = Number(c.req.param('id'))
   const [ep] = db.select().from(schema.episodes).where(eq(schema.episodes.id, episodeId)).all()
@@ -163,6 +172,7 @@ app.get('/:id/pipeline-status', async (c) => {
   const charsWithSample = chars.filter(c => c.voiceSampleUrl)
   const sbsWithImage = sbs.filter(s => s.composedImage)
   const sbsWithVideo = sbs.filter(s => s.videoUrl)
+  const sbsWithBgm = sbs.filter(s => s.bgmAudioUrl)
   const sbsComposed = sbs.filter(s => s.composedVideoUrl)
   const latestMerge = merges[merges.length - 1]
 
@@ -183,6 +193,7 @@ app.get('/:id/pipeline-status', async (c) => {
       extract_storyboards: { status: stepStatus(sbs.length > 0), count: sbs.length },
       generate_images: { status: stepStatus(sbsWithImage.length === sbs.length && sbs.length > 0, sbsWithImage.length > 0), completed: sbsWithImage.length, total: sbs.length },
       generate_videos: { status: stepStatus(sbsWithVideo.length === sbs.length && sbs.length > 0, sbsWithVideo.length > 0), completed: sbsWithVideo.length, total: sbs.length },
+      register_bgm: { status: stepStatus(sbsWithBgm.length === sbs.length && sbs.length > 0, sbsWithBgm.length > 0), completed: sbsWithBgm.length, total: sbs.length },
       compose_shots: { status: stepStatus(sbsComposed.length === sbs.length && sbs.length > 0, sbsComposed.length > 0), completed: sbsComposed.length, total: sbs.length },
       merge_episode: { status: latestMerge?.status === 'completed' ? 'done' : (latestMerge ? latestMerge.status : 'pending'), merged_url: latestMerge?.mergedUrl },
     },

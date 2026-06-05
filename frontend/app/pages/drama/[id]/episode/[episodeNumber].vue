@@ -13,7 +13,7 @@
           <span class="studio-episode-chip">제 {{ episodeNumber }} 회</span>
           <div class="studio-meta-row">
             <span class="studio-meta-pill">{{ currentSubStageLabel }}</span>
-            <span class="studio-meta-pill is-progress">{{ pipelineProgress }}/11</span>
+            <span class="studio-meta-pill is-progress">{{ pipelineProgress }}/12</span>
             <span class="studio-meta-inline">{{ chars.length }} 캐릭터 · {{ sbs.length }} 샷</span>
           </div>
         </div>
@@ -66,10 +66,10 @@
         <div class="progress-wrap">
           <div class="progress-head">
             <span class="progress-label">제작 진행률</span>
-            <span class="progress-val">{{ pipelineProgress }}/11</span>
+            <span class="progress-val">{{ pipelineProgress }}/12</span>
           </div>
           <div class="progress-track">
-            <div class="progress-fill" :style="{ width: (pipelineProgress / 11 * 100) + '%' }"></div>
+            <div class="progress-fill" :style="{ width: (pipelineProgress / 12 * 100) + '%' }"></div>
           </div>
         </div>
         <div class="sidebar-jumper" v-if="sidebarJumpSteps.length">
@@ -384,11 +384,11 @@
                 </div>
 
                 <div class="voice-actions-row">
-                  <button class="btn btn-sm" :disabled="!(c.voice_style || c.voiceStyle)" @click="genSample(c.id)">
+                  <button class="btn btn-sm" :disabled="!(c.voice_style || c.voiceStyle) || isPendingVoiceSample(c.id)" @click="genSample(c.id)">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-                    {{ (c.voice_sample_url || c.voiceSampleUrl) ? '다시 미리듣기' : '미리듣기 생성' }}
+                    {{ voiceSampleButtonLabel(c) }}
                   </button>
-                  <span class="dim" style="font-size:11px">{{ (c.voice_sample_url || c.voiceSampleUrl) ? '음성 샘플이 생성되어 바로 재생할 수 있습니다' : '생성 후 캐릭터 음성을 빠르게 확인할 수 있습니다' }}</span>
+                  <span class="dim" style="font-size:11px">{{ isPendingVoiceSample(c.id) ? 'Voicebox에서 음성을 생성하는 중입니다' : ((c.voice_sample_url || c.voiceSampleUrl) ? '음성 샘플이 생성되어 바로 재생할 수 있습니다' : '생성 후 캐릭터 음성을 빠르게 확인할 수 있습니다') }}</span>
                 </div>
 
                 <div v-if="c.voice_sample_url || c.voiceSampleUrl" class="voice-player">
@@ -744,7 +744,7 @@
                   <button :class="['service-mode-btn', item.mode === 'manual' && 'active']" @click="setEpisodeGenerationMode(item.key, 'manual')">프롬프트</button>
                 </div>
               </div>
-              <span class="dim">회차별로 이미지, 더빙, 영상을 API 자동 생성 또는 수동/구독형 등록으로 나눠 사용할 수 있습니다.</span>
+              <span class="dim">회차별로 이미지, 더빙, 영상, BGM을 API 자동 생성 또는 수동/구독형 등록으로 나눠 사용할 수 있습니다.</span>
             </div>
           </div>
 
@@ -1258,6 +1258,47 @@
             </div>
           </div>
 
+          <!-- Sub: BGM -->
+          <div v-else-if="prodTab === 'bgm'" class="prod-content">
+            <div class="prod-section-bar">
+              <span class="dim" style="font-size:12px">{{ sbs.length }} 개 샷</span>
+              <span class="tag mono">{{ bgmCount }}/{{ sbs.length }} 등록됨</span>
+              <span class="tag">{{ isManualBgmGeneration ? 'Suno 프롬프트/등록' : 'BGM 프롬프트/등록' }}</span>
+              <div class="ml-auto flex gap-1">
+                <button class="btn btn-sm" @click="handleBatchBgm">
+                  <Music :size="11" />
+                  {{ isManualBgmGeneration ? 'BGM 프롬프트 일괄 복사' : 'BGM 프롬프트 복사' }}
+                </button>
+              </div>
+            </div>
+            <div class="prod-grid">
+              <div v-for="(sb, i) in sbs" :key="sb.id" class="card prod-card">
+                <div class="prod-cover audio-cover">
+                  <div class="asset-cover-empty">
+                    <Music :size="24" />
+                  </div>
+                  <span class="prod-idx">#{{ String(i+1).padStart(2,'0') }}</span>
+                  <span class="prod-overlay-badge" :class="hasBgm(sb) ? 'is-ready' : ''">{{ hasBgm(sb) ? 'BGM 등록됨' : '등록 대기' }}</span>
+                </div>
+                <div class="prod-info">
+                  <div class="prod-desc truncate">{{ sb.bgm_prompt || sb.bgmPrompt || sb.atmosphere || sb.description || 'BGM 프롬프트 없음' }}</div>
+                  <div class="prod-meta-line">{{ sb.shot_type || sb.shotType || '샷 크기 미설정' }} · {{ sb.duration || 10 }}s</div>
+                  <div class="prod-dots">
+                    <span :class="['dot', (sb.bgm_prompt || sb.bgmPrompt) && 'ok']" /><span style="font-size:10px">프롬프트</span>
+                    <span :class="['dot', hasBgm(sb) && 'ok']" /><span style="font-size:10px">BGM</span>
+                  </div>
+                  <audio v-if="hasBgm(sb)" :src="'/' + getBgmUrl(sb)" controls preload="none" class="dub-audio" />
+                </div>
+                <div class="prod-actions">
+                  <button class="btn btn-sm" @click="handleBgm(sb)">
+                    <Music :size="11" />
+                    {{ hasBgm(sb) ? '다시 등록' : '프롬프트/등록' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Sub: Compose -->
           <div v-else-if="prodTab === 'compose'" class="prod-content">
             <div class="prod-section-bar">
@@ -1277,6 +1318,22 @@
                   @click="setComposeAudioMode('source')"
                 >
                   원본 음성 유지
+                </button>
+              </div>
+              <div class="compose-audio-toggle">
+                <button
+                  :class="['btn', 'btn-sm', composeBgmMode === 'none' && 'btn-primary']"
+                  type="button"
+                  @click="setComposeBgmMode('none')"
+                >
+                  BGM 없음
+                </button>
+                <button
+                  :class="['btn', 'btn-sm', composeBgmMode === 'mix' && 'btn-primary']"
+                  type="button"
+                  @click="setComposeBgmMode('mix')"
+                >
+                  BGM 믹스
                 </button>
               </div>
               <div class="ml-auto flex gap-1">
@@ -1323,6 +1380,7 @@
                   <div class="prod-dots">
                     <span :class="['dot', hasVid(sb) && 'ok']" /><span style="font-size:10px">영상</span>
                     <span :class="['dot', (composeAudioMode === 'source' ? hasVid(sb) : hasTTS(sb)) && 'ok']" /><span style="font-size:10px">{{ composeAudioLabel }}</span>
+                    <span :class="['dot', (composeBgmMode === 'none' || hasBgm(sb)) && 'ok']" /><span style="font-size:10px">BGM</span>
                     <span :class="['dot', hasComposed(sb) && 'ok', isPendingCompose(sb.id) && 'pending']" /><span style="font-size:10px">{{ isPendingCompose(sb.id) ? '합성 중' : '합성' }}</span>
                   </div>
                   <div v-if="composeFailMessage(sb.id)" class="prod-error">{{ composeFailMessage(sb.id) }}</div>
@@ -1464,10 +1522,20 @@
             <div class="manual-prompt-panel">
               <div class="manual-prompt-head">
                 <span>생성 프롬프트</span>
-                <button class="btn btn-sm" @click="copyPrompt(manualDialog.prompt, '생성 프롬프트')">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                  복사
-                </button>
+                <div class="manual-prompt-actions">
+                  <button
+                    v-for="target in manualDialog.automationTargets"
+                    :key="target"
+                    class="btn btn-sm"
+                    @click="sendPromptToAutomation(target)"
+                  >
+                    {{ automationTargetLabel(target) }}로 보내기
+                  </button>
+                  <button class="btn btn-sm" @click="copyPrompt(manualDialog.prompt, '생성 프롬프트')">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    복사
+                  </button>
+                </div>
               </div>
               <textarea class="manual-prompt-text" :value="manualDialog.prompt" readonly rows="10"></textarea>
             </div>
@@ -1516,7 +1584,7 @@
 <script setup>
 import { toast } from 'vue-sonner'
 import {
-  Users, MapPin, Video, ImageIcon, Layers, Mic2, FileText, FolderKanban, Clapperboard, Download,
+  Users, MapPin, Video, ImageIcon, Layers, Mic2, FileText, FolderKanban, Clapperboard, Download, Music,
 } from 'lucide-vue-next'
 import { dramaAPI, episodeAPI, storyboardAPI, characterAPI, sceneAPI, imageAPI, videoAPI, composeAPI, mergeAPI, gridAPI, aiConfigAPI, voicesAPI, uploadAPI } from '~/composables/useApi'
 import { useAgent } from '~/composables/useAgent'
@@ -1551,8 +1619,13 @@ const prodTabIdx = computed({
 })
 const frameMode = ref('first')
 const composeAudioMode = ref('tts')
+const composeBgmMode = ref('none')
 const composeAudioLabel = computed(() => composeAudioMode.value === 'source' ? '원본 음성' : '더빙')
-const composeAudioPayload = computed(() => ({ audio_mode: composeAudioMode.value === 'source' ? 'source' : 'tts' }))
+const composeAudioPayload = computed(() => ({
+  audio_mode: composeAudioMode.value === 'source' ? 'source' : 'tts',
+  bgm_mode: composeBgmMode.value === 'mix' ? 'mix' : 'none',
+  bgm_volume: 0.18,
+}))
 const fallbackVoiceProfiles = [
   { id: 'alloy', label: 'Alloy', gender: '중성', traits: '균형감, 자연스러움, 절제됨', suitable: '범용 내레이션, 내레이션, 안정적인 출력이 필요한 캐릭터' },
   { id: 'echo', label: 'Echo', gender: '남성 음성', traits: '낮고 안정적이며 침착함', suitable: '성숙한 남성, 아버지 세대, 내레이션, 압박감 있는 캐릭터' },
@@ -1595,6 +1668,7 @@ const pendingShotFrameKeys = ref([])
 const pendingVideoIds = ref([])
 const pendingComposeIds = ref([])
 const pendingTTSIds = ref([])
+const pendingVoiceSampleIds = ref([])
 const isBatchTTSRunning = ref(false)
 const failedVideoMessages = ref({})
 const failedComposeMessages = ref({})
@@ -1605,6 +1679,7 @@ const manualDialog = reactive({
   kind: 'uploads',
   accept: '',
   prompt: '',
+  automationTargets: [],
   url: '',
   file: null,
   onSave: null,
@@ -1645,11 +1720,22 @@ function setComposeAudioMode(mode) {
   }
 }
 
+function setComposeBgmMode(mode) {
+  composeBgmMode.value = mode === 'mix' ? 'mix' : 'none'
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem('huobao:compose-bgm-mode', composeBgmMode.value)
+  }
+}
+
 onMounted(() => {
   window.addEventListener('keydown', handleImageViewerKeydown)
   const savedComposeAudioMode = window.localStorage.getItem('huobao:compose-audio-mode')
   if (savedComposeAudioMode === 'source' || savedComposeAudioMode === 'tts') {
     composeAudioMode.value = savedComposeAudioMode
+  }
+  const savedComposeBgmMode = window.localStorage.getItem('huobao:compose-bgm-mode')
+  if (savedComposeBgmMode === 'mix' || savedComposeBgmMode === 'none') {
+    composeBgmMode.value = savedComposeBgmMode
   }
 })
 
@@ -1695,21 +1781,26 @@ const visualChars = computed(() => chars.value.filter(c => !isNarratorCharacter(
 const lockedImageConfigId = computed(() => episode.value?.image_config_id || episode.value?.imageConfigId || null)
 const lockedVideoConfigId = computed(() => episode.value?.video_config_id || episode.value?.videoConfigId || null)
 const lockedAudioConfigId = computed(() => episode.value?.audio_config_id || episode.value?.audioConfigId || null)
+const lockedBgmConfigId = computed(() => episode.value?.bgm_config_id || episode.value?.bgmConfigId || null)
 const imageGenerationMode = computed(() => normalizeGenerationMode(episode.value?.image_generation_mode || episode.value?.imageGenerationMode))
 const videoGenerationMode = computed(() => normalizeGenerationMode(episode.value?.video_generation_mode || episode.value?.videoGenerationMode))
 const audioGenerationMode = computed(() => normalizeGenerationMode(episode.value?.audio_generation_mode || episode.value?.audioGenerationMode))
+const bgmGenerationMode = computed(() => normalizeGenerationMode(episode.value?.bgm_generation_mode || episode.value?.bgmGenerationMode || 'manual'))
 const isManualImageGeneration = computed(() => imageGenerationMode.value === 'manual')
 const isManualVideoGeneration = computed(() => videoGenerationMode.value === 'manual')
 const isManualAudioGeneration = computed(() => audioGenerationMode.value === 'manual')
+const isManualBgmGeneration = computed(() => bgmGenerationMode.value === 'manual')
 const serviceModeItems = computed(() => [
   { key: 'image', label: '이미지', mode: imageGenerationMode.value },
   { key: 'audio', label: '더빙', mode: audioGenerationMode.value },
   { key: 'video', label: '영상', mode: videoGenerationMode.value },
+  { key: 'bgm', label: 'BGM', mode: bgmGenerationMode.value },
 ])
 const lockedAudioProvider = computed(() => audioConfigs.value.find(c => c.id === lockedAudioConfigId.value)?.provider || '')
 const lockedImageConfigLabel = computed(() => configLabel(imageConfigs.value.find(c => c.id === lockedImageConfigId.value)))
 const lockedVideoConfigLabel = computed(() => configLabel(videoConfigs.value.find(c => c.id === lockedVideoConfigId.value)))
 const lockedAudioConfigLabel = computed(() => configLabel(audioConfigs.value.find(c => c.id === lockedAudioConfigId.value)))
+const lockedBgmConfigLabel = computed(() => configLabel(audioConfigs.value.find(c => c.id === lockedBgmConfigId.value)))
 
 async function setEpisodeGenerationMode(service, mode) {
   if (!episode.value?.id) return
@@ -1718,13 +1809,15 @@ async function setEpisodeGenerationMode(service, mode) {
     image: 'image_generation_mode',
     audio: 'audio_generation_mode',
     video: 'video_generation_mode',
+    bgm: 'bgm_generation_mode',
   }
   const key = keyMap[service]
   if (!key) return
   try {
     await episodeAPI.update(episode.value.id, { [key]: normalized })
     episode.value = { ...episode.value, [key]: normalized }
-    toast.success(`${service === 'image' ? '이미지' : service === 'audio' ? '더빙' : '영상'} 생성 방식을 ${normalized === 'api' ? 'API' : '프롬프트/등록'}로 저장했습니다`)
+    const serviceLabel = service === 'image' ? '이미지' : service === 'audio' ? '더빙' : service === 'video' ? '영상' : 'BGM'
+    toast.success(`${serviceLabel} 생성 방식을 ${normalized === 'api' ? 'API' : '프롬프트/등록'}로 저장했습니다`)
     await refresh()
   } catch (e) {
     toast.error(e.message || '생성 방식 저장 실패')
@@ -1907,6 +2000,7 @@ function prodStepDone(id) {
   if (id === 'dubbing') return !!sbs.value.length && (!ttsEligibleCount.value || ttsGeneratedCount.value === ttsEligibleCount.value)
   if (id === 'shots') return !!sbs.value.length && shotImgCount.value === sbs.value.length
   if (id === 'videos') return !!sbs.value.length && shotVidCount.value === sbs.value.length
+  if (id === 'bgm') return !!sbs.value.length && bgmCount.value === sbs.value.length
   if (id === 'compose') return !!sbs.value.length && composedCount.value === sbs.value.length
   return false
 }
@@ -2250,6 +2344,7 @@ const ttsEligibleCount = computed(() => sbs.value.filter(s => hasDialogue(s)).le
 const ttsGeneratedCount = computed(() => sbs.value.filter(s => hasDialogue(s) && hasTTS(s)).length)
 const shotImgCount = computed(() => sbs.value.filter(s => s.first_frame_image || s.firstFrameImage || s.last_frame_image || s.lastFrameImage || s.composed_image || s.composedImage).length)
 const shotVidCount = computed(() => sbs.value.filter(s => s.video_url || s.videoUrl).length)
+const bgmCount = computed(() => sbs.value.filter(s => hasBgm(s)).length)
 const visualCharTotal = computed(() => visualChars.value.length)
 
 const prodTabDefs = computed(() => [
@@ -2258,6 +2353,7 @@ const prodTabDefs = computed(() => [
   { id: 'dubbing', label: '더빙 생성', icon: Mic2, badge: '' },
   { id: 'shots', label: '샷 이미지', icon: ImageIcon, badge: shotImgCount.value ? `${shotImgCount.value}/${sbs.value.length}` : '' },
   { id: 'videos', label: '영상 생성', icon: Video, badge: shotVidCount.value ? `${shotVidCount.value}/${sbs.value.length}` : '' },
+  { id: 'bgm', label: 'BGM 등록', icon: Music, badge: bgmCount.value ? `${bgmCount.value}/${sbs.value.length}` : '' },
   { id: 'compose', label: '영상 합성', icon: Layers, badge: composedCount.value ? `${composedCount.value}/${sbs.value.length}` : '' },
 ])
 
@@ -2289,6 +2385,7 @@ const sidebarSections = computed(() => ([
       { key: 'prod:dubbing', label: '더빙 생성', desc: '', icon: Mic2, done: prodStepDone('dubbing') },
       { key: 'prod:shots', label: '샷 이미지', desc: '', icon: ImageIcon, done: prodStepDone('shots') },
       { key: 'prod:videos', label: '영상 생성', desc: '', icon: Video, done: prodStepDone('videos') },
+      { key: 'prod:bgm', label: 'BGM 등록', desc: '', icon: Music, done: prodStepDone('bgm') },
       { key: 'prod:compose', label: '영상 합성', desc: '', icon: Layers, done: prodStepDone('compose') },
     ],
   },
@@ -2352,7 +2449,7 @@ function goMainStage(stageId) {
   }
   if (stageId === 'storyboard') {
     if (panel.value === 'production') {
-      prodTab.value = ['dubbing', 'shots', 'videos', 'compose'].includes(prodTab.value) ? prodTab.value : 'dubbing'
+      prodTab.value = ['dubbing', 'shots', 'videos', 'bgm', 'compose'].includes(prodTab.value) ? prodTab.value : 'dubbing'
       return
     }
     panel.value = 'script'
@@ -2383,6 +2480,7 @@ const activeSubSteps = computed(() => {
       { key: 'prod:dubbing', label: '더빙 생성', done: !ttsEligibleCount.value || ttsGeneratedCount.value === ttsEligibleCount.value },
       { key: 'prod:shots', label: '샷 이미지', done: !!sbs.value.length && shotImgCount.value === sbs.value.length },
       { key: 'prod:videos', label: '영상 생성', done: !!sbs.value.length && shotVidCount.value === sbs.value.length },
+      { key: 'prod:bgm', label: 'BGM 등록', done: !!sbs.value.length && bgmCount.value === sbs.value.length },
       { key: 'prod:compose', label: '영상 합성', done: !!sbs.value.length && composedCount.value === sbs.value.length },
     ]
   }
@@ -2467,6 +2565,7 @@ const pipelineProgress = computed(() => {
   if (sbs.value.length && (!ttsEligibleCount.value || ttsGeneratedCount.value === ttsEligibleCount.value)) p++
   if (sbs.value.some(s => s.composed_image || s.composedImage)) p++
   if (sbs.value.some(s => s.video_url || s.videoUrl)) p++
+  if (sbs.value.some(s => s.bgm_audio_url || s.bgmAudioUrl)) p++
   if (sbs.value.length && composedCount.value === sbs.value.length) p++
   if (mergeUrl.value) p++
   return p
@@ -2631,20 +2730,44 @@ async function batchGenSamples() {
     toast.info(charsVoiced.value ? '모든 캐릭터의 미리듣기 파일이 생성되었습니다' : '먼저 음색을 배정하세요')
     return
   }
+  const ids = pending.map(c => c.id)
+  pendingVoiceSampleIds.value = [...new Set([...pendingVoiceSampleIds.value, ...ids])]
   toast.info(`미리듣기 ${pending.length} 개를 안전 모드로 순차 생성합니다`)
-  const results = await runSequentially(pending, c => characterAPI.voiceSample(c.id, epId.value), SAFE_BATCH_DELAY_MS.tts)
-  const okCount = results.filter(r => r.status === 'fulfilled').length
-  const failCount = results.length - okCount
-  if (okCount) toast.success(`생성됨 ${okCount} 개 미리듣기 파일`)
-  if (failCount) toast.error(`${failCount} 개 미리듣기 파일 생성 실패`)
-  await refresh()
+  try {
+    const results = await runSequentially(pending, c => characterAPI.voiceSample(c.id, epId.value), SAFE_BATCH_DELAY_MS.tts)
+    const okCount = results.filter(r => r.status === 'fulfilled').length
+    const failCount = results.length - okCount
+    if (okCount) toast.success(`생성됨 ${okCount} 개 미리듣기 파일`)
+    if (failCount) toast.error(`${failCount} 개 미리듣기 파일 생성 실패`)
+    await refresh()
+  } finally {
+    pendingVoiceSampleIds.value = pendingVoiceSampleIds.value.filter(id => !ids.includes(id))
+  }
 }
 function doBreakdown() {
   const cfg = videoConfigs.value.find(c => c.id === lockedVideoConfigId.value)
   const label = cfg ? `${cfg.name} (${cfg.provider})` : '기본값'
   runAgent('storyboard_breaker', `스토리보드를 분해하고 영상 프롬프트를 생성하세요. 영상 모델: ${label}. 해당 모델의 특성과 길이 제한에 맞는 영상 프롬프트를 생성하세요.`, dramaId, epId.value, refresh)
 }
-async function genSample(id) { try { await characterAPI.voiceSample(id, epId.value); toast.success('미리듣기가 생성되었습니다'); refresh() } catch (e) { toast.error(e.message) } }
+function isPendingVoiceSample(id) { return pendingVoiceSampleIds.value.includes(id) }
+function voiceSampleButtonLabel(c) {
+  if (isPendingVoiceSample(c.id)) return '생성 중'
+  return (c.voice_sample_url || c.voiceSampleUrl) ? '다시 미리듣기' : '미리듣기 생성'
+}
+async function genSample(id) {
+  if (isPendingVoiceSample(id)) return
+  pendingVoiceSampleIds.value = [...new Set([...pendingVoiceSampleIds.value, id])]
+  try {
+    toast.info('미리듣기 음성을 생성하는 중입니다')
+    await characterAPI.voiceSample(id, epId.value)
+    toast.success('미리듣기가 생성되었습니다')
+    await refresh()
+  } catch (e) {
+    toast.error(e.message)
+  } finally {
+    pendingVoiceSampleIds.value = pendingVoiceSampleIds.value.filter(item => item !== id)
+  }
+}
 async function addShot() { await storyboardAPI.create({ episode_id: epId.value, storyboard_number: sbs.value.length + 1, title: `샷${sbs.value.length + 1}`, duration: 10 }); refresh() }
 
 function sleep(ms) {
@@ -2728,6 +2851,22 @@ function buildTtsPrompt(sb) {
   ].filter(Boolean).join('\n')
 }
 
+function buildBgmPrompt(sb) {
+  return [
+    `Use case: background-music`,
+    `Asset type: short-form drama BGM`,
+    `Primary request: ${sb.bgm_prompt || sb.bgmPrompt || sb.atmosphere || sb.description || '장면 분위기에 맞는 배경음악'}`,
+    `Duration target: ${Number(sb.duration || 10)} seconds`,
+    sb.location ? `Scene/location: ${sb.location}` : '',
+    sb.time ? `Time: ${sb.time}` : '',
+    sb.action ? `Action: ${sb.action}` : '',
+    sb.atmosphere ? `Mood: ${sb.atmosphere}` : '',
+    sb.sound_effect || sb.soundEffect ? `Avoid covering these sound effects: ${sb.sound_effect || sb.soundEffect}` : '',
+    'Style: cinematic, loop-friendly, no vocals unless explicitly requested',
+    'Mixing: keep enough space for dialogue and narration',
+  ].filter(Boolean).join('\n')
+}
+
 function buildVideoManualPrompt(sb) {
   return [
     `Use case: video-generation`,
@@ -2744,12 +2883,62 @@ function buildVideoManualPrompt(sb) {
   ].filter(Boolean).join('\n')
 }
 
-function openManualDialog({ title, kind, accept, prompt, onSave }) {
+function automationTargetLabel(target) {
+  if (target === 'suno') return 'Suno'
+  return 'Flow'
+}
+
+function defaultAutomationTargets(kind) {
+  if (kind === 'images' || kind === 'videos') return ['flow']
+  return []
+}
+
+function sendPromptToAutomation(target) {
+  const prompt = String(manualDialog.prompt || '').trim()
+  if (!prompt) {
+    toast.warning('보낼 프롬프트가 비어 있습니다')
+    return
+  }
+  if (typeof window === 'undefined') return
+
+  const requestId = `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  let settled = false
+  const timeout = window.setTimeout(() => {
+    if (settled) return
+    settled = true
+    window.removeEventListener('message', onResponse)
+    toast.warning('브라우저 자동화 확장 프로그램 응답이 없습니다. 확장 프로그램 설치 여부를 확인하세요.')
+  }, 1800)
+
+  function onResponse(event) {
+    if (event.source !== window) return
+    const message = event.data
+    if (!message || message.type !== 'HUOBAO_AUTOMATION_RESPONSE' || message.requestId !== requestId) return
+    settled = true
+    window.clearTimeout(timeout)
+    window.removeEventListener('message', onResponse)
+    const response = message.response || {}
+    if (response.ok) toast.success(`${response.label || automationTargetLabel(target)} 탭으로 프롬프트를 보냈습니다`)
+    else toast.error(response.error || '브라우저 자동화 전송 실패')
+  }
+
+  window.addEventListener('message', onResponse)
+  window.postMessage({
+    type: 'HUOBAO_AUTOMATION_REQUEST',
+    requestId,
+    target,
+    title: manualDialog.title,
+    prompt,
+  }, '*')
+}
+
+function openManualDialog({ title, kind, accept, prompt, automationTargets, onSave }) {
   manualDialog.open = true
   manualDialog.title = title
   manualDialog.kind = kind || 'uploads'
   manualDialog.accept = accept || ''
   manualDialog.prompt = prompt || ''
+  manualDialog.automationTargets = Array.isArray(automationTargets) ? automationTargets : defaultAutomationTargets(manualDialog.kind)
   manualDialog.url = ''
   manualDialog.file = null
   manualDialog.onSave = onSave
@@ -2952,8 +3141,8 @@ function batchSceneImages() {
   }), 36)
 }
 
-const IGNORE_TTS_SPEAKERS = /^(환경음|환경음|효과음|효과음|sfx|sound ?effect|bgm|배경음|배경음악|ambient)$/i
-const IGNORE_TTS_TEXT = /^(없음|없음대사|대사 없음|없음내레이션|필요 없음더빙|필요 없음대사|none|null|n\/a|na|환경음|환경음|효과음|효과음|순수효과음|순수환경음|만 있음환경음|만환경음|배경음|배경음악|bgm|sfx|ambient)$/i
+const IGNORE_TTS_SPEAKERS = /^(환경음|환경소리|효과음|sfx|sound ?effect|bgm|배경음|배경음악|ambient)$/i
+const IGNORE_TTS_TEXT = /^(없음|대사 없음|내레이션 없음|더빙 필요 없음|대사 필요 없음|none|null|n\/a|na|환경음|환경소리|효과음|순수 효과음|순수 환경음|배경음|배경음악|bgm|sfx|ambient)$/i
 
 function getDialogueSpeakerRaw(sb) {
   const dialogue = sb?.dialogue?.trim() || ''
@@ -2979,6 +3168,8 @@ function isTTSIgnorable(sb) {
 function hasDialogue(sb) { return !isTTSIgnorable(sb) }
 function hasTTS(sb) { return !!(sb?.tts_audio_url || sb?.ttsAudioUrl) }
 function getTTSUrl(sb) { return sb?.tts_audio_url || sb?.ttsAudioUrl || '' }
+function hasBgm(sb) { return !!(sb?.bgm_audio_url || sb?.bgmAudioUrl) }
+function getBgmUrl(sb) { return sb?.bgm_audio_url || sb?.bgmAudioUrl || '' }
 function isPendingTTS(id) { return pendingTTSIds.value.includes(id) }
 function ttsButtonLabel(sb) {
   if (isPendingTTS(sb.id)) return '생성 중'
@@ -3071,6 +3262,33 @@ async function handleBatchShotTTS() {
     ({ sb }, idx) => `더빙 ${idx + 1}: 샷 #${sb.storyboard_number || sb.storyboardNumber || sb.id}`,
   )
   await copyPrompt(text, '더빙 일괄 프롬프트')
+}
+
+function handleBgm(sb) {
+  const prompt = buildBgmPrompt(sb)
+  openManualDialog({
+    title: `샷 #${sb.storyboard_number || sb.storyboardNumber || sb.id} BGM 수동 등록`,
+    kind: 'audio',
+    accept: 'audio/*',
+    prompt,
+    automationTargets: ['suno'],
+    onSave: async (path) => {
+      await storyboardAPI.update(sb.id, { bgm_audio_url: path })
+    },
+  })
+}
+
+async function handleBatchBgm() {
+  const pending = sbs.value.filter(sb => !hasBgm(sb))
+  if (!pending.length) {
+    toast.info('모든 샷 BGM이 등록되었습니다')
+    return
+  }
+  const text = joinManualPrompts(
+    pending.map(sb => ({ sb, prompt: buildBgmPrompt(sb) })),
+    ({ sb }, idx) => `BGM ${idx + 1}: 샷 #${sb.storyboard_number || sb.storyboardNumber || sb.id}`,
+  )
+  await copyPrompt(text, 'BGM 일괄 프롬프트')
 }
 
 function getFirstFrame(s) { return s?.first_frame_image || s?.firstFrameImage || null }
@@ -4439,6 +4657,13 @@ onMounted(() => { refresh(); loadConfigs(); loadVoices() })
   font-weight: 700;
   color: var(--text-1);
 }
+.manual-prompt-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 .manual-prompt-text {
   width: 100%;
   min-height: 260px;
@@ -4977,6 +5202,23 @@ onMounted(() => { refresh(); loadConfigs(); loadVoices() })
   }
 
   .latest-grid-strip-actions {
+    justify-content: flex-start;
+  }
+
+  .manual-asset-dialog {
+    width: calc(100vw - 24px);
+  }
+
+  .manual-asset-body {
+    grid-template-columns: 1fr;
+  }
+
+  .manual-prompt-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .manual-prompt-actions {
     justify-content: flex-start;
   }
 }

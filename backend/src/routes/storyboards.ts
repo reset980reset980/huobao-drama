@@ -8,8 +8,8 @@ import { logTaskError, logTaskPayload, logTaskProgress, logTaskStart, logTaskSuc
 
 const app = new Hono()
 
-const IGNORE_TTS_SPEAKERS = /^(环境音|环境声|音效|效果音|sfx|sound ?effect|bgm|背景音|背景音乐|ambient)$/i
-const IGNORE_TTS_TEXT = /^(无|无대사|无台词|无내레이션|无需더빙|无需대사|none|null|n\/a|na|环境音|环境声|音效|效果音|纯音效|纯环境音|只有环境音|仅环境音|背景音|背景音乐|bgm|sfx|ambient)$/i
+const IGNORE_TTS_SPEAKERS = /^(환경음|환경소리|효과음|sfx|sound ?effect|bgm|배경음|배경음악|ambient)$/i
+const IGNORE_TTS_TEXT = /^(없음|대사 없음|내레이션 없음|더빙 필요 없음|대사 필요 없음|none|null|n\/a|na|환경음|환경소리|효과음|순수 효과음|순수 환경음|배경음|배경음악|bgm|sfx|ambient)$/i
 
 function parseDialogueForTTS(dialogue?: string | null) {
   const raw = dialogue?.trim() || ''
@@ -56,7 +56,7 @@ function cleanDialogueText(value: string) {
 }
 
 function resolveVoiceForSpeaker(speaker: string, characters: Array<{ name: string, voiceStyle: string | null }>) {
-  if (!speaker || /^(내레이션|画外音|narrator)$/i.test(speaker)) return 'alloy'
+  if (!speaker || /^(내레이션|화면 밖 목소리|narrator)$/i.test(speaker)) return 'alloy'
   const found = characters.find((char) => char.name === speaker)
   return found?.voiceStyle || 'alloy'
 }
@@ -166,6 +166,7 @@ app.put('/:id', async (c) => {
     composed_image: 'composedImage', first_frame_image: 'firstFrameImage',
     last_frame_image: 'lastFrameImage', video_url: 'videoUrl',
     tts_audio_url: 'ttsAudioUrl', subtitle_url: 'subtitleUrl',
+    bgm_audio_url: 'bgmAudioUrl',
     composed_video_url: 'composedVideoUrl',
   }
 

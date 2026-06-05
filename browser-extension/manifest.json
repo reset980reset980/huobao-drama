@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "Huobao Drama Browser Helper",
+  "version": "0.1.0",
+  "description": "화보 드라마 프롬프트를 구독형 웹 생성 서비스 입력창으로 전달합니다.",
+  "permissions": ["storage", "tabs", "scripting"],
+  "host_permissions": [
+    "http://localhost:3013/*",
+    "http://127.0.0.1:3013/*",
+    "https://labs.google/*",
+    "https://labs.google.com/*",
+    "https://flow.google/*",
+    "https://flow.google.com/*",
+    "https://suno.com/*",
+    "https://app.suno.ai/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://localhost:3013/*", "http://127.0.0.1:3013/*"],
+      "js": ["content-app.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://labs.google/*",
+        "https://labs.google.com/*",
+        "https://flow.google/*",
+        "https://flow.google.com/*",
+        "https://suno.com/*",
+        "https://app.suno.ai/*"
+      ],
+      "js": ["content-service.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "Huobao Helper",
+    "default_popup": "popup.html"
+  }
+}

@@ -100,6 +100,7 @@
           <div class="summary-chip">이미지 · {{ imageConfigs.length }} 개 선택 가능</div>
           <div class="summary-chip">영상 · {{ videoConfigs.length }} 개 선택 가능</div>
           <div class="summary-chip">오디오 · {{ audioConfigs.length }} 개 선택 가능</div>
+          <div class="summary-chip">BGM · {{ audioConfigs.length }} 개 선택 가능</div>
         </div>
         <div class="dialog-body">
           <div class="dialog-section">
@@ -150,6 +151,16 @@
                 <BaseSelect v-if="newEpisodeAudioMode === 'api'" v-model="newEpisodeAudioConfigId" :options="audioConfigOptions" placeholder="오디오 서비스 선택" searchable />
                 <span v-else class="field-hint">더빙 프롬프트만 제공하고 사용자가 만든 음성 파일 또는 URL을 등록합니다.</span>
               </div>
+              <div class="config-card">
+                <span class="config-card-kicker">BGM</span>
+                <span class="field-label">배경음악 생성 방식</span>
+                <div class="mode-toggle">
+                  <button :class="['mode-option', newEpisodeBgmMode === 'api' && 'active']" @click="newEpisodeBgmMode = 'api'">API</button>
+                  <button :class="['mode-option', newEpisodeBgmMode === 'manual' && 'active']" @click="newEpisodeBgmMode = 'manual'">프롬프트/등록</button>
+                </div>
+                <BaseSelect v-if="newEpisodeBgmMode === 'api'" v-model="newEpisodeBgmConfigId" :options="audioConfigOptions" placeholder="BGM 서비스 선택" searchable />
+                <span v-else class="field-hint">Suno 같은 구독형 서비스용 프롬프트를 제공하고 만든 음악 파일 또는 URL을 등록합니다.</span>
+              </div>
             </div>
           </div>
         </div>
@@ -180,9 +191,11 @@ const audioConfigs = ref([])
 const newEpisodeImageConfigId = ref(null)
 const newEpisodeVideoConfigId = ref(null)
 const newEpisodeAudioConfigId = ref(null)
+const newEpisodeBgmConfigId = ref(null)
 const newEpisodeImageMode = ref('api')
 const newEpisodeVideoMode = ref('manual')
 const newEpisodeAudioMode = ref('api')
+const newEpisodeBgmMode = ref('manual')
 
 function hasScript(ep) { return !!(ep.script_content || ep.scriptContent) }
 
@@ -200,6 +213,7 @@ const canCreateEpisode = computed(() => {
   if (newEpisodeImageMode.value === 'api' && !newEpisodeImageConfigId.value) return false
   if (newEpisodeVideoMode.value === 'api' && !newEpisodeVideoConfigId.value) return false
   if (newEpisodeAudioMode.value === 'api' && !newEpisodeAudioConfigId.value) return false
+  if (newEpisodeBgmMode.value === 'api' && !newEpisodeBgmConfigId.value) return false
   return true
 })
 
@@ -224,6 +238,7 @@ async function loadConfigs() {
     if (!newEpisodeImageConfigId.value && imageConfigs.value.length) newEpisodeImageConfigId.value = imageConfigs.value[0].id
     if (!newEpisodeVideoConfigId.value && videoConfigs.value.length) newEpisodeVideoConfigId.value = videoConfigs.value[0].id
     if (!newEpisodeAudioConfigId.value && audioConfigs.value.length) newEpisodeAudioConfigId.value = audioConfigs.value[0].id
+    if (!newEpisodeBgmConfigId.value && audioConfigs.value.length) newEpisodeBgmConfigId.value = audioConfigs.value[0].id
   } catch (e) {
     toast.error(e.message)
   }
@@ -235,6 +250,7 @@ function openAddEpisode() {
     newEpisodeImageMode.value = localStorage.getItem('huobao:image-generation-mode') || 'api'
     newEpisodeVideoMode.value = localStorage.getItem('huobao:video-generation-mode') || 'manual'
     newEpisodeAudioMode.value = localStorage.getItem('huobao:audio-generation-mode') || 'api'
+    newEpisodeBgmMode.value = localStorage.getItem('huobao:bgm-generation-mode') || 'manual'
   }
   addDialog.value = true
 }
@@ -248,9 +264,11 @@ async function addEpisode() {
       image_config_id: newEpisodeImageConfigId.value,
       video_config_id: newEpisodeVideoConfigId.value,
       audio_config_id: newEpisodeAudioConfigId.value,
+      bgm_config_id: newEpisodeBgmConfigId.value,
       image_generation_mode: newEpisodeImageMode.value,
       video_generation_mode: newEpisodeVideoMode.value,
       audio_generation_mode: newEpisodeAudioMode.value,
+      bgm_generation_mode: newEpisodeBgmMode.value,
     })
     toast.success('새 회차가 추가되었습니다')
     addDialog.value = false

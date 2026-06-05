@@ -17,9 +17,15 @@ async function readComposeOptions(c: any): Promise<ComposeOptions> {
   try {
     const body = await c.req.json()
     const requestedMode = body?.audio_mode || body?.audioMode
-    return { audioMode: requestedMode === 'source' ? 'source' : 'tts' }
+    const requestedBgmMode = body?.bgm_mode || body?.bgmMode
+    const bgmVolume = Number(body?.bgm_volume ?? body?.bgmVolume)
+    return {
+      audioMode: requestedMode === 'source' ? 'source' : 'tts',
+      bgmMode: requestedBgmMode === 'mix' ? 'mix' : 'none',
+      bgmVolume: Number.isFinite(bgmVolume) ? bgmVolume : undefined,
+    }
   } catch {
-    return { audioMode: 'tts' }
+    return { audioMode: 'tts', bgmMode: 'none' }
   }
 }
 
@@ -28,12 +34,12 @@ app.post('/storyboards/:id/compose', async (c) => {
   const id = Number(c.req.param('id'))
   const options = await readComposeOptions(c)
   try {
-    logTaskStart('ComposeAPI', 'single-compose', { storyboardId: id, audioMode: options.audioMode })
+    logTaskStart('ComposeAPI', 'single-compose', { storyboardId: id, audioMode: options.audioMode, bgmMode: options.bgmMode })
     const composedUrl = await composeStoryboard(id, options)
-    logTaskSuccess('ComposeAPI', 'single-compose', { storyboardId: id, output: composedUrl, audioMode: options.audioMode })
-    return success(c, { id, composed_video_url: composedUrl, audio_mode: options.audioMode })
+    logTaskSuccess('ComposeAPI', 'single-compose', { storyboardId: id, output: composedUrl, audioMode: options.audioMode, bgmMode: options.bgmMode })
+    return success(c, { id, composed_video_url: composedUrl, audio_mode: options.audioMode, bgm_mode: options.bgmMode })
   } catch (err: any) {
-    logTaskError('ComposeAPI', 'single-compose', { storyboardId: id, audioMode: options.audioMode, error: err.message })
+    logTaskError('ComposeAPI', 'single-compose', { storyboardId: id, audioMode: options.audioMode, bgmMode: options.bgmMode, error: err.message })
     return badRequest(c, err.message)
   }
 })
@@ -63,18 +69,19 @@ app.post('/episodes/:id/compose-all', async (c) => {
       try {
         await composeStoryboard(sb.id, options)
       } catch (err: any) {
-        logTaskError('ComposeAPI', 'batch-item', { storyboardId: sb.id, episodeId, audioMode: options.audioMode, error: err.message })
+        logTaskError('ComposeAPI', 'batch-item', { storyboardId: sb.id, episodeId, audioMode: options.audioMode, bgmMode: options.bgmMode, error: err.message })
       }
       if (COMPOSE_TASK_DELAY_MS > 0) await sleep(COMPOSE_TASK_DELAY_MS)
     }
-    logTaskSuccess('ComposeAPI', 'batch-compose', { episodeId, total: withVideo.length, audioMode: options.audioMode })
+    logTaskSuccess('ComposeAPI', 'batch-compose', { episodeId, total: withVideo.length, audioMode: options.audioMode, bgmMode: options.bgmMode })
   })()
 
-  logTaskStart('ComposeAPI', 'batch-compose', { episodeId, total: withVideo.length, audioMode: options.audioMode })
+  logTaskStart('ComposeAPI', 'batch-compose', { episodeId, total: withVideo.length, audioMode: options.audioMode, bgmMode: options.bgmMode })
   return success(c, {
     message: `Started composing ${withVideo.length} storyboards`,
     total: withVideo.length,
     audio_mode: options.audioMode,
+    bgm_mode: options.bgmMode,
   })
 })
 

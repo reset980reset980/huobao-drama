@@ -1,6 +1,6 @@
 /**
- * Drizzle schema — 精确匹配现有 SQLite 数据库列名
- * 从 PRAGMA table_info() 逆向生成
+ * Drizzle schema - 기존 SQLite 데이터베이스 컬럼명과 맞춤
+ * PRAGMA table_info() 기준으로 정리
  */
 import { sqliteTable, text, integer, real, primaryKey } from 'drizzle-orm/sqlite-core'
 
@@ -36,9 +36,11 @@ export const episodes = sqliteTable('episodes', {
   imageConfigId: integer('image_config_id'),
   videoConfigId: integer('video_config_id'),
   audioConfigId: integer('audio_config_id'),
+  bgmConfigId: integer('bgm_config_id'),
   imageGenerationMode: text('image_generation_mode').default('api'),
   videoGenerationMode: text('video_generation_mode').default('api'),
   audioGenerationMode: text('audio_generation_mode').default('api'),
+  bgmGenerationMode: text('bgm_generation_mode').default('manual'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
   deletedAt: text('deleted_at'),
@@ -124,6 +126,7 @@ export const storyboards = sqliteTable('storyboards', {
   referenceImages: text('reference_images'),
   videoUrl: text('video_url'),
   ttsAudioUrl: text('tts_audio_url'),
+  bgmAudioUrl: text('bgm_audio_url'),
   subtitleUrl: text('subtitle_url'),
   composedVideoUrl: text('composed_video_url'),
   status: text('status').default('pending'),
@@ -155,7 +158,7 @@ export const aiServiceConfigs = sqliteTable('ai_service_configs', {
   settings: text('settings'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
-  // 주의: 此表无 deleted_at
+  // 주의: 이 테이블에는 deleted_at 컬럼이 없음
 })
 
 export const aiServiceProviders = sqliteTable('ai_service_providers', {
@@ -175,9 +178,9 @@ export const aiServiceProviders = sqliteTable('ai_service_providers', {
 export const aiVoices = sqliteTable('ai_voices', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   voiceId: text('voice_id').notNull().unique(),   // MiniMax voice_id
-  voiceName: text('voice_name').notNull(),         // 중국어名
-  description: text('description'),                // 설명数组 JSON
-  language: text('language'),                     // 语言标签
+  voiceName: text('voice_name').notNull(),         // 중국어 이름
+  description: text('description'),                // 설명 배열 JSON
+  language: text('language'),                     // 언어 태그
   provider: text('provider').notNull(),           // minimax
   createdAt: text('created_at').notNull(),
 })

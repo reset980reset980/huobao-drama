@@ -32,7 +32,7 @@ app.delete('/:id', async (c) => {
   return success(c)
 })
 
-// POST /characters/:id/generate-voice-sample — 生成캐릭터음색试听
+// POST /characters/:id/generate-voice-sample - 캐릭터 음색 미리듣기 생성
 app.post('/:id/generate-voice-sample', async (c) => {
   const id = Number(c.req.param('id'))
   const body = await c.req.json().catch(() => ({}))

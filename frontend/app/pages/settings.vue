@@ -47,7 +47,7 @@
           <div class="setup-panel-head compact">
             <div>
               <div class="setup-title">생성 방식</div>
-              <div class="setup-desc">새 회차를 만들 때 사용할 기본값입니다. 회차 안에서도 이미지, 더빙, 영상별로 다시 바꿀 수 있습니다.</div>
+              <div class="setup-desc">새 회차를 만들 때 사용할 기본값입니다. 회차 안에서도 이미지, 더빙, 영상, BGM별로 다시 바꿀 수 있습니다.</div>
             </div>
           </div>
           <div class="generation-mode-box">
@@ -60,6 +60,48 @@
                 <button :class="['generation-mode-option', item.mode === 'api' && 'active']" @click="setGenerationMode(item.key, 'api')">API</button>
                 <button :class="['generation-mode-option', item.mode === 'manual' && 'active']" @click="setGenerationMode(item.key, 'manual')">프롬프트/등록</button>
               </div>
+            </div>
+          </div>
+        </section>
+        <section class="setup-panel card">
+          <div class="setup-panel-head compact">
+            <div>
+              <div class="setup-title">원격 승인</div>
+              <div class="setup-desc">완전 자동 대신 사용자가 중간 결과를 승인하는 흐름을 준비합니다. 실제 봇 송수신은 후속 기능에서 연결됩니다.</div>
+            </div>
+            <span class="tag">{{ remoteApproval.channel === 'none' ? '사용 안 함' : remoteApproval.channel === 'telegram' ? '텔레그램' : '디스코드' }}</span>
+          </div>
+          <div class="generation-mode-box">
+            <div class="generation-mode-row">
+              <div>
+                <span class="generation-mode-title">승인 채널</span>
+                <span class="generation-mode-desc">캐릭터, 장면, 프롬프트, 더빙, 이미지, 영상, BGM 승인에 사용할 채널입니다.</span>
+              </div>
+              <div class="generation-mode-actions remote-mode-actions">
+                <button :class="['generation-mode-option', remoteApproval.channel === 'none' && 'active']" @click="remoteApproval.channel = 'none'">사용 안 함</button>
+                <button :class="['generation-mode-option', remoteApproval.channel === 'telegram' && 'active']" @click="remoteApproval.channel = 'telegram'">텔레그램</button>
+                <button :class="['generation-mode-option', remoteApproval.channel === 'discord' && 'active']" @click="remoteApproval.channel = 'discord'">디스코드</button>
+              </div>
+            </div>
+            <div v-if="remoteApproval.channel === 'telegram'" class="remote-config-grid">
+              <label class="field">
+                <span class="field-label">봇 토큰</span>
+                <input v-model="remoteApproval.telegramToken" class="input" type="password" placeholder="Telegram Bot Token" />
+              </label>
+              <label class="field">
+                <span class="field-label">채팅 ID</span>
+                <input v-model="remoteApproval.telegramChatId" class="input" placeholder="승인 메시지를 받을 채팅 ID" />
+              </label>
+            </div>
+            <div v-if="remoteApproval.channel === 'discord'" class="remote-config-grid">
+              <label class="field">
+                <span class="field-label">Webhook URL</span>
+                <input v-model="remoteApproval.discordWebhookUrl" class="input" type="password" placeholder="Discord Webhook URL" />
+              </label>
+            </div>
+            <div class="setup-actions">
+              <span class="field-hint">저장된 값은 이 브라우저의 로컬 설정으로 보관됩니다. 서버 API 키 저장소와 분리됩니다.</span>
+              <button class="btn btn-primary btn-sm ml-auto" @click="saveRemoteApproval">원격 승인 설정 저장</button>
             </div>
           </div>
         </section>
@@ -367,13 +409,22 @@ const GENERATION_MODE_KEYS = {
   image: 'huobao:image-generation-mode',
   video: 'huobao:video-generation-mode',
   audio: 'huobao:audio-generation-mode',
+  bgm: 'huobao:bgm-generation-mode',
 }
-const generationModes = reactive({ image: 'api', video: 'manual', audio: 'api' })
+const generationModes = reactive({ image: 'api', video: 'manual', audio: 'api', bgm: 'manual' })
 const generationModeItems = computed(() => [
   { key: 'image', label: '이미지', desc: '캐릭터, 장면, 샷 이미지를 생성합니다', mode: generationModes.image },
   { key: 'audio', label: '더빙', desc: '미리듣기와 샷 대사 음성을 생성합니다', mode: generationModes.audio },
   { key: 'video', label: '영상', desc: '샷 영상을 생성하거나 외부 제작 결과를 연결합니다', mode: generationModes.video },
+  { key: 'bgm', label: 'BGM', desc: 'Suno 같은 외부 서비스로 만든 배경음악을 등록합니다', mode: generationModes.bgm },
 ])
+const REMOTE_APPROVAL_KEY = 'huobao:remote-approval'
+const remoteApproval = reactive({
+  channel: 'none',
+  telegramToken: '',
+  telegramChatId: '',
+  discordWebhookUrl: '',
+})
 const baseTabs = [
   { id: 'ai', label: 'AI 서비스', icon: Cpu },
 ]
@@ -388,8 +439,27 @@ watch(showAdvanced, (v) => {
 function setGenerationMode(service, mode) {
   generationModes[service] = mode === 'manual' ? 'manual' : 'api'
   if (import.meta.client) localStorage.setItem(GENERATION_MODE_KEYS[service], generationModes[service])
-  const label = service === 'image' ? '이미지' : service === 'audio' ? '더빙' : '영상'
+  const label = service === 'image' ? '이미지' : service === 'audio' ? '더빙' : service === 'video' ? '영상' : 'BGM'
   toast.success(`${label} 기본 생성 방식을 ${generationModes[service] === 'api' ? 'API' : '프롬프트/등록'}로 설정했습니다`)
+}
+
+function loadRemoteApproval() {
+  if (!import.meta.client) return
+  try {
+    const saved = JSON.parse(localStorage.getItem(REMOTE_APPROVAL_KEY) || '{}')
+    Object.assign(remoteApproval, {
+      channel: ['none', 'telegram', 'discord'].includes(saved.channel) ? saved.channel : 'none',
+      telegramToken: saved.telegramToken || '',
+      telegramChatId: saved.telegramChatId || '',
+      discordWebhookUrl: saved.discordWebhookUrl || '',
+    })
+  } catch {}
+}
+
+function saveRemoteApproval() {
+  if (!import.meta.client) return
+  localStorage.setItem(REMOTE_APPROVAL_KEY, JSON.stringify(remoteApproval))
+  toast.success('원격 승인 설정을 저장했습니다')
 }
 
 // ===== AI Service Configs =====
@@ -849,6 +919,8 @@ onMounted(() => {
   generationModes.image = localStorage.getItem(GENERATION_MODE_KEYS.image) || 'api'
   generationModes.video = localStorage.getItem(GENERATION_MODE_KEYS.video) || 'manual'
   generationModes.audio = localStorage.getItem(GENERATION_MODE_KEYS.audio) || 'api'
+  generationModes.bgm = localStorage.getItem(GENERATION_MODE_KEYS.bgm) || 'manual'
+  loadRemoteApproval()
   loadCfgs(); loadAgents(); loadAllSkills()
 })
 </script>
@@ -1048,6 +1120,9 @@ onMounted(() => {
   grid-template-columns: 76px 110px;
   gap: 6px;
 }
+.remote-mode-actions {
+  grid-template-columns: repeat(3, minmax(76px, 1fr));
+}
 .generation-mode-option {
   border: 1px solid var(--border);
   background: rgba(255,255,255,0.82);
@@ -1073,6 +1148,18 @@ onMounted(() => {
   color: var(--text-2);
 }
 .generation-mode-option.active .generation-mode-desc { color: inherit; opacity: 0.82; }
+.remote-config-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.setup-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
 .sections { display: flex; flex-direction: column; gap: 24px; }
 .section-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .section-title { font-size: 13px; font-weight: 600; }
@@ -1219,6 +1306,24 @@ onMounted(() => {
   .preset-grid,
   .preset-grid.compact {
     grid-template-columns: 1fr;
+  }
+  .generation-mode-row {
+    grid-template-columns: 1fr;
+  }
+  .generation-mode-actions,
+  .remote-mode-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+  .remote-config-grid {
+    grid-template-columns: 1fr;
+  }
+  .setup-actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .setup-actions .btn {
+    margin-left: 0;
   }
 }
 </style>
