@@ -2893,6 +2893,8 @@ function defaultAutomationTargets(kind) {
   return []
 }
 
+const browserHelperInstallGuide = 'Chrome에서 chrome://extensions 를 열고 개발자 모드를 켠 뒤, 압축해제된 확장 프로그램 로드에서 D:\\Project\\huobao-drama\\browser-extension 폴더를 선택하세요.'
+
 function sendPromptToAutomation(target) {
   const prompt = String(manualDialog.prompt || '').trim()
   if (!prompt) {
@@ -2907,7 +2909,7 @@ function sendPromptToAutomation(target) {
     if (settled) return
     settled = true
     window.removeEventListener('message', onResponse)
-    toast.warning('브라우저 자동화 확장 프로그램 응답이 없습니다. 확장 프로그램 설치 여부를 확인하세요.')
+    toast.warning(`브라우저 자동화 확장 프로그램 응답이 없습니다. ${browserHelperInstallGuide}`)
   }, 1800)
 
   function onResponse(event) {
