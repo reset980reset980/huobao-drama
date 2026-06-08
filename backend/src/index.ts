@@ -22,6 +22,7 @@ import grid from './routes/grid.js'
 import skills from './routes/skills.js'
 import webhooks from './routes/webhooks.js'
 import aiVoices from './routes/aiVoices.js'
+import browserBridge from './routes/browserBridge.js'
 import { requestLogger, errorHandler } from './middleware/logger.js'
 import { startVoiceboxRuntime, stopVoiceboxRuntime } from './services/voicebox-runtime.js'
 
@@ -60,6 +61,7 @@ api.route('/merge', merge)
 api.route('/grid', grid)
 api.route('/skills', skills)
 api.route('/ai-voices', aiVoices)
+api.route('/browser-bridge', browserBridge)
 
 app.route('/api/v1', api)
 

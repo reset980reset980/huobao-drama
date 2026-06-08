@@ -243,6 +243,12 @@
       }, true))
     }
 
+    if (isFlowPage()) {
+      actions.appendChild(button('Flow API 프로젝트 생성', () => {
+        createFlowProjectFromPanel(job || {})
+      }))
+    }
+
     if (state.flowOptionalGateButton) {
       actions.appendChild(button('Flow 팝업 진행', () => {
         state.flowOptionalGateButton.click()
@@ -330,6 +336,59 @@
 
     await new Promise((resolve) => window.setTimeout(resolve, 600))
     return fillWhenReady(job, attempt + 1)
+  }
+
+  function createFlowProjectFromPanel(job) {
+    renderPanel(job, {
+      message: 'Flow API로 새 프로젝트 생성을 시도합니다. 로그인 토큰이 아직 캡처되지 않았다면 실패할 수 있습니다.',
+      generateButton: null,
+      flowNewProjectButton: null,
+      flowOptionalGateButton: null,
+      downloadButton: null,
+      diagnostics: makeDiagnostics(),
+    })
+
+    chrome.runtime.sendMessage({
+      type: 'HUOBAO_FLOW_CREATE_PROJECT',
+      title: job?.title || 'Huobao Drama Project',
+    }, (response) => {
+      const lastError = chrome.runtime.lastError?.message
+      if (lastError) {
+        renderPanel(job, {
+          message: `Flow API 프로젝트 생성 실패: ${lastError}`,
+          generateButton: null,
+          flowNewProjectButton: findFlowNewProjectButton(),
+          flowOptionalGateButton: findFlowOptionalGateButton(),
+          downloadButton: null,
+          diagnostics: makeDiagnostics(),
+        })
+        return
+      }
+
+      if (response?.ok) {
+        renderPanel(job, {
+          message: response.projectId
+            ? `Flow 프로젝트를 생성했습니다: ${response.projectId}. 프로젝트 탭이 열리면 프롬프트를 다시 입력하세요.`
+            : `Flow 프로젝트 생성 요청은 성공했지만 projectId를 찾지 못했습니다. 응답: ${response.rawSummary || '요약 없음'}`,
+          generateButton: null,
+          flowNewProjectButton: null,
+          flowOptionalGateButton: null,
+          downloadButton: null,
+          diagnostics: makeDiagnostics(),
+        })
+        window.setTimeout(() => fillWhenReady(job || {}, 0), 1800)
+        return
+      }
+
+      renderPanel(job, {
+        message: `Flow API 프로젝트 생성 실패: ${response?.error || '알 수 없는 오류'}${response?.flowKeyPresent === false ? ' (Flow 로그인 토큰 없음)' : ''}`,
+        generateButton: null,
+        flowNewProjectButton: findFlowNewProjectButton(),
+        flowOptionalGateButton: findFlowOptionalGateButton(),
+        downloadButton: null,
+        diagnostics: makeDiagnostics(),
+      })
+    })
   }
 
   chrome.runtime.onMessage.addListener((message) => {

@@ -11,8 +11,46 @@ const TARGETS = {
   },
 }
 
+let flowKey = null
+let tokenCapturedAt = 0
+
+chrome.storage.local.get(['flowKey', 'tokenCapturedAt'], (data) => {
+  flowKey = data.flowKey || null
+  tokenCapturedAt = data.tokenCapturedAt || 0
+})
+
+chrome.webRequest.onBeforeSendHeaders.addListener(
+  (details) => {
+    if (!details?.requestHeaders?.length) return
+    const authHeader = details.requestHeaders.find((header) => header.name?.toLowerCase() === 'authorization')
+    const value = authHeader?.value || ''
+    if (!value.startsWith('Bearer ya29.')) return
+
+    flowKey = value.replace(/^Bearer\s+/i, '').trim()
+    tokenCapturedAt = Date.now()
+    chrome.storage.local.set({ flowKey, tokenCapturedAt })
+    notifyLocalFlowBridge().catch(() => {})
+  },
+  { urls: ['https://aisandbox-pa.googleapis.com/*', 'https://labs.google/*'] },
+  ['requestHeaders', 'extraHeaders'],
+)
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (!message || message.type !== 'HUOBAO_OPEN_GENERATOR') return false
+  if (!message) return false
+
+  if (message.type === 'HUOBAO_FLOW_STATUS') {
+    sendResponse(getFlowStatus())
+    return false
+  }
+
+  if (message.type === 'HUOBAO_FLOW_CREATE_PROJECT') {
+    createFlowProject(message.title || 'Huobao Drama Project')
+      .then((response) => sendResponse(response))
+      .catch((error) => sendResponse({ ok: false, error: error?.message || 'Flow 프로젝트 생성 실패' }))
+    return true
+  }
+
+  if (message.type !== 'HUOBAO_OPEN_GENERATOR') return false
 
   const target = TARGETS[message.target] || TARGETS.flow
   const job = {
@@ -33,6 +71,99 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   })
   return true
 })
+
+function getFlowStatus() {
+  return {
+    ok: true,
+    flowKeyPresent: !!flowKey,
+    tokenAgeMs: tokenCapturedAt ? Date.now() - tokenCapturedAt : null,
+  }
+}
+
+async function notifyLocalFlowBridge() {
+  await fetch('http://127.0.0.1:5679/api/v1/browser-bridge/flow-token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      token_present: !!flowKey,
+      token_age_ms: tokenCapturedAt ? Date.now() - tokenCapturedAt : null,
+      captured_at: tokenCapturedAt,
+    }),
+  })
+}
+
+async function createFlowProject(title) {
+  const body = { json: { projectTitle: String(title || 'Huobao Drama Project').slice(0, 120), toolName: 'PINHOLE' } }
+  const headers = {
+    'content-type': 'application/json',
+    'accept': '*/*',
+  }
+  if (flowKey) headers.authorization = `Bearer ${flowKey}`
+
+  const response = await fetch('https://labs.google/fx/api/trpc/project.createProject', {
+    method: 'POST',
+    headers,
+    credentials: 'include',
+    body: JSON.stringify(body),
+  })
+  const text = await response.text()
+  let data = text
+  try {
+    data = JSON.parse(text)
+  } catch {}
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      status: response.status,
+      flowKeyPresent: !!flowKey,
+      error: summarizeFlowResponse(data) || `Flow 프로젝트 생성 API 오류 ${response.status}`,
+      raw: data,
+    }
+  }
+
+  const projectId = extractProjectId(data)
+  if (projectId) {
+    await chrome.tabs.create({ url: `https://labs.google/fx/tools/flow/project/${projectId}`, active: true }).catch(() => {})
+  }
+
+  return {
+    ok: true,
+    status: response.status,
+    flowKeyPresent: !!flowKey,
+    projectId,
+    rawSummary: summarizeFlowResponse(data),
+  }
+}
+
+function extractProjectId(value) {
+  if (!value) return ''
+  if (typeof value === 'string') {
+    const match = value.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)
+    return match?.[0] || ''
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = extractProjectId(item)
+      if (found) return found
+    }
+    return ''
+  }
+  if (typeof value === 'object') {
+    if (typeof value.projectId === 'string') return value.projectId
+    if (typeof value.project_id === 'string') return value.project_id
+    for (const nested of Object.values(value)) {
+      const found = extractProjectId(nested)
+      if (found) return found
+    }
+  }
+  return ''
+}
+
+function summarizeFlowResponse(value) {
+  const text = typeof value === 'string' ? value : JSON.stringify(value)
+  return text ? text.slice(0, 320) : ''
+}
 
 async function openOrReuseGeneratorTab(target, job, sendResponse) {
   const existing = await findExistingTargetTab(target)
