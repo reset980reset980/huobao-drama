@@ -100,6 +100,27 @@
     ])
   }
 
+  function findFlowNewProjectButton() {
+    if (!isFlowPage()) return null
+    return findClickable([
+      /새\s*프로젝트/,
+      /new\s*project/,
+      /add_2.*새\s*프로젝트|새\s*프로젝트.*add_2/,
+    ])
+  }
+
+  function findFlowOptionalGateButton() {
+    if (!isFlowPage()) return null
+    return findClickable([
+      /나중에|건너뛰기|닫기|계속|확인/,
+      /not\s*now|skip|continue|close|got\s*it|dismiss/,
+    ])
+  }
+
+  function isFlowPage() {
+    return /(^|\.)labs\.google|(^|\.)flow\.google/.test(location.hostname)
+  }
+
   function setNativeValue(target, prompt) {
     const proto = Object.getPrototypeOf(target)
     const descriptor = Object.getOwnPropertyDescriptor(proto, 'value')
@@ -210,6 +231,30 @@
       }, true))
     }
 
+    if (state.flowNewProjectButton) {
+      actions.appendChild(button('새 프로젝트 클릭', () => {
+        state.flowNewProjectButton.click()
+        renderPanel(job, {
+          ...state,
+          message: '새 프로젝트 버튼을 클릭했습니다. 입력 화면이 열리면 프롬프트를 다시 입력합니다.',
+          flowNewProjectButton: null,
+        })
+        window.setTimeout(() => fillWhenReady(job || {}, 0), 1200)
+      }, true))
+    }
+
+    if (state.flowOptionalGateButton) {
+      actions.appendChild(button('Flow 팝업 진행', () => {
+        state.flowOptionalGateButton.click()
+        renderPanel(job, {
+          ...state,
+          message: 'Flow의 선택 화면 버튼을 클릭했습니다. 다음 화면에서 프롬프트를 다시 입력합니다.',
+          flowOptionalGateButton: null,
+        })
+        window.setTimeout(() => fillWhenReady(job || {}, 0), 1200)
+      }))
+    }
+
     actions.appendChild(button('프롬프트 다시 입력', () => {
       fillWhenReady(job || {}, 0)
     }))
@@ -217,12 +262,18 @@
     actions.appendChild(button('버튼 다시 찾기', () => {
       const generateButton = findGenerateButton()
       const downloadButton = findDownloadButton()
+      const flowNewProjectButton = findFlowNewProjectButton()
+      const flowOptionalGateButton = findFlowOptionalGateButton()
       renderPanel(job, {
         message: [
           generateButton ? '생성 버튼 후보를 찾았습니다.' : '생성 버튼 후보를 찾지 못했습니다.',
+          flowNewProjectButton ? 'Flow 새 프로젝트 버튼을 찾았습니다.' : '',
+          flowOptionalGateButton ? 'Flow 선택 화면 버튼 후보를 찾았습니다.' : '',
           downloadButton ? '다운로드 버튼 후보도 찾았습니다.' : '',
         ].filter(Boolean).join(' '),
         generateButton,
+        flowNewProjectButton,
+        flowOptionalGateButton,
         downloadButton,
         diagnostics: makeDiagnostics(),
       })
@@ -255,6 +306,8 @@
           ? '프롬프트를 입력했고 생성 버튼 후보를 찾았습니다. 화면 내용을 확인한 뒤 승인하면 클릭합니다.'
           : '프롬프트를 입력했습니다. 생성 버튼 후보는 찾지 못했습니다.',
         generateButton,
+        flowNewProjectButton: findFlowNewProjectButton(),
+        flowOptionalGateButton: findFlowOptionalGateButton(),
         downloadButton: findDownloadButton(),
         diagnostics: makeDiagnostics(),
       })
@@ -263,8 +316,12 @@
 
     if (attempt >= 30) {
       renderPanel(job, {
-        message: '입력창을 찾지 못했습니다. 로그인, 프로젝트 선택, 정책 확인 화면을 지나 프롬프트 입력 화면을 연 뒤 다시 시도하세요.',
+        message: findFlowNewProjectButton()
+          ? '입력창은 아직 없지만 Flow 새 프로젝트 버튼을 찾았습니다. 새 프로젝트를 열고 다시 입력할 수 있습니다.'
+          : '입력창을 찾지 못했습니다. 로그인, 프로젝트 선택, 정책 확인 화면을 지나 프롬프트 입력 화면을 연 뒤 다시 시도하세요.',
         generateButton: null,
+        flowNewProjectButton: findFlowNewProjectButton(),
+        flowOptionalGateButton: findFlowOptionalGateButton(),
         downloadButton: null,
         diagnostics: makeDiagnostics(),
       })
