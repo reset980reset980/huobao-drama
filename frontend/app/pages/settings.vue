@@ -157,6 +157,73 @@
         </div>
       </div>
 
+      <!-- ===== 시스템 상태 ===== -->
+      <div v-else-if="tab === 'system'" class="settings-scroll">
+        <div class="settings-head">
+          <div class="settings-brand">
+            <div class="settings-brand-mark">
+              <img v-if="showBrandImage" :src="brandLogo" alt="화보 드라마" class="settings-brand-logo" @error="showBrandImage = false" />
+              <span v-else class="settings-brand-fallback">화</span>
+            </div>
+            <div class="settings-brand-copy">
+              <div class="settings-brand-kicker">Huobao Shorts</div>
+              <div class="settings-brand-name">화보 드라마</div>
+            </div>
+          </div>
+          <h2 class="settings-title">시스템 상태</h2>
+          <p class="settings-desc">로컬 실행에 필요한 백엔드, 프론트엔드, Voicebox, FFmpeg, Flow 브라우저 연결 상태를 확인합니다.</p>
+        </div>
+        <section class="setup-panel card">
+          <div class="setup-panel-head compact">
+            <div>
+              <div class="setup-title">실행 상태</div>
+              <div class="setup-desc">
+                <span v-if="systemStatus?.checkedAt">마지막 확인: {{ formatSystemTime(systemStatus.checkedAt) }}</span>
+                <span v-else>아직 확인하지 않았습니다.</span>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" :disabled="systemLoading" @click="loadSystemStatus">
+              <Loader2 v-if="systemLoading" :size="12" class="animate-spin" />
+              새로고침
+            </button>
+          </div>
+          <div v-if="systemError" class="status-error">{{ systemError }}</div>
+          <div class="status-grid">
+            <div v-for="item in systemItems" :key="item.key" class="status-card">
+              <div class="status-card-head">
+                <span :class="['status-dot', item.ok ? 'ok' : 'bad']"></span>
+                <span class="status-label">{{ item.label }}</span>
+                <span :class="['tag', item.ok ? 'tag-success' : 'tag-error']">{{ item.ok ? '정상' : '확인 필요' }}</span>
+              </div>
+              <div class="status-message">{{ item.message }}</div>
+              <div v-if="item.detailText" class="status-detail mono">{{ item.detailText }}</div>
+            </div>
+          </div>
+        </section>
+        <section class="setup-panel card">
+          <div class="setup-panel-head compact">
+            <div>
+              <div class="setup-title">로컬 실행 스크립트</div>
+              <div class="setup-desc">백엔드 터미널을 숨긴 상태로 실행하고 상태를 점검할 때 사용할 수 있습니다.</div>
+            </div>
+          </div>
+          <div class="command-list">
+            <div class="command-row">
+              <span class="command-label">시작</span>
+              <code>.\scripts\start-huobao.ps1</code>
+            </div>
+            <div class="command-row">
+              <span class="command-label">상태</span>
+              <code>.\scripts\status-huobao.ps1</code>
+            </div>
+            <div class="command-row">
+              <span class="command-label">종료</span>
+              <code>.\scripts\stop-huobao.ps1</code>
+            </div>
+          </div>
+        </section>
+      </div>
+
       <!-- ===== Agent 설정 ===== -->
       <div v-else-if="tab === 'agents'" class="settings-scroll">
         <div class="settings-head">
@@ -396,10 +463,10 @@
 </template>
 
 <script setup>
-import { Plus, Pencil, Trash2, FileText, ChevronDown, Check, Loader2, Bot, Cpu } from 'lucide-vue-next'
+import { Plus, Pencil, Trash2, FileText, ChevronDown, Check, Loader2, Bot, Cpu, Server } from 'lucide-vue-next'
 import BaseSelect from '~/components/BaseSelect.vue'
 import { toast } from 'vue-sonner'
-import { aiConfigAPI, agentConfigAPI, skillsAPI } from '~/composables/useApi'
+import { aiConfigAPI, agentConfigAPI, skillsAPI, systemAPI } from '~/composables/useApi'
 import brandLogo from '~/assets/huobao-logo.png'
 
 const showBrandImage = ref(true)
@@ -427,6 +494,7 @@ const remoteApproval = reactive({
 })
 const baseTabs = [
   { id: 'ai', label: 'AI 서비스', icon: Cpu },
+  { id: 'system', label: '시스템 상태', icon: Server },
 ]
 const advancedTabs = [
   { id: 'agents', label: 'Agent 설정', icon: Bot },
@@ -434,6 +502,9 @@ const advancedTabs = [
 ]
 watch(showAdvanced, (v) => {
   if (!v && tab.value !== 'ai') tab.value = 'ai'
+})
+watch(tab, (v) => {
+  if (v === 'system') loadSystemStatus()
 })
 
 function setGenerationMode(service, mode) {
@@ -460,6 +531,49 @@ function saveRemoteApproval() {
   if (!import.meta.client) return
   localStorage.setItem(REMOTE_APPROVAL_KEY, JSON.stringify(remoteApproval))
   toast.success('원격 승인 설정을 저장했습니다')
+}
+
+// ===== System Status =====
+const systemStatus = ref(null)
+const systemLoading = ref(false)
+const systemError = ref('')
+const systemItems = computed(() => {
+  const services = systemStatus.value?.services || {}
+  return Object.entries(services).map(([key, item]) => {
+    const detail = item?.detail || {}
+    const detailText = [
+      detail.url,
+      detail.path,
+      detail.version,
+      detail.updatedAt ? `갱신 ${formatSystemTime(detail.updatedAt)}` : '',
+    ].filter(Boolean).join(' · ')
+    return {
+      key,
+      label: item?.label || key,
+      ok: !!item?.ok,
+      message: item?.message || '상태 없음',
+      detailText,
+    }
+  })
+})
+
+function formatSystemTime(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value)
+  return date.toLocaleString('ko-KR')
+}
+
+async function loadSystemStatus() {
+  systemLoading.value = true
+  systemError.value = ''
+  try {
+    systemStatus.value = await systemAPI.status()
+  } catch (e) {
+    systemError.value = e.message || '시스템 상태를 불러오지 못했습니다'
+  } finally {
+    systemLoading.value = false
+  }
 }
 
 // ===== AI Service Configs =====
@@ -1175,6 +1289,89 @@ onMounted(() => {
 .config-base { font-size: 11px; color: var(--text-3); }
 .config-empty { font-size: 12px; color: var(--text-3); padding: 12px 0; }
 
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.status-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.78);
+  padding: 12px;
+  min-width: 0;
+}
+.status-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+.status-dot.ok {
+  background: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+}
+.status-label {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+.status-message {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.status-detail {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.status-error {
+  border: 1px solid rgba(239, 68, 68, 0.24);
+  background: rgba(239, 68, 68, 0.08);
+  color: #b91c1c;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+.command-list {
+  display: grid;
+  gap: 8px;
+}
+.command-row {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.72);
+  padding: 9px 11px;
+}
+.command-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-1);
+}
+.command-row code {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-2);
+}
+
 .toggle { position: relative; width: 30px; height: 17px; cursor: pointer; flex-shrink: 0; }
 .toggle input { opacity: 0; width: 0; height: 0; }
 .toggle span { position: absolute; inset: 0; background: var(--bg-3); border-radius: 99px; transition: 0.2s; }
@@ -1316,6 +1513,12 @@ onMounted(() => {
     width: 100%;
   }
   .remote-config-grid {
+    grid-template-columns: 1fr;
+  }
+  .status-grid {
+    grid-template-columns: 1fr;
+  }
+  .command-row {
     grid-template-columns: 1fr;
   }
   .setup-actions {

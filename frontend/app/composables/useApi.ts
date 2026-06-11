@@ -129,6 +129,10 @@ export const voicesAPI = {
   sync: () => api.post('/ai-voices/sync', {}),
 }
 
+export const systemAPI = {
+  status: () => api.get('/system/status'),
+}
+
 export const uploadAPI = {
   file: async (file: File, kind = 'uploads') => {
     const form = new FormData()

@@ -10,6 +10,10 @@ let flowBridgeStatus = {
   updatedAt: null as string | null,
 }
 
+export function getFlowBridgeStatus() {
+  return { ...flowBridgeStatus }
+}
+
 app.post('/flow-token', async (c) => {
   const body = await c.req.json().catch(() => ({}))
   flowBridgeStatus = {
